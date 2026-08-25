@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090b0f" />
+    <title>余烬刻度 · 魂系卡牌原型</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="game" class="game" aria-label="余烬刻度战斗界面">
+      <div id="sceneBg" class="scene scene-bg" aria-hidden="true"></div>
+      <div id="mistLayer" class="mist-layer" aria-hidden="true"></div>
+      <div id="enemyTarget" class="enemy-stage" aria-label="丧钟守卫拖拽目标">
+        <canvas id="enemyCanvas" aria-hidden="true"></canvas>
+        <div class="enemy-shadow" aria-hidden="true"></div>
+        <div class="target-reticle" aria-hidden="true"><span>释放攻击</span></div>
+      </div>
+      <div id="foregroundLayer" class="foreground-layer" aria-hidden="true"></div>
+      <div class="scene-shade" aria-hidden="true"></div>
+      <div class="grain" aria-hidden="true"></div>
+      <div id="damageFlash" class="damage-flash" aria-hidden="true"></div>
+      <div id="enemyFlash" class="enemy-flash" aria-hidden="true"></div>
+      <div id="vfxLayer" class="vfx-layer" aria-hidden="true"></div>
+
+      <header class="top-bar">
+        <div class="brand-block">
+          <span class="brand-mark">III</span>
+          <div>
+            <p class="eyebrow">无火纪 · 第七猎场</p>
+            <h1>余烬刻度</h1>
+          </div>
+        </div>
+        <div class="node-counter" aria-label="当前时间节点">
+          <span>当前刻度</span>
+          <strong id="currentNode">00</strong>
+        </div>
+      </header>
+
+      <section class="enemy-hud" aria-label="敌人状态">
+        <p class="enemy-title">守墓者</p>
+        <div class="enemy-name-row">
+          <h2>丧钟守卫</h2>
+          <span id="enemyHpText">120 / 120</span>
+        </div>
+        <div class="hp-track enemy-hp-track">
+          <div id="enemyHp" class="hp-fill enemy-hp"></div>
+          <div id="enemyHpLag" class="hp-fill hp-lag"></div>
+        </div>
+        <div id="enemyStatuses" class="status-row"></div>
+      </section>
+
+      <aside id="intentPanel" class="intent-panel" aria-live="polite">
+        <div class="intent-seal" aria-hidden="true">
+          <span id="intentDamage">12</span>
+          <small>伤害</small>
+        </div>
+        <div class="intent-copy">
+          <p>敌方意图</p>
+          <h3 id="intentName">哀钟横扫</h3>
+          <span id="intentDesc">沉重的钟摆将扫过战场</span>
+        </div>
+        <div class="intent-clock">
+          <span>生效还剩</span>
+          <strong id="intentCountdown">4</strong>
+          <em>节点</em>
+        </div>
+      </aside>
+
+      <section class="timeline-wrap" aria-label="未来时间节点">
+        <div class="timeline-heading">
+          <span>时间刻痕</span>
+          <p id="timelineHint">悬停卡牌以预演结算位置</p>
+        </div>
+        <div id="timeline" class="timeline"></div>
+        <div class="timeline-legend">
+          <span><i class="legend-enemy"></i>敌方生效</span>
+          <span><i class="legend-player"></i>卡牌结算</span>
+        </div>
+      </section>
+
+      <section id="combatLog" class="combat-log" aria-live="polite"></section>
+
+      <section class="player-hud" aria-label="玩家状态">
+        <div class="player-vitals">
+          <div class="vital-icon" aria-hidden="true">✦</div>
+          <div class="vital-copy">
+            <div class="player-name-row">
+              <span>失名猎人</span>
+              <strong id="playerHpText">60 / 60</strong>
+            </div>
+            <div id="playerHpTrack" class="hp-track player-hp-track">
+              <div id="playerHp" class="hp-fill player-hp"></div>
+            </div>
+            <div id="playerStatuses" class="status-row player-statuses"></div>
+          </div>
+        </div>
+        <div class="deck-info">
+          <span>牌库 <strong id="deckCount">0</strong></span>
+          <i></i>
+          <span>弃牌 <strong id="discardCount">0</strong></span>
+        </div>
+      </section>
+
+      <button id="refillButton" class="refill-button" type="button" aria-label="保留当前手牌并抽到 5 张，消耗 1 个时间节点">
+        <span aria-hidden="true">↻</span>
+        补充手牌
+        <small>1</small>
+      </button>
+
+      <section class="hand-area" aria-label="手牌区域">
+        <div id="hand" class="hand"></div>
+      </section>
+
+      <div id="playerDropZone" class="player-drop-zone" aria-hidden="true">
+        <span>释放区</span>
+      </div>
+      <div id="dragHint" class="drag-hint" aria-live="polite"></div>
+
+      <div id="actionBanner" class="action-banner" aria-live="assertive"></div>
+
+      <section id="introOverlay" class="overlay visible" aria-label="游戏说明">
+        <div class="overlay-card intro-card">
+          <p class="eyebrow">战斗原型 · 连续时间制</p>
+          <h2>每一次出牌，<br />都在把死亡推近。</h2>
+          <p class="intro-copy">
+            这里没有能量。卡牌右上角的数字代表它会消耗的<strong>时间节点</strong>；
+            按住卡牌并拖向目标释放，你行动时，敌人的招式也会同步读条。
+          </p>
+          <div class="rules">
+            <div><span>01</span><p><strong>探索回廊</strong>在房间之间移动，找到丧钟守卫藏身的房间。</p></div>
+            <div><span>02</span><p><strong>拖入释放区</strong>松手即可打出卡牌，目标由卡牌效果自动决定。</p></div>
+            <div><span>03</span><p><strong>没有回合结束</strong>，只有不断向前的刻度。</p></div>
+          </div>
+          <button id="startButton" class="primary-button">踏入猎场 <span>↗</span></button>
+          <small>WASD / 方向键探索地图 · 拖拽卡牌释放 · 数字键 1–5 快速出牌 · 空格补充手牌</small>
+        </div>
+      </section>
+
+      <section id="endOverlay" class="overlay" aria-label="战斗结果">
+        <div class="overlay-card end-card">
+          <p id="endEyebrow" class="eyebrow">猎杀完成</p>
+          <h2 id="endTitle">丧钟止息</h2>
+          <p id="endCopy">刻度仍在前进，但至少今夜，它不再为你鸣响。</p>
+          <div class="result-stats">
+            <span>历经节点 <strong id="resultNodes">0</strong></span>
+            <span>打出卡牌 <strong id="resultCards">0</strong></span>
+          </div>
+          <button id="restartButton" class="primary-button">回到地图 <span>↗</span></button>
+        </div>
+      </section>
+    </main>
+
+    <section id="mapScreen" class="map-screen hidden" aria-label="猎场地图">
+      <header class="map-header">
+        <p class="eyebrow">无火纪 · 第七猎场</p>
+        <h2>灰烬回廊</h2>
+        <p id="mapHint">WASD / 方向键移动，找到丧钟守卫所在的房间。</p>
+      </header>
+      <svg id="mapSvg" class="map-svg" viewBox="40 20 1020 740" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <filter id="mapSketch" x="-5%" y="-5%" width="110%" height="110%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="11" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" />
+          </filter>
+        </defs>
+        <g filter="url(#mapSketch)">
+          <path id="mapWalls" class="map-walls" d="" />
+        </g>
+        <g id="mapBoss" class="map-boss">
+          <text class="boss-skull" text-anchor="middle">☠</text>
+          <text class="boss-label" text-anchor="middle">Boss</text>
+        </g>
+        <g id="mapPlayer" class="map-player">
+          <circle r="15" />
+          <text text-anchor="middle" dy="6">✦</text>
+        </g>
+      </svg>
+      <footer class="map-footer">
+        <span><i class="legend-player"></i>你</span>
+        <span><i class="legend-enemy"></i>丧钟守卫 · 走进它的房间即开战</span>
+        <span>已猎杀 <strong id="mapKills">0</strong> 次</span>
+      </footer>
+    </section>
+
+    <script src="deck-config.js"></script>
+    <script src="game.js"></script>
+  </body>
+</html>
