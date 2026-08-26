@@ -348,6 +348,15 @@ button { font: inherit; }
 .intent-copy p { margin: 0 0 4px; color: var(--blood-bright); font: 9px/1 sans-serif; letter-spacing: .25em; }
 .intent-copy h3 { margin: 0 0 5px; font-size: 15px; font-weight: 500; letter-spacing: .12em; }
 .intent-copy span { color: #8d8b8d; font: 10px/1.4 sans-serif; }
+.interrupt-meter { width: min(178px, 100%); margin-top: 9px; }
+.interrupt-meter-copy { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+.intent-copy .interrupt-meter-copy span { color: #b99169; font: 8px/1 sans-serif; letter-spacing: .16em; }
+.interrupt-meter-copy strong { color: #d7b67f; font: 9px/1 Georgia, serif; }
+.interrupt-meter-copy b { font-weight: 500; }
+.interrupt-meter-track { position: relative; height: 3px; overflow: hidden; background: rgba(142, 54, 45, .28); border: 1px solid rgba(178, 88, 65, .18); }
+.interrupt-meter-track i { display: block; width: 0; height: 100%; background: linear-gradient(90deg, #8d312d, #e2a858); box-shadow: 0 0 9px rgba(226, 145, 67, .62); transition: width .28s ease; }
+.interrupt-meter.free-refill .interrupt-meter-copy span, .interrupt-meter.free-refill .interrupt-meter-copy strong { color: #f0c87b; }
+.interrupt-meter.free-refill .interrupt-meter-track i { background: linear-gradient(90deg, #8b6535, #f0c87b); }
 .intent-clock { display: grid; justify-items: center; align-self: stretch; align-content: center; border-left: 1px solid rgba(190,180,170,.15); }
 .intent-clock span { color: #858185; font: 8px/1 sans-serif; letter-spacing: .12em; }
 .intent-clock strong { color: #eee3d5; font: 36px/.95 Georgia, serif; }
@@ -357,6 +366,7 @@ button { font: inherit; }
 .intent-panel.break { border-color: rgba(225, 182, 102, .72); border-left-color: #e0b465; box-shadow: 0 0 34px rgba(215, 164, 78, .22); }
 .intent-panel.break .intent-seal { border-color: rgba(238, 196, 117, .9); background: radial-gradient(circle, rgba(184, 128, 47, .44), rgba(15, 12, 15, .6) 68%); }
 .intent-panel.break #intentDamage { color: #ffe1a9; text-shadow: 0 0 16px rgba(255,213,143,.72), 0 3px 3px #140506; }
+.intent-panel.interrupted { animation: intent-interrupted .58s cubic-bezier(.18,.75,.25,1) both; }
 
 .timeline-wrap {
   position: absolute;
@@ -459,6 +469,7 @@ button { font: inherit; }
 .refill-button.refill-ready { animation: refill-ready .9s ease; }
 .refill-button.refill-ready small { background: #f0c87b; }
 .game.enemy-broken .refill-button:not(:disabled) { border-color: rgba(240, 200, 123, .9); box-shadow: 0 0 22px rgba(218, 170, 82, .24), 0 8px 20px rgba(0,0,0,.38); }
+.refill-button.break-free small { width: 46px; color: #201508; background: #f0c87b; font: 11px/1 sans-serif; box-shadow: 0 0 15px rgba(240,200,123,.42); }
 .card {
   --accent: #9b3a37;
   position: relative;
@@ -485,6 +496,8 @@ button { font: inherit; }
 .card:hover, .card:focus-visible { z-index: 4; transform: translateY(-55px) scale(1.06); filter: brightness(1.16); outline: none; border-color: #aaa096; }
 .card.risky { box-shadow: 0 10px 20px rgba(0,0,0,.5), 0 0 0 1px rgba(178,42,39,.75), 0 0 22px rgba(143,22,22,.25); }
 .card.clash-ready { box-shadow: 0 10px 20px rgba(0,0,0,.5), 0 0 0 1px rgba(212,192,161,.85), 0 0 22px rgba(190,44,44,.28); }
+.card.interrupt-ready { border-color: #d7ad69; box-shadow: 0 10px 20px rgba(0,0,0,.5), 0 0 0 1px rgba(232,184,101,.92), 0 0 26px rgba(224,157,63,.3); }
+.card.interrupt-ready .card-speed { color: #f1c878; text-shadow: 0 0 8px rgba(240,185,87,.5); }
 .card.choice-selectable { border-color: #d2b370; box-shadow: 0 10px 20px rgba(0,0,0,.5), 0 0 0 1px rgba(210,179,112,.72), 0 0 24px rgba(210,179,112,.2); }
 .card.choice-blocked { opacity: .42; cursor: default; filter: grayscale(.58) brightness(.62); }
 .card.choice-blocked:hover { transform: none; }
@@ -691,6 +704,9 @@ button { font: inherit; }
 .vfx-enemy-tell::before { content: ""; position: absolute; inset: 17%; border: 1px solid var(--vfx-tone); transform: rotate(45deg); }.vfx-enemy-tell::after { content: ""; position: absolute; inset: 37%; background: var(--vfx-tone); border-radius: 50%; filter: blur(5px); }
 .vfx-evade { border-radius: 50%; background: repeating-linear-gradient(122deg, transparent 0 11px, var(--vfx-tone) 12px 14px, transparent 16px 27px); filter: drop-shadow(0 0 5px var(--vfx-tone)); animation: vfx-evade .72s ease-out both; }
 .vfx-parry, .vfx-clash { background: linear-gradient(45deg, transparent 47%, var(--vfx-tone) 48% 52%, transparent 53%), linear-gradient(-45deg, transparent 47%, #fff7dc 48% 52%, transparent 53%); filter: drop-shadow(0 0 8px var(--vfx-tone)); animation: vfx-parry .7s cubic-bezier(.12,.8,.2,1) both; }
+.vfx-interrupt { border: 2px solid var(--vfx-tone); border-radius: 50%; background: repeating-conic-gradient(transparent 0 19deg, var(--vfx-tone) 20deg 23deg, transparent 24deg 41deg); filter: drop-shadow(0 0 10px var(--vfx-tone)); animation: vfx-interrupt .7s cubic-bezier(.12,.8,.2,1) both; }
+.vfx-interrupt::before, .vfx-interrupt::after { content: ""; position: absolute; inset: 21%; background: linear-gradient(45deg, transparent 46%, #fff4cf 47% 53%, transparent 54%); }
+.vfx-interrupt::after { transform: rotate(90deg); }
 .vfx-guard { border: 2px solid var(--vfx-tone); border-radius: 50%; box-shadow: inset 0 0 18px color-mix(in srgb, var(--vfx-tone) 36%, transparent), 0 0 16px color-mix(in srgb, var(--vfx-tone) 28%, transparent); animation: vfx-guard .72s ease-out both; }
 .vfx-guard::before { content: ""; position: absolute; inset: 17%; border: 1px solid var(--vfx-tone); border-radius: 50%; }
 .vfx-focus, .vfx-delay { border: 1px solid var(--vfx-tone); border-radius: 50%; box-shadow: 0 0 18px color-mix(in srgb, var(--vfx-tone) 48%, transparent); animation: vfx-rune .76s ease-out both; }
@@ -709,6 +725,7 @@ button { font: inherit; }
 @keyframes enemy-idle { from { transform: translateY(0) scale(1); } to { transform: translateY(-5px) scale(1.006); } }
 @keyframes reticle-pulse { to { box-shadow: 0 0 28px rgba(197,47,43,.38); } }
 @keyframes countdown-pop { 50% { transform: scale(1.24); color: #e34a45; } }
+@keyframes intent-interrupted { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); border-color: #f0bd67; } 45% { transform: translateX(6px); } 70% { transform: translateX(-3px); } }
 @keyframes log-in { from { opacity: 0; transform: translateY(7px); } }
 @keyframes banner { 0% { opacity: 0; transform: translate(-50%, -30%); } 18%, 55% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; transform: translate(-50%, -70%); } }
 @keyframes clash-banner { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.58); filter: blur(4px); } 18%, 62% { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: blur(0); } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.18); filter: blur(2px); } }
@@ -735,6 +752,7 @@ button { font: inherit; }
 @keyframes vfx-enemy-tell { from { opacity: 0; transform: translate(-50%, -50%) scale(.35) rotate(-25deg); } 38% { opacity: .95; } to { opacity: 0; transform: translate(-50%, -50%) scale(1.2) rotate(28deg); } }
 @keyframes vfx-evade { from { opacity: 0; transform: translate(-80%, -35%) scale(.5); } 35% { opacity: .9; } to { opacity: 0; transform: translate(-18%, -75%) scale(1.25); } }
 @keyframes vfx-parry { from { opacity: 0; transform: translate(-50%, -50%) scale(.28) rotate(-30deg); } 34% { opacity: 1; } to { opacity: 0; transform: translate(-50%, -50%) scale(1.34) rotate(30deg); } }
+@keyframes vfx-interrupt { from { opacity: 0; transform: translate(-50%, -50%) scale(.2) rotate(-20deg); } 34% { opacity: 1; } to { opacity: 0; transform: translate(-50%, -50%) scale(1.3) rotate(35deg); } }
 @keyframes vfx-guard { from { opacity: 0; transform: translate(-50%, -50%) scale(.45); } 34% { opacity: .9; } to { opacity: 0; transform: translate(-50%, -50%) scale(1.25); } }
 @keyframes vfx-rune { from { opacity: 0; transform: translate(-50%, -50%) scale(.4) rotate(-55deg); } 36% { opacity: 1; } to { opacity: 0; transform: translate(-50%, -50%) scale(1.2) rotate(65deg); } }
 @keyframes vfx-heal { from { opacity: 0; transform: translate(-50%, -25%) scale(.45); } 32% { opacity: .9; } to { opacity: 0; transform: translate(-50%, -100%) scale(1.2); } }

@@ -43,6 +43,8 @@ const ENEMY_BREAK_DURATION = 6;
 const REFILL_COOLDOWN = 6;
 // 补充手牌目标手牌大小
 const REFILL_TARGET_HAND_SIZE = 6;
+// 补充手牌前是否弃掉全部当前手牌，再重新抽满
+const REFILL_DISCARD_HAND_BEFORE_DRAW = false;
 // 每个时间节点的推进间隔（毫秒），越短节奏越流畅
 const NODE_STEP_MS = 160;
 // 敌方攻击出手前的预警停顿
@@ -110,6 +112,8 @@ const els = {
   playerHp: $("#playerHp"), playerHpText: $("#playerHpText"), playerHpTrack: $("#playerHpTrack"), enemyStatuses: $("#enemyStatuses"),
   playerStatuses: $("#playerStatuses"), intentPanel: $("#intentPanel"), intentName: $("#intentName"),
   intentDamage: $("#intentDamage"), intentDesc: $("#intentDesc"), intentCountdown: $("#intentCountdown"),
+  interruptMeter: $("#interruptMeter"), interruptLabel: $("#interruptLabel"),
+  interruptProgress: $("#interruptProgress"), interruptThreshold: $("#interruptThreshold"), interruptFill: $("#interruptFill"),
   timelineHint: $("#timelineHint"), combatLog: $("#combatLog"), deckCount: $("#deckCount"),
   discardCount: $("#discardCount"), actionBanner: $("#actionBanner"), damageFlash: $("#damageFlash"),
   enemyFlash: $("#enemyFlash"), introOverlay: $("#introOverlay"), endOverlay: $("#endOverlay"),
@@ -285,7 +289,7 @@ function appendEnemyIntents(intents) {
   let countdown = intents.at(-1)?.countdown ?? 0;
   for (const intentIndex of rollEnemyIntents()) {
     countdown += ENEMY_INTENTS[intentIndex].windup;
-    intents.push({ intentIndex, countdown });
+    intents.push({ intentIndex, countdown, interruptDamage: 0 });
   }
 }
 
@@ -354,7 +358,7 @@ function enterEnemyBreak() {
   els.refillButton.classList.remove("refill-ready");
   void els.refillButton.offsetWidth;
   els.refillButton.classList.add("refill-ready");
-  addLog(`连续拼刀击溃守卫！失衡 ${ENEMY_BREAK_DURATION} 个节点，补牌已刷新。`, "good");
+  addLog(`连续拼刀击溃守卫！失衡 ${ENEMY_BREAK_DURATION} 个节点，期间补充手牌无冷却。`, "good");
   renderAll();
 }
 
@@ -434,6 +438,12 @@ function renderIntent() {
     els.intentDamage.classList.add("threat-pop");
     els.intentDesc.textContent = "守卫失衡，敌方攻击暂时停摆";
     els.intentCountdown.textContent = state.enemy.breakRemaining;
+    els.interruptMeter.classList.add("free-refill");
+    els.interruptLabel.textContent = "补牌特权";
+    els.interruptProgress.textContent = "无";
+    els.interruptThreshold.textContent = "CD";
+    els.interruptFill.style.width = "100%";
+    els.interruptMeter.setAttribute("aria-label", "敌人失衡期间，补充手牌不会产生冷却");
     els.intentPanel.classList.remove("danger");
     els.intentPanel.classList.add("break");
     return;
@@ -448,6 +458,13 @@ function renderIntent() {
   els.intentDamage.classList.add("threat-pop");
   els.intentDesc.textContent = intent.desc;
   els.intentCountdown.textContent = leadEntry.countdown;
+  const interruptDamage = Math.min(intent.damage, leadEntry.interruptDamage ?? 0);
+  els.interruptMeter.classList.remove("free-refill");
+  els.interruptLabel.textContent = "抢攻打断";
+  els.interruptProgress.textContent = interruptDamage;
+  els.interruptThreshold.textContent = intent.damage;
+  els.interruptFill.style.width = `${interruptDamage / intent.damage * 100}%`;
+  els.interruptMeter.setAttribute("aria-label", `抢攻打断进度 ${interruptDamage} / ${intent.damage}`);
   els.intentPanel.classList.toggle("danger", leadEntry.countdown <= 2);
   els.intentPanel.classList.remove("break");
 }
@@ -477,7 +494,12 @@ function renderTimeline() {
   } else if (isEnemyBroken()) {
     els.timelineHint.textContent = `${hover.name} 在 BREAK 中仅消耗 ${hoverCost} 节点`;
   } else if (hoverCost < leadCountdown) {
-    els.timelineHint.textContent = `${hover.name} 将抢先结算`;
+    const intent = ENEMY_INTENTS[getLeadEnemyEntry().intentIndex];
+    const remainingInterruptDamage = Math.max(0, intent.damage - (getLeadEnemyEntry().interruptDamage ?? 0));
+    const previewDamage = getPreviewCardDamage(hover);
+    els.timelineHint.textContent = previewDamage >= remainingInterruptDamage
+      ? `${hover.name} 将抢先打断「${intent.name}」`
+      : `${hover.name} 将抢先结算 · 还差 ${remainingInterruptDamage - previewDamage} 伤害可打断`;
   } else if (!hover.immediate && isAttackCard(hover) && hoverClashEntry) {
     els.timelineHint.textContent = `${hover.name} 将与敌方攻击拼刀`;
   } else if (!hover.immediate && hover.block && hoverClashEntry) {
@@ -504,9 +526,10 @@ function renderHand() {
     const button = document.createElement("button");
     const clashReady = !card.immediate && isAttackCard(card) && Boolean(getEnemyEntryAt(effectiveCost));
     const guardReady = !card.immediate && card.block && Boolean(getEnemyEntryAt(effectiveCost));
+    const interruptReady = canCardInterruptLeadIntent(card, effectiveCost);
     const risky = !card.immediate && effectiveCost >= getLeadEnemyCountdown() && !clashReady && !guardReady;
     const selectable = !handChoice || handChoice.filter(card, index);
-    button.className = `card ${card.type}${risky ? " risky" : ""}${clashReady ? " clash-ready" : ""}${handChoice && selectable ? " choice-selectable" : ""}${handChoice && !selectable ? " choice-blocked" : ""}`;
+    button.className = `card ${card.type}${risky ? " risky" : ""}${clashReady ? " clash-ready" : ""}${interruptReady ? " interrupt-ready" : ""}${handChoice && selectable ? " choice-selectable" : ""}${handChoice && !selectable ? " choice-blocked" : ""}`;
     button.disabled = !state.active || (handChoice && !selectable);
     button.setAttribute("aria-label", `${card.name}，消耗 ${effectiveCost} 个时间节点`);
     button.innerHTML = `
@@ -516,7 +539,7 @@ function renderHand() {
       <h3>${card.name}</h3>
       <p>${card.text}</p>
       <span class="card-key">${index + 1}</span>
-      <span class="card-speed">${clashReady ? "拼刀" : guardReady ? "格挡" : risky ? "危险" : card.speed} · ${enemyTargeted ? "敌方" : "自身"}</span>`;
+      <span class="card-speed">${interruptReady ? "可打断" : clashReady ? "拼刀" : guardReady ? "格挡" : risky ? "危险" : card.speed} · ${enemyTargeted ? "敌方" : "自身"}</span>`;
     button.addEventListener("mouseenter", () => previewCard(card.id, index));
     button.addEventListener("focus", () => previewCard(card.id, index));
     button.addEventListener("mouseleave", clearPreview);
@@ -619,13 +642,15 @@ function cancelChoice(result = null) {
 
 function renderRefillButton() {
   const cooldown = state.player.refillCooldown;
-  els.refillButton.disabled = !state.active || cooldown > 0 || Boolean(state.choice);
-  els.refillButton.classList.toggle("cooling", cooldown > 0);
-  if (cooldown > 0) els.refillButton.classList.remove("refill-ready");
-  els.refillButton.querySelector("small").textContent = cooldown > 0 ? `CD ${cooldown}` : getRefillCost();
-  els.refillButton.setAttribute("aria-label", cooldown > 0
+  const cooldownDisabled = !isEnemyBroken() && cooldown > 0;
+  els.refillButton.disabled = !state.active || cooldownDisabled || Boolean(state.choice);
+  els.refillButton.classList.toggle("cooling", cooldownDisabled);
+  els.refillButton.classList.toggle("break-free", isEnemyBroken());
+  if (cooldownDisabled) els.refillButton.classList.remove("refill-ready");
+  els.refillButton.querySelector("small").textContent = isEnemyBroken() ? "无CD" : cooldownDisabled ? `CD ${cooldown}` : getRefillCost();
+  els.refillButton.setAttribute("aria-label", cooldownDisabled
     ? `补充手牌冷却中，还剩 ${cooldown} 个时间节点`
-    : `保留当前手牌并抽到 ${REFILL_TARGET_HAND_SIZE} 张，消耗 ${getRefillCost()} 个时间节点`);
+    : `${REFILL_DISCARD_HAND_BEFORE_DRAW ? "弃掉当前手牌并重新抽到" : "保留当前手牌并抽到"} ${REFILL_TARGET_HAND_SIZE} 张，消耗 ${getRefillCost()} 个时间节点${isEnemyBroken() ? "，失衡期间不产生冷却" : ""}`);
 }
 
 function targetsEnemy(card) {
@@ -634,6 +659,20 @@ function targetsEnemy(card) {
 
 function isAttackCard(card) {
   return card?.type === "attack" && Boolean(card.damage);
+}
+
+function getPreviewCardDamage(card) {
+  if (!card?.damage) return 0;
+  return isAttackCard(card) && state.player.focus
+    ? Math.ceil(card.damage * (1 + state.player.focus))
+    : card.damage;
+}
+
+function canCardInterruptLeadIntent(card, effectiveCost) {
+  if (isEnemyBroken() || !card?.damage || effectiveCost >= getLeadEnemyCountdown()) return false;
+  const entry = getLeadEnemyEntry();
+  const intent = ENEMY_INTENTS[entry.intentIndex];
+  return getPreviewCardDamage(card) >= Math.max(0, intent.damage - (entry.interruptDamage ?? 0));
 }
 
 function formatPercent(value) {
@@ -920,6 +959,7 @@ function playStatusVfx(type) {
     bleed: ["vfx-bleed", enemy, 142, "#b73a42"],
     clash: ["vfx-clash", center, 200, "#f0c98e"],
     break: ["vfx-clash", enemy, 260, "#ffd28b"],
+    interrupt: ["vfx-interrupt", enemy, 230, "#f3c36f"],
   };
   const [kind, point, size, tone] = effects[type] || [];
   if (kind) spawnVfx(kind, point, { size, tone });
@@ -1014,26 +1054,36 @@ async function performCardPlay(cardId, costDelta = 0) {
 }
 
 function replenishHand() {
-  if (!state.active || state.choice || state.player.refillCooldown > 0) return;
+  if (!state.active || state.choice || (!isEnemyBroken() && state.player.refillCooldown > 0)) return;
   cancelActiveDrag();
   state.hoveredCard = null;
   enqueueAction(performReplenish);
 }
 
 async function performReplenish() {
-  if (state.player.refillCooldown > 0) return;
+  if (!isEnemyBroken() && state.player.refillCooldown > 0) return;
+  const noCooldown = isEnemyBroken();
   showBanner("补充手牌");
   playStatusVfx("draw");
   if (state.player.block > 0) {
     state.player.block = 0;
     addLog("换气之间，灰钢架势崩解：格挡值全部清零。", "damage");
   }
+  if (REFILL_DISCARD_HAND_BEFORE_DRAW && state.hand.length > 0) {
+    const discardedCount = state.hand.length;
+    state.discard.push(...state.hand);
+    state.hand.length = 0;
+    state.handCostDeltas.length = 0;
+    addLog(`你弃掉当前 ${discardedCount} 张手牌，重新整理牌堆。`, "good");
+  }
   const cardsNeeded = Math.max(0, REFILL_TARGET_HAND_SIZE - state.hand.length);
   if (cardsNeeded > 0) {
     const handBeforeDraw = state.hand.length;
     drawCards(cardsNeeded);
     const cardsDrawn = state.hand.length - handBeforeDraw;
-    addLog(cardsDrawn > 0 ? `你稳住呼吸，补入 ${cardsDrawn} 张手牌。` : "你试图补充手牌，但已无牌可抽。", "good");
+    addLog(cardsDrawn > 0
+      ? `${REFILL_DISCARD_HAND_BEFORE_DRAW ? "你重新整理牌组，抽取" : "你稳住呼吸，补入"} ${cardsDrawn} 张手牌。`
+      : "你试图补充手牌，但已无牌可抽。", "good");
   } else {
     addLog("手牌已足，无需抽牌。", "good");
   }
@@ -1044,7 +1094,9 @@ async function performReplenish() {
   if (!state.active) return;
   await advanceNode();
   if (!state.active) return;
-  state.player.refillCooldown = REFILL_COOLDOWN;
+  state.player.refillCooldown = noCooldown ? 0 : REFILL_COOLDOWN;
+  if (noCooldown) addLog("失衡窗口仍在延续：本次补牌不进入冷却。", "good");
+  renderAll();
 
   checkBattleEnd();
 }
@@ -1343,6 +1395,27 @@ function registerClashStagger() {
   if (state.enemy.breakProgress >= ENEMY_BREAK_THRESHOLD) enterEnemyBreak();
 }
 
+function registerPreemptiveDamage(amount) {
+  const entry = getLeadEnemyEntry();
+  if (!entry || isEnemyBroken() || entry.countdown <= 0 || state.enemy.hp <= 0) return false;
+  const intent = ENEMY_INTENTS[entry.intentIndex];
+  entry.interruptDamage = (entry.interruptDamage ?? 0) + amount;
+  if (entry.interruptDamage < intent.damage) return false;
+
+  state.enemy.intents.shift();
+  ensureEnemyIntentQueue();
+  showBanner("攻击打断", "interrupt");
+  playStatusVfx("interrupt");
+  shakeScreen();
+  pulseTone(230, .18, .055);
+  addLog(`抢攻累计造成 ${entry.interruptDamage} 点伤害，「${intent.name}」被打断！`, "good");
+  els.intentPanel.classList.remove("interrupted");
+  void els.intentPanel.offsetWidth;
+  els.intentPanel.classList.add("interrupted");
+  setTimeout(() => els.intentPanel.classList.remove("interrupted"), 620);
+  return true;
+}
+
 function damageEnemy(amount, dramatic = true) {
   state.enemy.hp -= amount;
   spawnDamageNumber("enemy", amount);
@@ -1351,6 +1424,7 @@ function damageEnemy(amount, dramatic = true) {
     hitEffect("enemy");
     pulseTone(95, .1, .04);
   }
+  registerPreemptiveDamage(amount);
   renderVitals();
 }
 

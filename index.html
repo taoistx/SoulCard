@@ -59,6 +59,15 @@
           <p>敌方意图</p>
           <h3 id="intentName">哀钟横扫</h3>
           <span id="intentDesc">沉重的钟摆将扫过战场</span>
+          <div id="interruptMeter" class="interrupt-meter" aria-label="抢攻打断进度">
+            <div class="interrupt-meter-copy">
+              <span id="interruptLabel">抢攻打断</span>
+              <strong><b id="interruptProgress">0</b> / <b id="interruptThreshold">24</b></strong>
+            </div>
+            <div class="interrupt-meter-track" aria-hidden="true">
+              <i id="interruptFill"></i>
+            </div>
+          </div>
         </div>
         <div class="intent-clock">
           <span>生效还剩</span>
