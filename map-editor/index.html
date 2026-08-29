@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World Map Editor</title>
+    <link rel="stylesheet" href="editor.css" />
+  </head>
+  <body>
+    <main id="editorApp" class="editor-app is-hidden">
+      <header class="editor-header">
+        <div class="brand">
+          <p>WORLD AUTHORING TOOL</p>
+          <h1>地图编辑器</h1>
+        </div>
+        <label>区域眉题<input id="mapEyebrow" maxlength="40" /></label>
+        <label>地图标题<input id="mapTitle" maxlength="40" /></label>
+        <div class="header-actions">
+          <button id="undoButton" type="button" title="撤销 Ctrl+Z">撤销</button>
+          <button id="redoButton" type="button" title="重做 Ctrl+Y">重做</button>
+          <button id="exportButton" class="primary" type="button">校验并导出</button>
+        </div>
+        <span id="dirtyState" class="dirty-state">未保存</span>
+      </header>
+
+      <div class="editor-layout">
+        <aside class="panel tool-panel">
+          <section>
+            <p class="panel-kicker">工具</p>
+            <div class="tool-grid" role="toolbar" aria-label="地图工具">
+              <button class="tool-button active" type="button" data-tool="select"><b>↖</b><span>选择</span></button>
+              <button class="tool-button" type="button" data-tool="room"><b>R</b><span>房间</span></button>
+              <button class="tool-button" type="button" data-tool="corridor"><b>·</b><span>走廊</span></button>
+              <button class="tool-button" type="button" data-tool="wall"><b>#</b><span>阻挡</span></button>
+              <button class="tool-button" type="button" data-tool="rect"><b>□</b><span>矩形</span></button>
+              <button class="tool-button" type="button" data-tool="fill"><b>▧</b><span>填充</span></button>
+            </div>
+            <p id="paintTileHint" class="subtle">矩形/填充使用最近选择的地形：房间</p>
+          </section>
+
+          <section>
+            <p class="panel-kicker">地图尺寸</p>
+            <div class="size-readout"><strong id="mapSize">23 × 15</strong><small>允许 5–80 格</small></div>
+            <div class="resize-grid" aria-label="地图边缘调整">
+              <span></span><button type="button" data-resize="top:1">上 +</button><button type="button" data-resize="top:-1">上 −</button>
+              <button type="button" data-resize="left:1">左 +</button><span></span><button type="button" data-resize="right:1">右 +</button>
+              <button type="button" data-resize="left:-1">左 −</button><span></span><button type="button" data-resize="right:-1">右 −</button>
+              <span></span><button type="button" data-resize="bottom:1">下 +</button><button type="button" data-resize="bottom:-1">下 −</button>
+            </div>
+          </section>
+
+          <section>
+            <p class="panel-kicker">视图</p>
+            <label class="zoom-control">缩放 <input id="zoomRange" type="range" min="45" max="180" value="100" /><span id="zoomValue">100%</span></label>
+            <p class="shortcut-help">拖动绘制地形。对象可直接拖到新格。<br />Delete 删除所选对象，Esc 取消当前操作。</p>
+          </section>
+        </aside>
+
+        <section class="canvas-column">
+          <div id="canvasScroller" class="canvas-scroller">
+            <svg id="editorCanvas" class="editor-canvas" aria-label="地图编辑画布"></svg>
+          </div>
+          <footer class="canvas-status">
+            <span id="cursorPosition">坐标 —</span>
+            <span id="activeToolStatus">选择工具</span>
+            <span id="feedback" role="status"></span>
+          </footer>
+        </section>
+
+        <aside class="panel object-panel">
+          <section>
+            <div class="panel-heading"><p class="panel-kicker">摆放对象</p><button id="deleteSelectionButton" type="button" disabled>删除所选</button></div>
+            <button id="playerTemplate" class="object-template player-template" type="button">
+              <b>✦</b><span><strong>玩家出生点</strong><small id="playerPosition">未放置</small></span>
+            </button>
+            <div id="objectPalette" class="object-palette"></div>
+          </section>
+
+          <section class="validation-section">
+            <div class="panel-heading"><p class="panel-kicker">地图检查</p><button id="validateButton" type="button">重新检查</button></div>
+            <div id="validationSummary" class="validation-summary"></div>
+            <ul id="validationList" class="validation-list"></ul>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <section id="startScreen" class="start-screen" aria-labelledby="startTitle">
+      <div class="start-card">
+        <p class="eyebrow">WORLD AUTHORING TOOL</p>
+        <h2 id="startTitle">从哪里开始？</h2>
+        <p>编辑器只修改内存中的草稿。完成后导出并替换项目根目录的 <code>world-map.js</code>。</p>
+        <div class="start-options">
+          <button id="loadCurrentButton" class="start-option primary" type="button"><strong>载入当前地图</strong><small>读取 ../world-map.js</small></button>
+          <div class="new-map-option">
+            <strong>新建空白地图</strong>
+            <label>宽 <input id="newMapWidth" type="number" min="5" max="80" value="23" /></label>
+            <label>高 <input id="newMapHeight" type="number" min="5" max="80" value="15" /></label>
+            <button id="newMapButton" type="button">新建</button>
+          </div>
+          <button id="importButton" class="start-option" type="button"><strong>导入地图文件</strong><small>安全解析已有 world-map.js</small></button>
+          <input id="importFile" type="file" accept=".js,text/javascript" hidden />
+        </div>
+        <p id="startError" class="start-error" role="alert"></p>
+      </div>
+    </section>
+
+    <script src="../world-map.js"></script>
+    <script src="editor.js"></script>
+  </body>
+</html>

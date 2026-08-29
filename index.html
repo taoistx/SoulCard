@@ -35,12 +35,13 @@
           <span>当前刻度</span>
           <strong id="currentNode">00</strong>
         </div>
+        <button id="escapeBattleButton" class="escape-battle-button" type="button">逃离战斗</button>
       </header>
 
       <section class="enemy-hud" aria-label="敌人状态">
-        <p class="enemy-title">守墓者</p>
+        <p id="enemyRole" class="enemy-title">守墓者</p>
         <div class="enemy-name-row">
-          <h2>丧钟守卫</h2>
+          <h2 id="enemyName">丧钟守卫</h2>
           <span id="enemyHpText">120 / 120</span>
         </div>
         <div class="hp-track enemy-hp-track">
@@ -117,6 +118,12 @@
         <small>1</small>
       </button>
 
+      <button id="innateButton" class="innate-button hidden" type="button" aria-label="使用内化技能">
+        <span id="innateIcon" aria-hidden="true">✦</span>
+        <b id="innateName">内化技能</b>
+        <small id="innateCooldown">READY</small>
+      </button>
+
       <section class="hand-area" aria-label="手牌区域">
         <div id="hand" class="hand"></div>
       </section>
@@ -130,19 +137,19 @@
 
       <section id="introOverlay" class="overlay visible" aria-label="游戏说明">
         <div class="overlay-card intro-card">
-          <p class="eyebrow">战斗原型 · 连续时间制</p>
-          <h2>每一次出牌，<br />都在把死亡推近。</h2>
+          <p class="eyebrow">五日生存 · 轻量 CRPG 切片</p>
+          <h2>你被马桶冲进了<br />一个认真吃人的世界。</h2>
           <p class="intro-copy">
-            这里没有能量。卡牌右上角的数字代表它会消耗的<strong>时间节点</strong>；
-            按住卡牌并拖向目标释放，你行动时，敌人的招式也会同步读条。
+            五天内吃不到新鲜血肉，你就会化成粪怪。移动、交谈和战斗都不推进日期；
+            只有<strong>长休</strong>会让你满血，也会夺走一天。
           </p>
           <div class="rules">
-            <div><span>01</span><p><strong>探索回廊</strong>在房间之间移动，找到丧钟守卫藏身的房间。</p></div>
-            <div><span>02</span><p><strong>拖入释放区</strong>松手即可打出卡牌，目标由卡牌效果自动决定。</p></div>
-            <div><span>03</span><p><strong>没有回合结束</strong>，只有不断向前的刻度。</p></div>
+            <div><span>01</span><p><strong>探索粪坑边境</strong>，靠近人物、敌人或地点后按 E 交互。</p></div>
+            <div><span>02</span><p><strong>战斗沿用连续时间制</strong>：拖拽卡牌释放，受伤会原样带回世界。</p></div>
+            <div><span>03</span><p><strong>身体就是角色卡</strong>：保留完整身体或永久献祭器官，都是 Build。</p></div>
           </div>
-          <button id="startButton" class="primary-button">踏入猎场 <span>↗</span></button>
-          <small>WASD / 方向键探索地图 · 拖拽卡牌释放 · 数字键 1–5 快速出牌 · 空格补充手牌</small>
+          <button id="startButton" class="primary-button">从坠落处爬起来 <span>↗</span></button>
+          <small>WASD / 方向键移动 · E 交互 · I 查看身体与背包 · 战斗中空格补牌</small>
         </div>
       </section>
 
@@ -160,39 +167,97 @@
       </section>
     </main>
 
-    <section id="mapScreen" class="map-screen hidden" aria-label="猎场地图">
-      <header class="map-header">
-        <p class="eyebrow">无火纪 · 第七猎场</p>
-        <h2>灰烬回廊</h2>
-        <p id="mapHint">WASD / 方向键移动，找到丧钟守卫所在的房间。</p>
+    <section id="mapScreen" class="map-screen hidden" aria-label="粪坑位面探索地图">
+      <header class="world-hud">
+        <div class="world-title">
+          <p id="worldEyebrow" class="eyebrow">粪坑位面 · 外围</p>
+          <h2 id="worldTitle">逆流山脚</h2>
+        </div>
+        <div class="survival-clock">
+          <span>仍为人类</span>
+          <strong>第 <b id="worldDay">1</b> 天</strong>
+          <small id="daysLeft">余 4 次安全长休</small>
+        </div>
+        <div class="world-vitals">
+          <span>生命 <strong id="worldHp">60 / 60</strong></span>
+          <div class="world-hp-track"><i id="worldHpFill"></i></div>
+        </div>
+        <div class="world-actions">
+          <button id="longRestButton" class="world-icon-button rest-action" type="button">长休 <kbd>L</kbd></button>
+          <button id="characterButton" class="world-icon-button" type="button">身体 / 背包 <kbd>I</kbd></button>
+        </div>
       </header>
-      <svg id="mapSvg" class="map-svg" viewBox="40 20 1020 740" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <filter id="mapSketch" x="-5%" y="-5%" width="110%" height="110%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="11" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="7" />
-          </filter>
-        </defs>
-        <g filter="url(#mapSketch)">
-          <path id="mapWalls" class="map-walls" d="" />
-        </g>
-        <g id="mapBoss" class="map-boss">
-          <text class="boss-skull" text-anchor="middle">☠</text>
-          <text class="boss-label" text-anchor="middle">Boss</text>
-        </g>
-        <g id="mapPlayer" class="map-player">
-          <circle r="15" />
-          <text text-anchor="middle" dy="6">✦</text>
-        </g>
-      </svg>
+
+      <div class="world-stage">
+        <svg id="mapSvg" class="map-svg" viewBox="0 0 1000 680" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <filter id="mapSketch" x="-5%" y="-5%" width="110%" height="110%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.011" numOctaves="2" seed="19" result="noise" />
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" />
+            </filter>
+            <pattern id="blockedHatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="9" height="9" fill="#080a09" />
+              <path d="M0 0 V9" stroke="#171a17" stroke-width="3" />
+            </pattern>
+            <filter id="gridShadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".72" />
+            </filter>
+            <mask id="fogMask">
+              <rect id="fogBounds" width="1000" height="680" fill="white" />
+              <circle id="fogReveal" cx="160" cy="600" r="138" fill="black" />
+            </mask>
+          </defs>
+          <rect id="worldGround" class="world-ground" x="18" y="18" width="964" height="644" rx="26" />
+          <g id="worldGrid" class="world-grid" filter="url(#gridShadow)"></g>
+          <g id="worldObjects"></g>
+          <g id="mapPlayer" class="map-player">
+            <circle r="14" />
+            <text text-anchor="middle" dy="6">✦</text>
+          </g>
+          <rect id="fogOverlay" class="fog-of-war" x="0" y="0" width="1000" height="680" mask="url(#fogMask)" />
+        </svg>
+        <div id="interactionPrompt" class="interaction-prompt hidden"><kbd>E</kbd><span>交互</span></div>
+        <p id="mapHint" class="map-hint">移动不会消耗时间。靠近目标后按 E。</p>
+      </div>
+
       <footer class="map-footer">
         <span><i class="legend-player"></i>你</span>
-        <span><i class="legend-enemy"></i>丧钟守卫 · 走进它的房间即开战</span>
-        <span>已猎杀 <strong id="mapKills">0</strong> 次</span>
+        <span><i class="legend-npc"></i>幸存者</span>
+        <span><i class="legend-enemy"></i>敌意</span>
+        <span><i class="legend-poi"></i>地点</span>
+        <span>World Flags <strong id="flagCount">0</strong></span>
       </footer>
+
+      <section id="worldModal" class="world-modal hidden" role="dialog" aria-modal="true" aria-labelledby="worldModalTitle">
+        <div class="world-modal-card">
+          <p id="worldModalKicker" class="eyebrow">交互</p>
+          <h3 id="worldModalTitle">地点</h3>
+          <div id="worldModalBody" class="world-modal-body"></div>
+          <div id="worldModalOptions" class="world-modal-options"></div>
+        </div>
+      </section>
+
+      <section id="characterPanel" class="character-panel hidden" role="dialog" aria-modal="true" aria-label="身体与背包">
+        <div class="character-card">
+          <header><div><p class="eyebrow">Character Sheet</p><h3>你的身体</h3></div><button id="closeCharacterButton" type="button">关闭</button></header>
+          <p id="humanSynergy" class="human-synergy"></p>
+          <div id="bodySlots" class="body-slots"></div>
+          <h4>背包</h4>
+          <div id="inventoryList" class="inventory-list"></div>
+          <h4>牌组与内化</h4>
+          <div id="deckSummary" class="deck-summary"></div>
+        </div>
+      </section>
     </section>
 
     <script src="deck-config.js"></script>
+    <script src="npc-dialogues.js"></script>
+    <script src="npc-dialogues/eddie.js"></script>
+    <script src="npc-dialogues/chris.js"></script>
+    <script src="npc-dialogues/bell.js"></script>
+    <script src="battle-data-loader.js"></script>
     <script src="game.js"></script>
+    <script src="world-map.js"></script>
+    <script src="world.js"></script>
   </body>
 </html>

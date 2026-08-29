@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "bell",
+  "combatEnabled": true,
+  "displayName": "丧钟",
+  "role": "无头掠夺者",
+  "intro": "丧钟从空荡荡的颈腔里发出铁器碰撞声。",
+  "stats": {
+    "maxHp": 120,
+    "poise": 3
+  },
+  "skills": [
+    {
+      "id": "bell_mournful_sweep_slow",
+      "name": "哀钟横扫",
+      "description": "沉重的钟摆将扫过战场",
+      "damage": 24,
+      "windup": 3
+    },
+    {
+      "id": "bell_iron_stomp",
+      "name": "铁靴践踏",
+      "description": "一次短促而凶狠的进逼",
+      "damage": 8,
+      "windup": 1
+    },
+    {
+      "id": "bell_funeral_chime",
+      "name": "葬礼鸣响",
+      "description": "裂钟中积蓄着致命回声",
+      "damage": 36,
+      "windup": 5
+    },
+    {
+      "id": "bell_rusted_blade_judgment",
+      "name": "锈刃裁断",
+      "description": "狭刃正寻找护甲的缝隙",
+      "damage": 28,
+      "windup": 4
+    },
+    {
+      "id": "bell_last_prayer_judgment",
+      "name": "末祷审判",
+      "description": "缓慢，却足以终结猎杀",
+      "damage": 50,
+      "windup": 7
+    },
+    {
+      "id": "bell_mournful_sweep_fast",
+      "name": "哀钟横扫",
+      "description": "沉重的钟摆将扫过战场",
+      "damage": 24,
+      "windup": 2
+    }
+  ]
+}

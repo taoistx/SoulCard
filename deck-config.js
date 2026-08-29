@@ -15,8 +15,8 @@ window.PLAYER_DECK_CONFIG = [
 //   { cardId: "mend", count: 1 }, // 饮下残露
   { cardId: "adjust", count: 1 }, // 调整
   { cardId: "adjustStance", count: 1 }, // 调整架势
-  { cardId: "feint", count: 1 }, // 佯攻
-  { cardId: "recoverStance", count: 1 }, // 收势
-  { cardId: "preRead", count: 1 }, // 预读
-  { cardId: "chase", count: 1 }, // 追击
+//   { cardId: "feint", count: 1 }, // 佯攻
+//   { cardId: "recoverStance", count: 1 }, // 收势
+//   { cardId: "preRead", count: 1 }, // 预读
+//   { cardId: "chase", count: 1 }, // 追击
 ];

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "chris",
+  "combatEnabled": false,
+  "displayName": "失眠者 克里斯",
+  "role": "失眠幸存者",
+  "intro": "",
+  "stats": null,
+  "skills": []
+}

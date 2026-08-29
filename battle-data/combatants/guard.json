@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "guard",
+  "combatEnabled": true,
+  "displayName": "逆流守卫",
+  "role": "山道封锁者",
+  "intro": "守卫举起裂钟。山顶的逆抽水器在它身后轰鸣。",
+  "stats": {
+    "maxHp": 120,
+    "poise": 3
+  },
+  "skills": [
+    {
+      "id": "guard_mournful_sweep_slow",
+      "name": "哀钟横扫",
+      "description": "沉重的钟摆将扫过战场",
+      "damage": 24,
+      "windup": 3
+    },
+    {
+      "id": "guard_iron_stomp",
+      "name": "铁靴践踏",
+      "description": "一次短促而凶狠的进逼",
+      "damage": 8,
+      "windup": 1
+    },
+    {
+      "id": "guard_funeral_chime",
+      "name": "葬礼鸣响",
+      "description": "裂钟中积蓄着致命回声",
+      "damage": 36,
+      "windup": 5
+    },
+    {
+      "id": "guard_rusted_blade_judgment",
+      "name": "锈刃裁断",
+      "description": "狭刃正寻找护甲的缝隙",
+      "damage": 28,
+      "windup": 4
+    },
+    {
+      "id": "guard_last_prayer_judgment",
+      "name": "末祷审判",
+      "description": "缓慢，却足以终结猎杀",
+      "damage": 50,
+      "windup": 7
+    },
+    {
+      "id": "guard_mournful_sweep_fast",
+      "name": "哀钟横扫",
+      "description": "沉重的钟摆将扫过战场",
+      "damage": 24,
+      "windup": 2
+    }
+  ]
+}

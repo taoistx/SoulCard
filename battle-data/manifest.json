@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "combatants": {
+    "eddie": "combatants/eddie.json",
+    "chris": "combatants/chris.json",
+    "bell": "combatants/bell.json",
+    "dungling": "combatants/dungling.json",
+    "guard": "combatants/guard.json"
+  }
+}

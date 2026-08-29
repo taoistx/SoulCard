@@ -22,21 +22,48 @@ const CARD_LIBRARY = {
   chase: { id: "chase", name: "追击", type: "attack", label: "攻击", cost: 1, icon: "⌁", text: "造成 <strong>10</strong> 点伤害。若拼刀胜出，该卡自动抽回手牌。", damage: 10, returnOnClashWin: true, speed: "追击" },
 };
 
-const ENEMY_INTENTS = [
-  { name: "哀钟横扫", damage: 24, windup: 3, desc: "沉重的钟摆将扫过战场" },
-  { name: "铁靴践踏", damage: 8, windup: 1, desc: "一次短促而凶狠的进逼" },
-  { name: "葬礼鸣响", damage: 36, windup: 5, desc: "裂钟中积蓄着致命回声" },
-  { name: "锈刃裁断", damage: 28, windup: 4, desc: "狭刃正寻找护甲的缝隙" },
-  { name: "末祷审判", damage: 50, windup: 7, desc: "缓慢，却足以终结猎杀" },
-  { name: "哀钟横扫", damage: 24, windup: 2, desc: "沉重的钟摆将扫过战场" },
+// World 层只传入 enemyId；战斗模块通过 BattleData 读取并解释对应 JSON。
+let activeBattle = null;
+let pendingBattleResolve = null;
+let pendingBattleResult = null;
+let battleStartPending = false;
 
- 
-];
+function getBattleIntents() {
+  return activeBattle.config.skills;
+}
+
+function getCombatModifiers() {
+  return window.WorldGame?.getCombatModifiers?.() || {};
+}
+
+function getBattleDeckRecipe() {
+  return window.WorldGame?.getBattleDeck?.() || PLAYER_DECK_RECIPE;
+}
+
+function isRitualCardLocked(card) {
+  return card?.type === "ritual" && !getCombatModifiers().ritualUnlocked;
+}
+
+function addInsightWindows(blockStart) {
+  if (!getCombatModifiers().insight) return;
+  const candidates = shuffled([1, 2, 3, 4, 5, 6, 7, 8]);
+  const count = Math.random() < .5 ? 2 : 3;
+  candidates.slice(0, count).forEach((offset) => state.insightWindows.add(blockStart + offset));
+}
+
+function ensureInsightWindowsThrough(node) {
+  if (!getCombatModifiers().insight) return;
+  while (state.insightGeneratedThrough < node) {
+    const blockStart = state.insightGeneratedThrough;
+    addInsightWindows(blockStart);
+    state.insightGeneratedThrough += 8;
+  }
+}
 
 // 敌方意图队列大小
 const ENEMY_INTENT_QUEUE_SIZE = 3;
-// 敌方意图中断阈值
-const ENEMY_BREAK_THRESHOLD = 3;
+// 默认敌方韧性
+const DEFAULT_ENEMY_POISE = 3;
 // 敌方意图中断持续时间
 const ENEMY_BREAK_DURATION = 6;
 // 补充手牌冷却时间
@@ -122,33 +149,14 @@ const els = {
   restartButton: $("#restartButton"), enemyCanvas: $("#enemyCanvas"), enemyTarget: $("#enemyTarget"),
   playerDropZone: $("#playerDropZone"), dragHint: $("#dragHint"), refillButton: $("#refillButton"),
   vfxLayer: $("#vfxLayer"), mapScreen: $("#mapScreen"), mapHint: $("#mapHint"),
-  mapWalls: $("#mapWalls"), mapPlayer: $("#mapPlayer"), mapBoss: $("#mapBoss"), mapKills: $("#mapKills"),
+  enemyName: $("#enemyName"), enemyRole: $("#enemyRole"), escapeBattleButton: $("#escapeBattleButton"),
+  innateButton: $("#innateButton"), innateIcon: $("#innateIcon"), innateName: $("#innateName"), innateCooldown: $("#innateCooldown"),
 };
 
 const PLAYER_MAX_HP = 60;
-const PLAYER_START = { x: 240, y: 655 };
-const BOSS_TRIGGER_INSET = 26;
-const MAP_MOVE_SPEED = 330;
 
-// 房间布局：普通房间为封闭矩形，走廊只画两侧墙壁（corridor: true）
-const MAP_ROOMS = [
-  { id: "boss", x: 70, y: 50, w: 210, h: 130, boss: true },
-  { id: "r1", x: 280, y: 50, w: 170, h: 130 },
-  { id: "r2", x: 450, y: 50, w: 170, h: 130 },
-  { id: "r3", x: 620, y: 50, w: 190, h: 130 },
-  { id: "cv1", x: 470, y: 180, w: 60, h: 130, corridor: true },
-  { id: "r4", x: 170, y: 310, w: 190, h: 140 },
-  { id: "r5", x: 360, y: 310, w: 190, h: 140 },
-  { id: "cv2", x: 440, y: 450, w: 60, h: 140, corridor: true },
-  { id: "r6", x: 150, y: 590, w: 180, h: 130 },
-  { id: "r7", x: 330, y: 590, w: 180, h: 130 },
-  { id: "r8", x: 510, y: 590, w: 180, h: 130 },
-  { id: "r9", x: 690, y: 590, w: 170, h: 130 },
-  { id: "r10", x: 830, y: 460, w: 180, h: 140 },
-  { id: "ch1", x: 810, y: 530, w: 60, h: 80, corridor: true },
-];
-
-let state;
+// JSON 尚未载入或当前位于 World 时，仅保留可安全拒绝输入的空闲状态。
+let state = { active: false, choice: null };
 let audioContext;
 let dragState = null;
 
@@ -157,12 +165,7 @@ const actionQueue = [];
 let processingActions = false;
 
 const runState = { playerHp: PLAYER_MAX_HP, battlesWon: 0 };
-const mapState = { player: { ...PLAYER_START } };
 let lastBattleWon = false;
-let mapSceneBuilt = false;
-let mapLoopId = null;
-let mapLastTs = 0;
-const mapKeys = new Set();
 
 function loadEnemyLayer() {
   const image = new Image();
@@ -279,16 +282,18 @@ const ENEMY_INTENT_ROLL_SIZE = 3;
 
 function rollEnemyIntents() {
   const rolled = [];
+  const intents = getBattleIntents();
   for (let i = 0; i < ENEMY_INTENT_ROLL_SIZE; i++) {
-    rolled.push(Math.floor(Math.random() * ENEMY_INTENTS.length));
+    rolled.push(Math.floor(Math.random() * intents.length));
   }
   return shuffled(rolled);
 }
 
 function appendEnemyIntents(intents) {
   let countdown = intents.at(-1)?.countdown ?? 0;
+  const battleIntents = getBattleIntents();
   for (const intentIndex of rollEnemyIntents()) {
-    countdown += ENEMY_INTENTS[intentIndex].windup;
+    countdown += battleIntents[intentIndex].windup;
     intents.push({ intentIndex, countdown, interruptDamage: 0 });
   }
 }
@@ -323,9 +328,14 @@ function isEnemyBroken() {
   return Boolean(state?.enemy?.breakRemaining > 0);
 }
 
+function getEnemyMaxPoise() {
+  return activeBattle.config.stats.poise ?? DEFAULT_ENEMY_POISE;
+}
+
 function getEffectiveCardCost(card, costDelta = 0) {
   const baseCost = isEnemyBroken() ? 1 : card.cost;
-  return Math.max(0, baseCost + costDelta);
+  const weaponCost = isAttackCard(card) ? (getCombatModifiers().attackCost ?? 0) : 0;
+  return Math.max(0, baseCost + costDelta + weaponCost);
 }
 
 function getHandCardCostDelta(handIndex) {
@@ -341,14 +351,15 @@ function getRefillCost() {
   return 1;
 }
 
-function resetBreakProgress(reason = "") {
-  if (!state.enemy.breakProgress) return;
-  state.enemy.breakProgress = 0;
+function resetEnemyPoise(reason = "") {
+  const maxPoise = getEnemyMaxPoise();
+  if (state.enemy.poise >= maxPoise) return;
+  state.enemy.poise = maxPoise;
   if (reason) addLog(reason, "damage");
 }
 
 function enterEnemyBreak() {
-  state.enemy.breakProgress = 0;
+  state.enemy.poise = 0;
   state.enemy.breakRemaining = ENEMY_BREAK_DURATION;
   state.player.refillCooldown = 0;
   showBanner("BREAK", "break");
@@ -358,7 +369,7 @@ function enterEnemyBreak() {
   els.refillButton.classList.remove("refill-ready");
   void els.refillButton.offsetWidth;
   els.refillButton.classList.add("refill-ready");
-  addLog(`连续拼刀击溃守卫！失衡 ${ENEMY_BREAK_DURATION} 个节点，期间补充手牌无冷却。`, "good");
+  addLog(`拼刀耗尽韧性，${activeBattle.config.displayName}失衡 ${ENEMY_BREAK_DURATION} 个节点，期间补充手牌无冷却。`, "good");
   renderAll();
 }
 
@@ -367,18 +378,24 @@ function resetState() {
   cancelActiveDrag();
   actionQueue.length = 0;
   const enemyPlan = buildEnemyIntentQueue();
+  const maxHp = activeBattle.playerMaxHp || PLAYER_MAX_HP;
   state = {
     active: false, node: 0, cardsPlayed: 0,
-    player: { hp: runState.playerHp, maxHp: PLAYER_MAX_HP, block: 0, evade: false, parry: false, focus: 0, refillCooldown: 0 },
-    enemy: { hp: 120, maxHp: 120, intents: enemyPlan.intents, bleedTicks: 0, breakProgress: 0, breakRemaining: 0 },
-    deck: shuffled(PLAYER_DECK_RECIPE), discard: [], hand: [], handCostDeltas: [],
+    player: { hp: Math.min(activeBattle.playerHp ?? runState.playerHp, maxHp), maxHp, block: 0, evade: false, parry: false, focus: 0, refillCooldown: 0 },
+    enemy: { hp: activeBattle.config.stats.maxHp, maxHp: activeBattle.config.stats.maxHp, intents: enemyPlan.intents, bleedTicks: 0, poise: getEnemyMaxPoise(), breakRemaining: 0 },
+    deck: shuffled(getBattleDeckRecipe()), discard: [], hand: [], handCostDeltas: [],
     hoveredCard: null, hoveredHandIndex: null, logs: [], choice: null, lastPlayedCardId: null,
+    innateCardId: getCombatModifiers().innateCardId || null, innateCooldown: 0,
+    insightWindows: new Set(), insightGeneratedThrough: 0,
   };
+  ensureInsightWindowsThrough(16);
   drawCards(REFILL_TARGET_HAND_SIZE);
   els.game.classList.remove("enemy-dead", "shake");
   els.endOverlay.classList.remove("visible");
+  els.enemyName.textContent = activeBattle.config.displayName;
+  els.enemyRole.textContent = activeBattle.config.role;
   renderAll();
-  addLog("丧钟守卫举起裂钟。", "");
+  addLog(activeBattle.config.intro, "");
 }
 
 function drawCards(amount) {
@@ -400,6 +417,7 @@ function renderAll() {
   renderTimeline();
   renderHand();
   renderLogs();
+  renderInnateButton();
 }
 
 function renderVitals() {
@@ -424,7 +442,7 @@ function renderVitals() {
 
   const enemyStatuses = [];
   if (state.enemy.bleedTicks) enemyStatuses.push(`<span class="status-chip">刻血 <b>${state.enemy.bleedTicks}</b></span>`);
-  enemyStatuses.push(`<span class="status-chip stagger-chip">失衡 <b>${state.enemy.breakProgress}/${ENEMY_BREAK_THRESHOLD}</b></span>`);
+  enemyStatuses.push(`<span class="status-chip stagger-chip">韧性 <b>${state.enemy.poise}/${getEnemyMaxPoise()}</b></span>`);
   if (isEnemyBroken()) enemyStatuses.push(`<span class="status-chip break-chip">BREAK <b>${state.enemy.breakRemaining}</b></span>`);
   els.enemyStatuses.innerHTML = enemyStatuses.join("");
 }
@@ -450,13 +468,13 @@ function renderIntent() {
   }
 
   const leadEntry = getLeadEnemyEntry();
-  const intent = ENEMY_INTENTS[leadEntry.intentIndex];
+  const intent = getBattleIntents()[leadEntry.intentIndex];
   els.intentName.textContent = intent.name;
   els.intentDamage.textContent = intent.damage;
   els.intentDamage.classList.remove("threat-pop");
   void els.intentDamage.offsetWidth;
   els.intentDamage.classList.add("threat-pop");
-  els.intentDesc.textContent = intent.desc;
+  els.intentDesc.textContent = intent.description;
   els.intentCountdown.textContent = leadEntry.countdown;
   const interruptDamage = Math.min(intent.damage, leadEntry.interruptDamage ?? 0);
   els.interruptMeter.classList.remove("free-refill");
@@ -477,16 +495,17 @@ function renderTimeline() {
   els.timeline.innerHTML = "";
   for (let i = 1; i <= 8; i++) {
     const node = document.createElement("div");
+    const insightHere = state.insightWindows.has(state.node + i);
     const enemyEntry = getEnemyEntryAt(i);
     const enemyHere = Boolean(enemyEntry);
     const enemyOrder = enemyEntry ? state.enemy.intents.indexOf(enemyEntry) : -1;
     const playerHere = hover && i === hoverCost;
-    node.className = `time-node${isEnemyBroken() ? " break-window" : ""}${enemyHere ? " enemy-node" : ""}${enemyOrder > 0 ? " queued-enemy-node" : ""}${playerHere ? " player-node" : ""}${enemyHere && playerHere ? " clash" : ""}`;
+    node.className = `time-node${isEnemyBroken() ? " break-window" : ""}${enemyHere ? " enemy-node" : ""}${enemyOrder > 0 ? " queued-enemy-node" : ""}${playerHere ? " player-node" : ""}${enemyHere && playerHere ? " clash" : ""}${insightHere ? " insight-node" : ""}`;
     let marker = "";
     if (enemyHere && playerHere) marker = "⚔";
     else if (enemyHere) marker = enemyOrder === 0 ? "◆" : "◇";
     else if (playerHere) marker = "○";
-    node.innerHTML = `${marker ? `<span class="marker">${marker}</span>` : ""}<small>${state.node + i}</small>`;
+    node.innerHTML = `${marker ? `<span class="marker">${marker}</span>` : ""}${insightHere ? '<span class="insight-mark">眼</span>' : ""}<small>${state.node + i}</small>`;
     els.timeline.appendChild(node);
   }
   if (!hover) {
@@ -494,12 +513,12 @@ function renderTimeline() {
   } else if (isEnemyBroken()) {
     els.timelineHint.textContent = `${hover.name} 在 BREAK 中仅消耗 ${hoverCost} 节点`;
   } else if (hoverCost < leadCountdown) {
-    const intent = ENEMY_INTENTS[getLeadEnemyEntry().intentIndex];
+    const intent = getBattleIntents()[getLeadEnemyEntry().intentIndex];
     const remainingInterruptDamage = Math.max(0, intent.damage - (getLeadEnemyEntry().interruptDamage ?? 0));
-    const previewDamage = getPreviewCardDamage(hover);
-    els.timelineHint.textContent = previewDamage >= remainingInterruptDamage
+    const previewContribution = getInterruptContribution(getPreviewCardDamage(hover, state.node + hoverCost));
+    els.timelineHint.textContent = previewContribution >= remainingInterruptDamage
       ? `${hover.name} 将抢先打断「${intent.name}」`
-      : `${hover.name} 将抢先结算 · 还差 ${remainingInterruptDamage - previewDamage} 伤害可打断`;
+      : `${hover.name} 将抢先结算 · 还差 ${remainingInterruptDamage - previewContribution} 打断值`;
   } else if (!hover.immediate && isAttackCard(hover) && hoverClashEntry) {
     els.timelineHint.textContent = `${hover.name} 将与敌方攻击拼刀`;
   } else if (!hover.immediate && hover.block && hoverClashEntry) {
@@ -522,6 +541,7 @@ function renderHand() {
   state.hand.forEach((cardId, index) => {
     const card = CARD_LIBRARY[cardId];
     const effectiveCost = getEffectiveHandCardCost(index);
+    const ritualLocked = isRitualCardLocked(card);
     const enemyTargeted = targetsEnemy(card);
     const button = document.createElement("button");
     const clashReady = !card.immediate && isAttackCard(card) && Boolean(getEnemyEntryAt(effectiveCost));
@@ -529,9 +549,9 @@ function renderHand() {
     const interruptReady = canCardInterruptLeadIntent(card, effectiveCost);
     const risky = !card.immediate && effectiveCost >= getLeadEnemyCountdown() && !clashReady && !guardReady;
     const selectable = !handChoice || handChoice.filter(card, index);
-    button.className = `card ${card.type}${risky ? " risky" : ""}${clashReady ? " clash-ready" : ""}${interruptReady ? " interrupt-ready" : ""}${handChoice && selectable ? " choice-selectable" : ""}${handChoice && !selectable ? " choice-blocked" : ""}`;
-    button.disabled = !state.active || (handChoice && !selectable);
-    button.setAttribute("aria-label", `${card.name}，消耗 ${effectiveCost} 个时间节点`);
+    button.className = `card ${card.type}${risky ? " risky" : ""}${clashReady ? " clash-ready" : ""}${interruptReady ? " interrupt-ready" : ""}${ritualLocked ? " ritual-locked" : ""}${handChoice && selectable ? " choice-selectable" : ""}${handChoice && !selectable ? " choice-blocked" : ""}`;
+    button.disabled = !state.active || ritualLocked || (handChoice && !selectable);
+    button.setAttribute("aria-label", ritualLocked ? `${card.name}，需要献祭心脏才能使用` : `${card.name}，消耗 ${effectiveCost} 个时间节点`);
     button.innerHTML = `
       <span class="card-time"><span>${effectiveCost}</span></span>
       <p class="card-type">${card.label}</p>
@@ -539,7 +559,7 @@ function renderHand() {
       <h3>${card.name}</h3>
       <p>${card.text}</p>
       <span class="card-key">${index + 1}</span>
-      <span class="card-speed">${interruptReady ? "可打断" : clashReady ? "拼刀" : guardReady ? "格挡" : risky ? "危险" : card.speed} · ${enemyTargeted ? "敌方" : "自身"}</span>`;
+      <span class="card-speed">${ritualLocked ? "心脏仍在 · 无法使用" : interruptReady ? "可打断" : clashReady ? "拼刀" : guardReady ? "格挡" : risky ? "危险" : card.speed} · ${enemyTargeted ? "敌方" : "自身"}</span>`;
     button.addEventListener("mouseenter", () => previewCard(card.id, index));
     button.addEventListener("focus", () => previewCard(card.id, index));
     button.addEventListener("mouseleave", clearPreview);
@@ -653,6 +673,32 @@ function renderRefillButton() {
     : `${REFILL_DISCARD_HAND_BEFORE_DRAW ? "弃掉当前手牌并重新抽到" : "保留当前手牌并抽到"} ${REFILL_TARGET_HAND_SIZE} 张，消耗 ${getRefillCost()} 个时间节点${isEnemyBroken() ? "，失衡期间不产生冷却" : ""}`);
 }
 
+function renderInnateButton() {
+  const card = CARD_LIBRARY[state?.innateCardId];
+  els.innateButton.classList.toggle("hidden", !card);
+  if (!card) return;
+  els.innateIcon.textContent = card.icon;
+  els.innateName.textContent = card.name;
+  els.innateCooldown.textContent = state.innateCooldown > 0 ? `CD ${state.innateCooldown}` : "READY · 0 时刻";
+  els.innateButton.disabled = !state.active || state.innateCooldown > 0 || Boolean(state.choice);
+}
+
+function useInnateSkill() {
+  const card = CARD_LIBRARY[state?.innateCardId];
+  if (!card || !state.active || state.innateCooldown > 0 || state.choice) return;
+  enqueueAction(async () => {
+    showBanner(`内化 · ${card.name}`);
+    playCardCastVfx(card);
+    addLog(`身体记起「${card.name}」：不消耗时刻。`, "good");
+    if (card.immediate) await applyImmediate(card, { previousCardId: state.lastPlayedCardId });
+    else resolveCard(card, { effectiveCost: 0 });
+    state.innateCooldown = 5;
+    state.lastPlayedCardId = card.id;
+    renderAll();
+    checkBattleEnd();
+  });
+}
+
 function targetsEnemy(card) {
   return card.type === "attack" || Boolean(card.damage || card.delay || card.bleed);
 }
@@ -661,18 +707,25 @@ function isAttackCard(card) {
   return card?.type === "attack" && Boolean(card.damage);
 }
 
-function getPreviewCardDamage(card) {
+function getPreviewCardDamage(card, targetNode = state.node) {
   if (!card?.damage) return 0;
-  return isAttackCard(card) && state.player.focus
-    ? Math.ceil(card.damage * (1 + state.player.focus))
-    : card.damage;
+  let damage = card.damage;
+  if (isAttackCard(card)) damage += getCombatModifiers().attackBonus ?? 0;
+  if (isAttackCard(card) && state.player.focus) damage = Math.ceil(damage * (1 + state.player.focus));
+  if (isAttackCard(card) && state.insightWindows.has(targetNode)) damage *= 2;
+  return damage;
+}
+
+function getInterruptContribution(amount) {
+  return Math.max(0, amount - state.enemy.poise);
 }
 
 function canCardInterruptLeadIntent(card, effectiveCost) {
   if (isEnemyBroken() || !card?.damage || effectiveCost >= getLeadEnemyCountdown()) return false;
   const entry = getLeadEnemyEntry();
-  const intent = ENEMY_INTENTS[entry.intentIndex];
-  return getPreviewCardDamage(card) >= Math.max(0, intent.damage - (entry.interruptDamage ?? 0));
+  const intent = getBattleIntents()[entry.intentIndex];
+  const contribution = getInterruptContribution(getPreviewCardDamage(card, state.node + effectiveCost));
+  return contribution >= Math.max(0, intent.damage - (entry.interruptDamage ?? 0));
 }
 
 function formatPercent(value) {
@@ -990,6 +1043,12 @@ function playCard(handIndex) {
     return;
   }
   if (!state.active || handIndex < 0 || handIndex >= state.hand.length) return;
+  const selectedCard = CARD_LIBRARY[state.hand[handIndex]];
+  if (isRitualCardLocked(selectedCard)) {
+    addLog(`你的心脏仍在跳动，秘仪拒绝回应「${selectedCard.name}」。`, "damage");
+    renderLogs();
+    return;
+  }
   const cardId = state.hand.splice(handIndex, 1)[0];
   const costDelta = state.handCostDeltas.splice(handIndex, 1)[0] ?? 0;
   state.hoveredCard = null;
@@ -1044,7 +1103,7 @@ async function performCardPlay(cardId, costDelta = 0) {
   }
 
   if (!card.immediate && state.active) {
-    resolveCard(card, { skipDamage: cardClashed, skipBlock: cardBlockPreResolved });
+    resolveCard(card, { skipDamage: cardClashed, skipBlock: cardBlockPreResolved, effectiveCost });
     renderAll();
     await wait(RESOLVE_GAP_MS);
   }
@@ -1065,9 +1124,11 @@ async function performReplenish() {
   const noCooldown = isEnemyBroken();
   showBanner("补充手牌");
   playStatusVfx("draw");
-  if (state.player.block > 0) {
+  if (state.player.block > 0 && !getCombatModifiers().retainBlockOnRefill) {
     state.player.block = 0;
     addLog("换气之间，灰钢架势崩解：格挡值全部清零。", "damage");
+  } else if (state.player.block > 0) {
+    addLog("重甲锁住了架势：补牌后格挡仍被保留。", "good");
   }
   if (REFILL_DISCARD_HAND_BEFORE_DRAW && state.hand.length > 0) {
     const discardedCount = state.hand.length;
@@ -1094,7 +1155,7 @@ async function performReplenish() {
   if (!state.active) return;
   await advanceNode();
   if (!state.active) return;
-  state.player.refillCooldown = noCooldown ? 0 : REFILL_COOLDOWN;
+  state.player.refillCooldown = noCooldown ? 0 : REFILL_COOLDOWN + (getCombatModifiers().refillCooldown ?? 0);
   if (noCooldown) addLog("失衡窗口仍在延续：本次补牌不进入冷却。", "good");
   renderAll();
 
@@ -1222,20 +1283,30 @@ async function resolveScry(card) {
   return true;
 }
 
-function consumeCardDamage(card) {
+function consumeCardDamage(card, options = {}) {
   let damage = card.damage;
+  if (isAttackCard(card)) damage += getCombatModifiers().attackBonus ?? 0;
   if (isAttackCard(card) && state.player.focus) {
     damage = Math.ceil(damage * (1 + state.player.focus));
     state.player.focus = 0;
     addLog("罅隙被命中，攻击伤害提高。", "good");
   }
+  if (isAttackCard(card) && state.insightWindows.has(state.node)) {
+    damage *= 2;
+    addLog("灵视标出的破绽在此刻张开：攻击伤害翻倍。", "good");
+  }
+  if (options.clash && isAttackCard(card) && getCombatModifiers().doubleClashDamage) {
+    damage *= 2;
+    addLog("双手剑吃住碰撞，拼刀伤害翻倍。", "good");
+  }
   return damage;
 }
 
 function applyCardBlock(card) {
-  state.player.block += card.block;
+  const block = card.block + (getCombatModifiers().blockBonus ?? 0);
+  state.player.block += block;
   playStatusVfx("guard");
-  addLog(`灰钢架势落定：获得 ${card.block} 点格挡值。`, "good");
+  addLog(`灰钢架势落定：获得 ${block} 点格挡值。`, "good");
 }
 
 function resolveCard(card, options = {}) {
@@ -1246,6 +1317,11 @@ function resolveCard(card, options = {}) {
     const damage = consumeCardDamage(card);
     playPlayerAttackVfx(card);
     damageEnemy(damage);
+  }
+  if (isAttackCard(card) && options.effectiveCost === 1 && getCombatModifiers().bleedOnFastAttack && state.enemy.hp > 0) {
+    state.enemy.bleedTicks += 1;
+    playStatusVfx("bleed");
+    addLog("匕首划开浅伤：附加 1 层流血。", "damage");
   }
   if (card.bleed && state.enemy.hp > 0) {
     state.enemy.bleedTicks += card.bleed;
@@ -1273,6 +1349,8 @@ function resolveCard(card, options = {}) {
 
 async function advanceNode(resolvingCard = null) {
   state.node++;
+  if (state.innateCooldown > 0) state.innateCooldown--;
+  ensureInsightWindowsThrough(state.node + 8);
   const result = { clashed: false, preResolvedBlock: false };
   if (state.player.refillCooldown > 0) state.player.refillCooldown--;
   const wasBroken = isEnemyBroken();
@@ -1299,8 +1377,9 @@ async function advanceNode(resolvingCard = null) {
   if (wasBroken) {
     if (state.enemy.breakRemaining <= 0) {
       state.enemy.breakRemaining = 0;
+      state.enemy.poise = getEnemyMaxPoise();
       showBanner("压迫回归");
-      addLog("失衡结束，守卫重新稳住攻势。", "damage");
+      addLog("失衡结束，守卫重新稳住攻势，韧性恢复。", "damage");
       pulseTone(70, .18, .055);
       renderAll();
     }
@@ -1324,7 +1403,7 @@ async function advanceNode(resolvingCard = null) {
 
 function resolveEnemyAttack(resolvingCard = null) {
   const entry = getLeadEnemyEntry();
-  const intent = ENEMY_INTENTS[entry.intentIndex];
+  const intent = getBattleIntents()[entry.intentIndex];
   showBanner(intent.name);
   playEnemyAttackVfx(intent);
   pulseTone(55, .26, .075);
@@ -1335,17 +1414,17 @@ function resolveEnemyAttack(resolvingCard = null) {
     resolveClash(intent, resolvingCard);
   } else if (state.player.evade) {
     state.player.evade = false;
-    resetBreakProgress("闪避打断了连续拼刀节奏，失衡进度归零。");
+    resetEnemyPoise("闪避打断了连续拼刀节奏，敌人韧性恢复。");
     playStatusVfx("evade");
     addLog(`${intent.name}落空——只斩中了散开的鸦羽。`, "good");
   } else if (state.player.parry) {
     state.player.parry = false;
-    resetBreakProgress("招架打断了连续拼刀节奏，失衡进度归零。");
+    resetEnemyPoise("招架打断了连续拼刀节奏，敌人韧性恢复。");
     playStatusVfx("parry");
     addLog(`完美招架！你以裂响回敬守卫。`, "good");
     damageEnemy(13);
   } else {
-    if (resolvingCard?.block) resetBreakProgress("格挡打断了连续拼刀节奏，失衡进度归零。");
+    if (resolvingCard?.block) resetEnemyPoise("格挡打断了连续拼刀节奏，敌人韧性恢复。");
     damagePlayer(intent.damage, intent.name);
   }
 
@@ -1356,7 +1435,7 @@ function resolveEnemyAttack(resolvingCard = null) {
 }
 
 function resolveClash(intent, card) {
-  const playerDamage = consumeCardDamage(card);
+  const playerDamage = consumeCardDamage(card, { clash: true });
   const enemyDamage = intent.damage;
   const remainder = playerDamage - enemyDamage;
   showBanner("拼刀", "clash");
@@ -1390,16 +1469,18 @@ function returnPlayedCardToHand(card) {
 
 function registerClashStagger() {
   if (isEnemyBroken()) return;
-  state.enemy.breakProgress++;
-  addLog(`拼刀撼动守卫：失衡 ${state.enemy.breakProgress}/${ENEMY_BREAK_THRESHOLD}。`, "good");
-  if (state.enemy.breakProgress >= ENEMY_BREAK_THRESHOLD) enterEnemyBreak();
+  state.enemy.poise = Math.max(0, state.enemy.poise - 1);
+  addLog(`拼刀撼动守卫：韧性降至 ${state.enemy.poise}/${getEnemyMaxPoise()}。`, "good");
+  if (state.enemy.poise <= 0) enterEnemyBreak();
 }
 
 function registerPreemptiveDamage(amount) {
   const entry = getLeadEnemyEntry();
   if (!entry || isEnemyBroken() || entry.countdown <= 0 || state.enemy.hp <= 0) return false;
-  const intent = ENEMY_INTENTS[entry.intentIndex];
-  entry.interruptDamage = (entry.interruptDamage ?? 0) + amount;
+  const intent = getBattleIntents()[entry.intentIndex];
+  const contribution = getInterruptContribution(amount);
+  if (contribution <= 0) return false;
+  entry.interruptDamage = (entry.interruptDamage ?? 0) + contribution;
   if (entry.interruptDamage < intent.damage) return false;
 
   state.enemy.intents.shift();
@@ -1408,7 +1489,7 @@ function registerPreemptiveDamage(amount) {
   playStatusVfx("interrupt");
   shakeScreen();
   pulseTone(230, .18, .055);
-  addLog(`抢攻累计造成 ${entry.interruptDamage} 点伤害，「${intent.name}」被打断！`, "good");
+  addLog(`抢攻累计 ${entry.interruptDamage} 点打断值，「${intent.name}」被打断！`, "good");
   els.intentPanel.classList.remove("interrupted");
   void els.intentPanel.offsetWidth;
   els.intentPanel.classList.add("interrupted");
@@ -1420,7 +1501,7 @@ function damageEnemy(amount, dramatic = true) {
   state.enemy.hp -= amount;
   spawnDamageNumber("enemy", amount);
   if (dramatic) {
-    addLog(`丧钟守卫受到 ${amount} 点伤害。`, "damage");
+    addLog(`${activeBattle.config.displayName}受到 ${amount} 点伤害。`, "damage");
     hitEffect("enemy");
     pulseTone(95, .1, .04);
   }
@@ -1436,7 +1517,7 @@ function damagePlayer(amount, sourceName, options = {}) {
   if (absorbed) addLog(`护甲吸收了 ${absorbed} 点伤害。`, "good");
   if (incoming > 0) {
     if (!options.preserveBreakProgress) {
-      resetBreakProgress("被敌人命中，失衡进度归零。");
+      resetEnemyPoise("被敌人命中，敌人韧性恢复。");
     }
     state.player.hp -= incoming;
     spawnDamageNumber("player", incoming);
@@ -1480,139 +1561,69 @@ function checkBattleEnd() {
   return false;
 }
 
-function finishBattle(won) {
+function finishBattle(outcome) {
+  const result = outcome === true ? "Win" : outcome === false ? "Lose" : outcome;
+  const won = result === "Win";
   state.active = false;
   cancelChoice();
   actionQueue.length = 0;
   lastBattleWon = won;
+  pendingBattleResult = { result, playerHp: Math.max(0, state.player.hp) };
   els.game.classList.toggle("enemy-dead", won);
   if (won) {
     runState.battlesWon++;
-    runState.playerHp = Math.min(PLAYER_MAX_HP, Math.max(1, state.player.hp) + 15);
+    runState.playerHp = Math.max(1, state.player.hp);
+    els.endEyebrow.textContent = "战斗胜利";
+    els.endTitle.textContent = `${activeBattle.config.displayName}倒下了`;
+    els.endCopy.textContent = "伤势会原样带回世界。是否长休，由你决定。";
     els.restartButton.innerHTML = `回到地图 <span>↗</span>`;
-  } else {
-    runState.playerHp = PLAYER_MAX_HP;
+  } else if (result === "Lose") {
+    runState.playerHp = 0;
     els.endEyebrow.textContent = "你已死去";
-    els.endTitle.textContent = "刻度吞没无名者";
-    els.endCopy.textContent = "你把最后一个节点交给了敌人。灰烬将你送回回廊入口。";
-    els.restartButton.innerHTML = `重整旗鼓 <span>↻</span>`;
+    els.endTitle.textContent = "血肉留在了这里";
+    els.endCopy.textContent = "本阶段将失败交回世界处理；未来可以在这里接入“失败但剧情继续”。";
+    els.restartButton.innerHTML = `承认死亡 <span>↻</span>`;
+  } else {
+    runState.playerHp = Math.max(1, state.player.hp);
+    els.endEyebrow.textContent = "脱离战斗";
+    els.endTitle.textContent = "你逃回了雾里";
+    els.endCopy.textContent = "敌人仍在原处，损失的生命也不会恢复。";
+    els.restartButton.innerHTML = `回到地图 <span>↗</span>`;
   }
   els.resultNodes.textContent = state.node;
   els.resultCards.textContent = state.cardsPlayed;
   renderAll();
-  setTimeout(() => els.endOverlay.classList.add("visible"), 700);
+  setTimeout(() => els.endOverlay.classList.add("visible"), result === "Escape" ? 120 : 700);
 }
 
 function isMapActive() {
   return !els.mapScreen.classList.contains("hidden");
 }
 
-function isMapPointAllowed(x, y) {
-  return MAP_ROOMS.some((room) => x >= room.x && x <= room.x + room.w && y >= room.y && y <= room.y + room.h);
+function startGame() {
+  els.introOverlay.classList.remove("visible");
+  els.startButton.blur();
+  window.WorldGame?.startNewRun();
+  pulseTone(90, .18, .04);
 }
 
-function buildMapScene() {
-  const walls = [];
-  for (const room of MAP_ROOMS) {
-    if (room.corridor) {
-      if (room.h > room.w) {
-        walls.push(`M${room.x} ${room.y} V${room.y + room.h}`, `M${room.x + room.w} ${room.y} V${room.y + room.h}`);
-      } else {
-        walls.push(`M${room.x} ${room.y} H${room.x + room.w}`, `M${room.x} ${room.y + room.h} H${room.x + room.w}`);
-      }
-    } else {
-      walls.push(`M${room.x} ${room.y} h${room.w} v${room.h} h${-room.w} Z`);
-    }
+async function beginWorldBattle(enemyId, options = {}) {
+  if (pendingBattleResolve || battleStartPending) throw new Error("A battle is already active.");
+  battleStartPending = true;
+  let config;
+  try {
+    config = await window.BattleData.getCombatant(enemyId);
+    if (!config.combatEnabled) throw new Error(`战斗角色 ${enemyId} 当前未启用战斗。`);
+  } finally {
+    battleStartPending = false;
   }
-  els.mapWalls.setAttribute("d", walls.join(" "));
-  const bossRoom = MAP_ROOMS.find((room) => room.boss);
-  const bossX = bossRoom.x + bossRoom.w / 2;
-  const bossY = bossRoom.y + bossRoom.h / 2 - 6;
-  els.mapBoss.querySelectorAll("text").forEach((label) => {
-    label.setAttribute("x", bossX);
-  });
-  els.mapBoss.querySelector(".boss-skull").setAttribute("y", bossY);
-  els.mapBoss.querySelector(".boss-label").setAttribute("y", bossY + 30);
-}
-
-function positionMapPlayer() {
-  els.mapPlayer.setAttribute("transform", `translate(${mapState.player.x} ${mapState.player.y})`);
-}
-
-function updateMapHint() {
-  const bossRoom = MAP_ROOMS.find((room) => room.boss);
-  const distance = Math.hypot(bossRoom.x + bossRoom.w / 2 - mapState.player.x, bossRoom.y + bossRoom.h / 2 - mapState.player.y);
-  els.mapHint.textContent = distance < 220
-    ? "钟声就在附近——推门即是战斗。"
-    : `WASD / 方向键移动 · 你听见丧钟在远方回荡。`;
-}
-
-function startMapLoop() {
-  if (mapLoopId) return;
-  mapLastTs = performance.now();
-  const step = (ts) => {
-    mapLoopId = requestAnimationFrame(step);
-    updateMapMovement(ts);
+  activeBattle = {
+    enemyId,
+    config,
+    playerHp: options.playerHp ?? PLAYER_MAX_HP,
+    playerMaxHp: options.playerMaxHp ?? PLAYER_MAX_HP,
   };
-  mapLoopId = requestAnimationFrame(step);
-}
-
-function stopMapLoop() {
-  if (mapLoopId) cancelAnimationFrame(mapLoopId);
-  mapLoopId = null;
-  mapKeys.clear();
-}
-
-function updateMapMovement(ts) {
-  const delta = Math.min(.05, (ts - mapLastTs) / 1000);
-  mapLastTs = ts;
-  let dx = 0;
-  let dy = 0;
-  for (const key of mapKeys) {
-    const move = MAP_MOVE_KEYS[key];
-    if (move) { dx += move[0]; dy += move[1]; }
-  }
-  if (!dx && !dy) return;
-  const length = Math.hypot(dx, dy) || 1;
-  const nextX = mapState.player.x + (dx / length) * MAP_MOVE_SPEED * delta;
-  const nextY = mapState.player.y + (dy / length) * MAP_MOVE_SPEED * delta;
-  if (isMapPointAllowed(nextX, mapState.player.y)) mapState.player.x = nextX;
-  if (isMapPointAllowed(mapState.player.x, nextY)) mapState.player.y = nextY;
-  positionMapPlayer();
-  updateMapHint();
-
-  const bossRoom = MAP_ROOMS.find((room) => room.boss);
-  const inset = BOSS_TRIGGER_INSET;
-  const { x, y } = mapState.player;
-  if (x > bossRoom.x + inset && x < bossRoom.x + bossRoom.w - inset &&
-    y > bossRoom.y + inset && y < bossRoom.y + bossRoom.h - inset) {
-    stopMapLoop();
-    pulseTone(90, .2, .05);
-    enterBattle();
-  }
-}
-
-function renderMap() {
-  if (!mapSceneBuilt) {
-    buildMapScene();
-    mapSceneBuilt = true;
-  }
-  els.mapKills.textContent = runState.battlesWon;
-  positionMapPlayer();
-  updateMapHint();
-  startMapLoop();
-}
-
-function showMap() {
-  els.endOverlay.classList.remove("visible");
-  els.game.classList.add("hidden");
-  els.game.classList.remove("enemy-dead");
-  els.mapScreen.classList.remove("hidden");
-  renderMap();
-}
-
-function enterBattle() {
-  stopMapLoop();
+  pendingBattleResult = null;
   els.mapScreen.classList.add("hidden");
   els.game.classList.remove("hidden");
   els.game.scrollTop = 0;
@@ -1620,41 +1631,40 @@ function enterBattle() {
   state.active = true;
   renderAll();
   pulseTone(90, .18, .04);
+  return new Promise((resolve) => { pendingBattleResolve = resolve; });
 }
 
-function startGame() {
-  els.introOverlay.classList.remove("visible");
-  els.startButton.blur();
-  runState.playerHp = PLAYER_MAX_HP;
-  runState.battlesWon = 0;
-  mapState.player = { ...PLAYER_START };
-  showMap();
-  pulseTone(90, .18, .04);
+function returnBattleResult() {
+  if (!pendingBattleResolve || !pendingBattleResult) return;
+  const resolve = pendingBattleResolve;
+  const result = pendingBattleResult;
+  pendingBattleResolve = null;
+  pendingBattleResult = null;
+  els.endOverlay.classList.remove("visible");
+  els.game.classList.add("hidden");
+  resolve(result);
 }
+
+window.BattleBridge = Object.freeze({
+  startBattle: beginWorldBattle,
+  getCardCatalog: () => CARD_LIBRARY,
+  getDefaultDeck: () => [...PLAYER_DECK_RECIPE],
+});
 
 els.startButton.addEventListener("click", startGame);
 els.refillButton.addEventListener("click", replenishHand);
+els.innateButton.addEventListener("click", useInnateSkill);
+els.escapeBattleButton.addEventListener("click", () => {
+  if (state.active) finishBattle("Escape");
+});
 els.restartButton.addEventListener("click", () => {
   els.restartButton.blur();
-  if (!lastBattleWon) runState.playerHp = PLAYER_MAX_HP;
-  mapState.player = { ...PLAYER_START };
-  showMap();
+  returnBattleResult();
 });
-
-const MAP_MOVE_KEYS = {
-  ArrowUp: [0, -1], w: [0, -1], W: [0, -1],
-  ArrowDown: [0, 1], s: [0, 1], S: [0, 1],
-  ArrowLeft: [-1, 0], a: [-1, 0], A: [-1, 0],
-  ArrowRight: [1, 0], d: [1, 0], D: [1, 0],
-};
 
 document.addEventListener("keydown", (event) => {
   if (isMapActive()) {
     if ((event.key === "Enter" || event.key === " ") && els.introOverlay.classList.contains("visible")) startGame();
-    if (MAP_MOVE_KEYS[event.key]) {
-      event.preventDefault();
-      mapKeys.add(event.key);
-    }
     return;
   }
   if (event.key >= "1" && event.key <= "5") playCard(Number(event.key) - 1);
@@ -1668,11 +1678,4 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-document.addEventListener("keyup", (event) => {
-  mapKeys.delete(event.key);
-});
-
-window.addEventListener("blur", () => mapKeys.clear());
-
 loadEnemyLayer();
-resetState();

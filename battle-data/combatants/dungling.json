@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "id": "dungling",
+  "combatEnabled": true,
+  "displayName": "失败者粪怪",
+  "role": "无血肉残骸",
+  "intro": "粪怪没有对白，只有曾经属于人的牙齿在互相叩击。",
+  "stats": {
+    "maxHp": 78,
+    "poise": 3
+  },
+  "skills": [
+    {
+      "id": "dungling_mournful_sweep_slow",
+      "name": "哀钟横扫",
+      "description": "沉重的钟摆将扫过战场",
+      "damage": 24,
+      "windup": 3
+    },
+    {
+      "id": "dungling_iron_stomp",
+      "name": "铁靴践踏",
+      "description": "一次短促而凶狠的进逼",
+      "damage": 8,
+      "windup": 1
+    },
+    {
+      "id": "dungling_funeral_chime",
+      "name": "葬礼鸣响",
+      "description": "裂钟中积蓄着致命回声",
+      "damage": 36,
+      "windup": 5
+    },
+    {
+      "id": "dungling_rusted_blade_judgment",
+      "name": "锈刃裁断",
+      "description": "狭刃正寻找护甲的缝隙",
+      "damage": 28,
+      "windup": 4
+    },
+    {
+      "id": "dungling_last_prayer_judgment",
+      "name": "末祷审判",
+      "description": "缓慢，却足以终结猎杀",
+      "damage": 50,
+      "windup": 7
+    },
+    {
+      "id": "dungling_mournful_sweep_fast",
+      "name": "哀钟横扫",
+      "description": "沉重的钟摆将扫过战场",
+      "damage": 24,
+      "windup": 2
+    }
+  ]
+}
