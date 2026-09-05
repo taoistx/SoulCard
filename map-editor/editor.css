@@ -77,9 +77,10 @@ button.primary { color: #17130d; background: var(--gold); border-color: #d5b97e;
 .canvas-scroller { min-height: 0; overflow: auto; padding: 36px; background-image: radial-gradient(#252922 1px, transparent 1px); background-size: 18px 18px; }
 .editor-canvas { display: block; margin: auto; overflow: visible; background: #090b09; box-shadow: 0 18px 55px #000, 0 0 0 1px #45483c; touch-action: none; user-select: none; }
 .editor-tile { stroke: #44483d; stroke-width: 1; }
-.editor-tile.room { fill: #37352d; }
-.editor-tile.corridor { fill: #564a34; stroke: #9d8358; }
-.editor-tile.wall { fill: #0c0e0c; stroke: #242821; }
+.editor-tile.room { fill: url("#editorRoomTerrain"); stroke: #746b5d; }
+.editor-tile.corridor { fill: url("#editorCorridorTerrain"); stroke: #a1875b; }
+.editor-tile.wall { fill: url("#editorWallTerrain"); stroke: #363a34; }
+.editor-tile.void { fill: url("#editorVoidTerrain"); stroke: #20231f; opacity: .82; }
 .editor-tile:hover, .editor-tile.hovered { stroke: #e0c288; stroke-width: 2; }
 .editor-tile.rect-origin { stroke: #f0d28f; stroke-width: 3; }
 .editor-object { cursor: grab; }

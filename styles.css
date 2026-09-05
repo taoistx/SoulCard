@@ -92,29 +92,29 @@ kbd { padding: 2px 5px; border: 1px solid #59564d; background: #20201d; color: #
   transition: fill .25s, stroke .25s, opacity .25s;
 }
 .grid-tile.floor {
-  fill: rgba(43, 41, 34, .94);
   stroke: #827764;
   stroke-width: 1.25;
 }
-.grid-tile.floor:nth-child(2n) { fill: rgba(38, 37, 31, .95); }
 .grid-tile.room {
+  fill: url("#worldRoomTerrain");
   stroke: #746b5d;
   filter: drop-shadow(0 0 4px rgba(188, 161, 107, .07));
 }
 .grid-tile.corridor {
-  fill: rgba(55, 48, 35, .96);
+  fill: url("#worldCorridorTerrain");
   stroke: #a1875b;
   stroke-width: 1.7;
 }
 .grid-tile.wall {
-  fill: url("#blockedHatch");
-  stroke: #292d29;
-  stroke-width: 1;
+  fill: url("#worldWallTerrain");
+  stroke: #353a34;
+  stroke-width: 1.15;
 }
 .grid-tile.void {
-  fill: rgba(3, 4, 4, .5);
-  stroke: rgba(27, 30, 27, .38);
+  fill: url("#worldVoidTerrain");
+  stroke: rgba(32, 35, 32, .46);
   stroke-width: .7;
+  opacity: .82;
 }
 .grid-tile.gate-floor.sealed {
   fill: rgba(88, 25, 28, .96);

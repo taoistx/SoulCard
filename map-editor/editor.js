@@ -6,6 +6,12 @@ const MIN_MAP_SIZE = 5;
 const MAX_MAP_SIZE = 80;
 const TILE_BY_TOOL = { room: "r", corridor: ".", wall: "#" };
 const TILE_NAME = { r: "房间", ".": "走廊", "#": "阻挡" };
+const TERRAIN_PATTERNS = [
+  { id: "editorRoomTerrain", file: "room-floor-v1.jpg", size: TILE_SIZE * 4, color: "#24231f", opacity: ".86" },
+  { id: "editorCorridorTerrain", file: "drain-corridor-v1.jpg", size: TILE_SIZE * 4, color: "#3b3022", opacity: ".9" },
+  { id: "editorWallTerrain", file: "thorn-wall-v1.jpg", size: TILE_SIZE * 4, color: "#0b0d0c", opacity: ".78" },
+  { id: "editorVoidTerrain", file: "flesh-void-v1.jpg", size: TILE_SIZE * 5, color: "#030404", opacity: ".48" },
+];
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const sourceBundle = window.WORLD_MAP_BUNDLE;
@@ -334,17 +340,48 @@ function deleteSelectedObject() {
   showFeedback("对象已移回摆放列表");
 }
 
+function createTerrainDefinitions() {
+  const defs = document.createElementNS(SVG_NS, "defs");
+  TERRAIN_PATTERNS.forEach((terrain) => {
+    const pattern = document.createElementNS(SVG_NS, "pattern");
+    pattern.id = terrain.id;
+    pattern.setAttribute("width", terrain.size);
+    pattern.setAttribute("height", terrain.size);
+    pattern.setAttribute("patternUnits", "userSpaceOnUse");
+
+    const base = document.createElementNS(SVG_NS, "rect");
+    base.setAttribute("width", terrain.size);
+    base.setAttribute("height", terrain.size);
+    base.setAttribute("fill", terrain.color);
+
+    const texture = document.createElementNS(SVG_NS, "image");
+    texture.setAttribute("href", `../assets/map-terrain/${terrain.file}`);
+    texture.setAttribute("width", terrain.size);
+    texture.setAttribute("height", terrain.size);
+    texture.setAttribute("opacity", terrain.opacity);
+    texture.setAttribute("preserveAspectRatio", "xMidYMid slice");
+    pattern.append(base, texture);
+    defs.appendChild(pattern);
+  });
+  return defs;
+}
+
 function renderCanvas() {
   const { width, height } = getDimensions();
   els.canvas.setAttribute("viewBox", `0 0 ${width * TILE_SIZE} ${height * TILE_SIZE}`);
   els.canvas.setAttribute("width", width * TILE_SIZE * zoom);
   els.canvas.setAttribute("height", height * TILE_SIZE * zoom);
   els.canvas.innerHTML = "";
+  els.canvas.appendChild(createTerrainDefinitions());
 
   const tileLayer = document.createElementNS(SVG_NS, "g");
   tileLayer.classList.add("tile-layer");
   map.grid.forEach((rowTiles, row) => {
     [...rowTiles].forEach((value, col) => {
+      const neighborWalkable = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
+        const neighbor = map.grid[row + dy]?.[col + dx];
+        return neighbor && neighbor !== "#";
+      });
       const rect = document.createElementNS(SVG_NS, "rect");
       rect.setAttribute("x", col * TILE_SIZE + 1);
       rect.setAttribute("y", row * TILE_SIZE + 1);
@@ -352,7 +389,8 @@ function renderCanvas() {
       rect.setAttribute("height", TILE_SIZE - 2);
       rect.setAttribute("rx", "2");
       rect.dataset.cell = `${col},${row}`;
-      rect.setAttribute("class", `editor-tile ${value === "r" ? "room" : value === "." ? "corridor" : "wall"}`);
+      const terrainClass = value === "r" ? "room" : value === "." ? "corridor" : neighborWalkable ? "wall" : "void";
+      rect.setAttribute("class", `editor-tile ${terrainClass}`);
       if (rectStart?.col === col && rectStart?.row === row) rect.classList.add("rect-origin");
       tileLayer.appendChild(rect);
     });

@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "id": "bell",
   "combatEnabled": true,
-  "displayName": "丧钟",
+  "displayName": "丧钟 比尔",
   "role": "无头掠夺者",
   "intro": "丧钟从空荡荡的颈腔里发出铁器碰撞声。",
   "stats": {
     "maxHp": 120,
-    "poise": 3
+    "poise": 4
   },
   "skills": [
     {

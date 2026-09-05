@@ -1,3 +1,5 @@
-assets/
+assets/*
+!assets/map-terrain/
+!assets/map-terrain/*.jpg
 *.rar
-
+/ArtSketch

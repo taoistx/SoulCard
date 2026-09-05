@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "eddie",
   "combatEnabled": true,
-  "displayName": "渔夫 艾迪",
+  "displayName": "打捞者 艾迪",
   "role": "边岸打捞者",
   "intro": "艾迪叹了口气，把打捞钩横在身前。",
   "stats": {
@@ -37,20 +37,7 @@
       "description": "狭刃正寻找护甲的缝隙",
       "damage": 28,
       "windup": 4
-    },
-    {
-      "id": "eddie_last_prayer_judgment",
-      "name": "末祷审判",
-      "description": "缓慢，却足以终结猎杀",
-      "damage": 50,
-      "windup": 7
-    },
-    {
-      "id": "eddie_mournful_sweep_fast",
-      "name": "哀钟横扫",
-      "description": "沉重的钟摆将扫过战场",
-      "damage": 24,
-      "windup": 2
     }
+   
   ]
 }
