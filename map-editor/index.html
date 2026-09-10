@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>World Map Editor</title>
     <link rel="stylesheet" href="editor.css" />
+    <link rel="stylesheet" href="../dungeon-view.css" />
   </head>
   <body>
     <main id="editorApp" class="editor-app is-hidden">
@@ -16,6 +17,8 @@
         <label>区域眉题<input id="mapEyebrow" maxlength="40" /></label>
         <label>地图标题<input id="mapTitle" maxlength="40" /></label>
         <div class="header-actions">
+          <a class="editor-link" href="../npc-editor/index.html">剧情编辑器</a>
+          <button id="preview3dButton" type="button">3D 预览 / 试玩</button>
           <button id="undoButton" type="button" title="撤销 Ctrl+Z">撤销</button>
           <button id="redoButton" type="button" title="重做 Ctrl+Y">重做</button>
           <button id="exportButton" class="primary" type="button">校验并导出</button>
@@ -81,6 +84,18 @@
             <div id="validationSummary" class="validation-summary"></div>
             <ul id="validationList" class="validation-list"></ul>
           </section>
+          <section class="mapping-help">
+            <p class="panel-kicker">二维 → 地宫</p>
+            <dl>
+              <dt>房间 r</dt><dd>石砖地面</dd>
+              <dt>走廊 .</dt><dd>排水沟地面</dd>
+              <dt>阻挡 #</dt><dd>墙体 / 未开凿岩层</dd>
+              <dt>玩家出生点</dt><dd>猎人 + 镜头起点</dd>
+              <dt>NPC / 敌人</dt><dd>对应角色模型</dd>
+              <dt>小屋 / 山道 / 逆抽水器</dt><dd>废墟 / 铁闸 / 泵机</dd>
+            </dl>
+            <p class="subtle">坐标一一对应。临近通路的阻挡生成墙体，前景墙降低高度；碰撞不变。导出的地图自动使用同一套 3D 映射。</p>
+          </section>
         </aside>
       </div>
     </main>
@@ -103,6 +118,19 @@
         </div>
         <p id="startError" class="start-error" role="alert"></p>
       </div>
+    </section>
+
+    <section id="preview3dDialog" class="preview-dialog is-hidden" role="dialog" aria-modal="true" aria-labelledby="preview3dTitle">
+      <header>
+        <div><p class="panel-kicker">DUNGEON PREVIEW</p><h2 id="preview3dTitle">地宫预览</h2></div>
+        <div class="preview-actions">
+          <label><input id="previewGateOpened" type="checkbox" /> 预览闸门开启</label>
+          <button id="playtestButton" class="primary" type="button">开始试玩</button>
+          <button id="closePreview3dButton" type="button">返回编辑 <kbd>Esc</kbd></button>
+        </div>
+      </header>
+      <div id="editorDungeonViewport" class="editor-dungeon-viewport"></div>
+      <footer>预览当前草稿 · 试玩支持移动、对话和战斗 · 返回编辑器保留草稿与撤销记录</footer>
     </section>
 
     <script src="../world-map.js"></script>

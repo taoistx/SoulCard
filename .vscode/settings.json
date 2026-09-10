@@ -1,0 +1,7 @@
+{
+  // NPC dialogue and other game text intentionally contain Chinese characters.
+  // Do not draw Unicode warning boxes around normal localized content.
+  "editor.unicodeHighlight.nonBasicASCII": false,
+  "editor.unicodeHighlight.ambiguousCharacters": false,
+  "editor.unicodeHighlight.invisibleCharacters": false
+}

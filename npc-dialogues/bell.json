@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "bell",
+  "name": "丧钟",
+  "start": {
+    "default": "hostile",
+    "rules": [{ "when": { "mode": "all", "clauses": [{ "source": "sacrifice", "partId": "head", "operator": "sacrificed" }, { "source": "sacrifice", "partId": "brain", "operator": "sacrificed" }] }, "node": "recognized" }]
+  },
+  "nodes": {
+    "hostile": { "kicker": "敌意 NPC", "title": "丧钟", "body": "他的头和脑都不在了。裂钟却准确转向你仍然完整的颈部。这里没有可以说服他的脸。", "options": [{ "id": "fight", "label": "迎战", "hint": "触发战斗", "action": "fight_bell" }] },
+    "recognized": {
+      "kicker": "条件对白 · 头与脑均已献祭",
+      "title": "丧钟",
+      "body": "他把裂钟放低。两个没有头脑的人，在此地反而完成了身份确认。\n“你也……听见里面的水声。”",
+      "options": [{ "id": "ask_way", "label": "询问上山的路", "hint": "避免战斗", "effects": [{ "type": "setFlag", "key": "bellSpared", "value": true }, { "type": "addItem", "itemId": "oldKey", "amount": 1 }], "next": "spared" }]
+    },
+    "spared": { "kicker": "丧钟 · World Flag", "title": "丧钟让路", "body": "他把山道钥匙塞进你颈部的空洞，然后消失在粪雾里。", "options": [] }
+  },
+  "editor": { "positions": { "hostile": { "x": 70, "y": 70 }, "recognized": { "x": 70, "y": 300 }, "spared": { "x": 430, "y": 300 } } }
+}

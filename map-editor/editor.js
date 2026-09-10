@@ -65,6 +65,69 @@ let history = [];
 let historyIndex = -1;
 let cleanSnapshot = null;
 let feedbackTimer = null;
+let previewView = null;
+let previewRequest = 0;
+let playtestNavigation = false;
+const previewDialog = document.querySelector("#preview3dDialog");
+const previewHost = document.querySelector("#editorDungeonViewport");
+
+function updatePreviewState() {
+  previewView?.setState({
+    player: { ...map.playerStart },
+    availableIds: map.objects.map((object) => object.id),
+    gateOpened: document.querySelector("#previewGateOpened").checked,
+    targetId: null,
+  });
+}
+
+async function open3dPreview() {
+  if (renderValidation().errors.length) {
+    showFeedback("请先修复地图错误，再预览或试玩", true);
+    return;
+  }
+  const request = ++previewRequest;
+  previewDialog.classList.remove("is-hidden");
+  document.querySelector("#preview3dTitle").textContent = map.meta?.title || "地宫预览";
+  previewHost.innerHTML = '<p class="dungeon-error" role="status">正在生成地宫…</p>';
+  document.querySelector("#closePreview3dButton").focus();
+  document.querySelector("#previewGateOpened").checked = false;
+  try {
+    const { createDungeonView } = await import("../dungeon-view.js");
+    if (request !== previewRequest) return;
+    previewView = createDungeonView(previewHost, currentBundle(), { preview: true });
+    updatePreviewState();
+  } catch (error) {
+    if (request !== previewRequest) return;
+    console.error("3D 预览加载失败：", error);
+    previewHost.innerHTML = '<p class="dungeon-error">3D 预览无法加载。请通过本地静态服务器打开，并确认浏览器支持 WebGL 2。二维编辑和导出仍可使用。</p>';
+  }
+}
+
+function close3dPreview() {
+  previewRequest++;
+  previewView?.dispose();
+  previewView = null;
+  previewDialog.classList.add("is-hidden");
+  document.querySelector("#preview3dButton").focus();
+}
+
+function startPlaytest() {
+  if (renderValidation().errors.length) return;
+  try {
+    sessionStorage.setItem("dungeon-map-playtest", JSON.stringify({
+      bundle: currentBundle(), cleanSnapshot, history, historyIndex,
+    }));
+    playtestNavigation = true;
+    window.location.href = "../index.html?mapPreview=1";
+  } catch {
+    showFeedback("浏览器无法保存试玩草稿，请允许当前站点的会话存储", true);
+  }
+}
+
+document.querySelector("#preview3dButton").addEventListener("click", open3dPreview);
+document.querySelector("#closePreview3dButton").addEventListener("click", close3dPreview);
+document.querySelector("#previewGateOpened").addEventListener("change", updatePreviewState);
+document.querySelector("#playtestButton").addEventListener("click", startPlaytest);
 
 function mapSnapshot() {
   return JSON.stringify(map);
@@ -816,6 +879,16 @@ els.importFile.addEventListener("change", async () => {
 
 document.addEventListener("keydown", (event) => {
   if (!map || els.app.classList.contains("is-hidden")) return;
+  if (!previewDialog.classList.contains("is-hidden")) {
+    if (event.key === "Escape") close3dPreview();
+    if (event.key === "Tab") {
+      const buttons = [...previewDialog.querySelectorAll('button:not(:disabled), input')].filter((element) => !element.hidden);
+      const first = buttons[0], last = buttons[buttons.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
+    return;
+  }
   const editingText = event.target instanceof HTMLInputElement;
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
     event.preventDefault();
@@ -835,8 +908,25 @@ document.addEventListener("keydown", (event) => {
 });
 
 window.addEventListener("beforeunload", (event) => {
-  if (map && (cleanSnapshot === null || mapSnapshot() !== cleanSnapshot)) event.preventDefault();
+  if (!playtestNavigation && map && (cleanSnapshot === null || mapSnapshot() !== cleanSnapshot)) event.preventDefault();
 });
+
+if (new URLSearchParams(window.location.search).get("restorePreview") === "1") {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem("dungeon-map-playtest"));
+    if (!saved?.bundle || !startEditing(saved.bundle, false)) throw new Error("试玩草稿无效，请重新载入地图。");
+    cleanSnapshot = typeof saved.cleanSnapshot === "string" ? saved.cleanSnapshot : null;
+    if (Array.isArray(saved.history) && Number.isInteger(saved.historyIndex) && saved.history[saved.historyIndex] === mapSnapshot()) {
+      history = saved.history;
+      historyIndex = saved.historyIndex;
+    }
+    updateHistoryButtons();
+    updateDirtyState();
+    showFeedback("已恢复试玩前的草稿");
+  } catch (error) {
+    els.startError.textContent = error.message;
+  }
+}
 
 if (!sourceBundle || !Object.keys(registeredDefinitions).length) {
   els.startError.textContent = "地图对象定义未载入，请确认 ../world-map.js 存在且格式正确。";

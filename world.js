@@ -46,6 +46,7 @@ function validateMapBundle(bundle) {
 }
 
 const MAP_CONFIG_ERRORS = validateMapBundle(window.WORLD_MAP_BUNDLE);
+if (window.MAP_PREVIEW_ERROR) MAP_CONFIG_ERRORS.push(window.MAP_PREVIEW_ERROR);
 const WORLD_MAP_BUNDLE = MAP_CONFIG_ERRORS.length ? {
   schemaVersion: 1,
   objectDefinitions: {},
@@ -160,7 +161,64 @@ let worldNextMoveAt = 0;
 let gridBuilt = false;
 let currentTarget = null;
 let interactionLocked = false;
+let dungeonView = null;
 const worldKeys = new Set();
+const WORLD_DATA_READY = Promise.all([window.NpcDialogueData.ready, window.BattleData.ready]);
+let worldDataError = null;
+WORLD_DATA_READY.catch((error) => { worldDataError = error; });
+
+function getPlayerCell() {
+  return {
+    col: Math.round((world.player.x - GRID_ORIGIN_X - GRID_SIZE / 2) / GRID_SIZE),
+    row: Math.round((world.player.y - GRID_ORIGIN_Y - GRID_SIZE / 2) / GRID_SIZE),
+  };
+}
+
+function syncDungeonView() {
+  dungeonView?.setState({
+    day: world.day,
+    player: getPlayerCell(),
+    availableIds: WORLD_OBJECTS.filter(isObjectAvailable).map((object) => object.id),
+    gateOpened: Boolean(getFlag("bridgeOpened")),
+    targetId: currentTarget?.id || null,
+  });
+}
+
+async function initializeDungeon() {
+  const host = $w("#dungeonViewport");
+  if (MAP_CONFIG_ERRORS.length) {
+    host.querySelector("p").textContent = MAP_CONFIG_ERRORS.join(" · ");
+    return;
+  }
+  try {
+    const { createDungeonView } = await import("./dungeon-view.js");
+    dungeonView = createDungeonView(host, WORLD_MAP_BUNDLE, {
+      onObject(id) {
+        if (!isWorldActive() || isOverlayOpen()) return;
+        const object = WORLD_OBJECTS.find((candidate) => candidate.id === id);
+        if (object && Math.hypot(object.x - world.player.x, object.y - world.player.y) <= INTERACTION_RADIUS) interactWith(object);
+      },
+      onCell(cell) {
+        const current = getPlayerCell();
+        if (Math.abs(cell.col - current.col) + Math.abs(cell.row - current.row) === 1) {
+          moveWorldBy(cell.col - current.col, cell.row - current.row);
+        }
+      },
+    });
+    host.parentElement.classList.add("has-dungeon");
+    renderWorld();
+  } catch (error) {
+    console.error("无法加载 Three.js 地宫：", error);
+    host.replaceChildren();
+    host.classList.remove("dungeon-view");
+    host.style.pointerEvents = "none";
+    const notice = document.createElement("p");
+    notice.className = "dungeon-error";
+    notice.textContent = "3D 地宫无法加载，已保留二维地图。请通过本地静态服务器打开，并确认浏览器支持 WebGL 2。";
+    host.appendChild(notice);
+    setTimeout(() => notice.remove(), 8000);
+  }
+}
 
 function createInitialWorld() {
   const deck = window.BattleBridge.getDefaultDeck();
@@ -326,7 +384,7 @@ function renderWorld() {
     return;
   }
   syncMaxHp();
-  renderGrid();
+  if (!dungeonView) renderGrid();
   elsWorld.player.classList.remove("hidden");
   elsWorld.player.setAttribute("transform", `translate(${world.player.x} ${world.player.y})`);
   elsWorld.fogReveal.setAttribute("cx", world.player.x);
@@ -339,10 +397,10 @@ function renderWorld() {
   currentTarget = getNearestObject();
   elsWorld.prompt.classList.toggle("hidden", !currentTarget || isOverlayOpen());
   if (currentTarget) elsWorld.prompt.querySelector("span").textContent = `与${currentTarget.label}交互`;
-  elsWorld.mapHint.textContent = getFlag("bridgeOpened")
-    ? "WASD / 方向键逐格移动 · L 随时长休 · 山道已开，树林里的粪怪没有血肉。"
-    : "浅色格可通行，斜线格不可通行 · L 随时长休 · 封锁格是上山的唯一入口。";
-  renderObjects();
+  const movementHint = dungeonView ? "WASD / 方向键或点击相邻地面移动" : "WASD / 方向键逐格移动";
+  elsWorld.mapHint.textContent = `${getFlag("bridgeOpened") ? "闸门已开启" : "石砖可行，墙体阻挡"} · ${movementHint} · E 交互 · L 长休`;
+  if (dungeonView) syncDungeonView();
+  else renderObjects();
   if (!elsWorld.characterPanel.classList.contains("hidden")) renderCharacterPanel();
 }
 
@@ -352,14 +410,15 @@ function closeWorldModal() {
   renderWorld();
 }
 
-function showWorldModal({ kicker = "交互", title, body, options = [] }) {
+function showWorldModal({ kicker = "交互", title, body = "", bodyText = null, options = [], allowClose = true }) {
   interactionLocked = true;
   worldKeys.clear();
   elsWorld.modalKicker.textContent = kicker;
   elsWorld.modalTitle.textContent = title;
-  elsWorld.modalBody.innerHTML = body;
+  if (bodyText === null) elsWorld.modalBody.innerHTML = body;
+  else elsWorld.modalBody.textContent = bodyText;
   elsWorld.modalOptions.innerHTML = "";
-  const resolvedOptions = [...options, { label: "离开", hint: "返回地图", close: true }];
+  const resolvedOptions = allowClose ? [...options, { label: "离开", hint: "返回地图", close: true }] : options;
   resolvedOptions.forEach((option) => {
     const button = document.createElement("button");
     button.type = "button";
@@ -566,59 +625,51 @@ function getNpcDialogueContext() {
     dailyStockName: ITEM_LIBRARY[stockId]?.name || stockId,
     sacrificedCount: Object.keys(world.sacrificed).length,
     getFlag,
+    setFlag,
     hasItem,
+    addItem,
+    removeItem,
     hasSacrificed: (partId) => Boolean(world.sacrificed[partId]),
   };
 }
 
 function applyDialogueEffects(effects = []) {
-  effects.forEach((effect) => {
-    if (effect.action === "set_flag") setFlag(effect.key, effect.value);
-  });
+  return window.NPCDialogueRuntime.applyEffects(effects, getNpcDialogueContext());
 }
 
 async function runNpcAction(npcId, actionId) {
-  if (actionId === "eddie_buy_daily") {
-    const stockId = getDailyStock();
-    if (!removeItem("freshFlesh")) return false;
-    addItem(stockId);
-    setFlag(`eddieBoughtDay${world.day}`, true);
-  } else if (actionId === "eddie_buy_key") {
-    if (!removeItem("freshFlesh")) return false;
-    addItem("oldKey");
-  } else if (actionId === "help_chris") {
-    if (!removeItem("healingPotion")) return false;
-    setFlag("helpedChris", true);
-    setFlag("foundSecretPath", true);
-    addItem("ladyHat");
-  } else if (actionId === "spare_bell") {
-    setFlag("bellSpared", true);
-    addItem("oldKey");
-  } else if (actionId === "fight_eddie") {
+  if (actionId === "fight_eddie") {
     await runBattle("eddie", "eddie");
   } else if (actionId === "fight_bell") {
     await runBattle("bell", "bell");
+  } else {
+    console.error(`NPC ${npcId} 请求了未登记动作：${actionId}`);
+    return false;
   }
   return true;
 }
 
 function showNpcDialogue(npcId, requestedNodeId = null) {
-  const script = window.NPC_DIALOGUES?.[npcId];
+  const script = window.NpcDialogueData.get(npcId);
   if (!script) return;
   const context = getNpcDialogueContext();
-  const nodeId = requestedNodeId || script.start(context);
-  const nodeFactory = script.nodes[nodeId];
-  const node = typeof nodeFactory === "function" ? nodeFactory(context) : nodeFactory;
+  const nodeId = requestedNodeId || window.NPCDialogueRuntime.resolveStart(script, context);
+  const node = window.NPCDialogueRuntime.resolveNode(script, nodeId, context);
   if (!node) return;
   applyDialogueEffects(node.effects);
+  const optionNode = window.NPCDialogueRuntime.resolveNode(script, nodeId, getNpcDialogueContext());
 
-  const configuredOptions = (node.options || []).map((option) => ({
+  const configuredOptions = (optionNode.options || []).map((option) => ({
     label: option.label,
     hint: option.hint,
     enabled: option.enabled,
     action: async () => {
+      const freshContext = getNpcDialogueContext();
+      if (!window.NPCDialogueRuntime.evaluateCondition(option.enabledWhen, freshContext)) return showNpcDialogue(npcId, nodeId);
       const completed = option.action ? await runNpcAction(npcId, option.action) : true;
-      if (completed !== false && option.next) showNpcDialogue(npcId, option.next);
+      if (completed === false) return showNpcDialogue(npcId, nodeId);
+      if (!window.NPCDialogueRuntime.applyEffects(option.effects || [], freshContext)) return showNpcDialogue(npcId, nodeId);
+      if (option.next) showNpcDialogue(npcId, option.next);
     },
   }));
   configuredOptions.push({
@@ -630,7 +681,7 @@ function showNpcDialogue(npcId, requestedNodeId = null) {
   showWorldModal({
     kicker: node.kicker,
     title: node.title || script.name,
-    body: node.body,
+    bodyText: node.body,
     options: configuredOptions,
   });
 }
@@ -640,7 +691,7 @@ function showChris() { showNpcDialogue("chris"); }
 function showBell() { showNpcDialogue("bell"); }
 
 function showSacrificeMenu(npcId) {
-  const npcName = window.NPC_DIALOGUES?.[npcId]?.name || "眼前的人";
+  const npcName = window.NpcDialogueData.get(npcId)?.name || "眼前的人";
   const available = (part) => !world.sacrificed[part];
   showWorldModal({
     kicker: `${npcName} · 血肉交易`,
@@ -897,13 +948,18 @@ function updateWorldMovement(ts) {
   else dx = 0;
   dx = Math.sign(dx);
   dy = Math.sign(dy);
+  worldNextMoveAt = ts + GRID_MOVE_REPEAT_MS;
+  moveWorldBy(dx, dy);
+}
+
+function moveWorldBy(dx, dy) {
+  if (!isWorldActive() || interactionLocked || isOverlayOpen() || MAP_CONFIG_ERRORS.length) return;
   const nextX = world.player.x + dx * GRID_SIZE;
   const nextY = world.player.y + dy * GRID_SIZE;
   if (isWalkable(nextX, nextY)) {
     world.player.x = nextX;
     world.player.y = nextY;
   }
-  worldNextMoveAt = ts + GRID_MOVE_REPEAT_MS;
   renderWorld();
 
   const bell = WORLD_OBJECTS.find((object) => object.id === "bell");
@@ -953,7 +1009,13 @@ function getCombatModifiersForBattle() {
   return modifiers;
 }
 
-function startNewRun() {
+async function startNewRun() {
+  try { await WORLD_DATA_READY; }
+  catch (error) {
+    worldDataError = error;
+    showWorldDataError();
+    return false;
+  }
   stopWorldLoop();
   world = createInitialWorld();
   currentTarget = null;
@@ -965,6 +1027,15 @@ function startNewRun() {
   elsWorld.mapScreen.classList.remove("hidden");
   renderWorld();
   startWorldLoop();
+  return true;
+}
+
+function showWorldDataError() {
+  stopWorldLoop();
+  elsWorld.game.classList.add("hidden");
+  elsWorld.mapScreen.classList.remove("hidden");
+  $w("#introOverlay").classList.remove("visible");
+  showWorldModal({ kicker: "配置错误 · 无法开始", title: "剧情或战斗数据加载失败", bodyText: worldDataError?.message || "无法加载游戏数据，请检查控制台。", allowClose: false });
 }
 
 window.WorldGame = Object.freeze({
@@ -983,6 +1054,8 @@ window.WorldGame = Object.freeze({
     flags: { ...world.flags },
     inventory: { ...world.inventory },
     sacrificed: { ...world.sacrificed },
+    player: getPlayerCell(),
+    equipment: { ...world.equipment },
   }),
 });
 
@@ -997,7 +1070,7 @@ document.addEventListener("keydown", (event) => {
   if (!isWorldActive()) return;
   if (event.key === "Escape") {
     if (!elsWorld.characterPanel.classList.contains("hidden")) closeCharacterPanel();
-    else if (!elsWorld.modal.classList.contains("hidden")) closeWorldModal();
+    else if (!worldDataError && !elsWorld.modal.classList.contains("hidden")) closeWorldModal();
     return;
   }
   if (isOverlayOpen()) return;
@@ -1029,3 +1102,15 @@ document.addEventListener("keyup", (event) => {
 window.addEventListener("blur", () => worldKeys.clear());
 
 renderWorld();
+$w("#startButton").disabled = true;
+WORLD_DATA_READY.then(() => {
+  $w("#startButton").disabled = false;
+  initializeDungeon();
+  if (window.IS_MAP_PREVIEW) {
+    $w("#returnToEditor").classList.remove("hidden");
+    startNewRun();
+  }
+}).catch((error) => {
+  worldDataError = error;
+  showWorldDataError();
+});

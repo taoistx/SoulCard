@@ -77,6 +77,12 @@
 kbd { padding: 2px 5px; border: 1px solid #59564d; background: #20201d; color: #d6c49e; font: 9px sans-serif; }
 
 .world-stage { position: relative; z-index: 1; min-height: 0; display: grid; place-items: stretch; overflow: hidden; }
+.world-stage > .dungeon-viewport { position: absolute; inset: 0; z-index: 1; }
+.world-stage.has-dungeon .map-svg { visibility: hidden; }
+.world-stage.has-dungeon::after { box-shadow: inset 0 0 60px 8px rgba(0, 0, 0, .25); }
+.world-stage .interaction-prompt, .world-stage .map-hint { z-index: 2; }
+.world-stage .map-hint { max-width: 95%; width: max-content; color: #a8ada1; }
+.world-actions a { text-decoration: none; }
 .world-stage::after {
   content: "";
   position: absolute;
@@ -288,7 +294,7 @@ button { font: inherit; }
 
 .scene-bg {
   z-index: -8;
-  background: url("assets/cathedral-bg.png") center 42% / cover no-repeat;
+  background: url("assets/cathedral-bg-perspective-v2.png") center 42% / cover no-repeat;
   transform: translate3d(var(--bg-x), var(--bg-y), 0) scale(1.06);
   filter: brightness(.88) saturate(.9);
   transition: transform .42s cubic-bezier(.2,.8,.2,1);
@@ -313,31 +319,34 @@ button { font: inherit; }
 .enemy-stage {
   position: absolute;
   z-index: -5;
+  --enemy-lift: -8%;
   top: .8%;
   left: 50%;
-  width: min(1040px, 81vw);
+  width: min(821px, 66.47vw);
   height: auto;
   min-height: 0;
-  aspect-ratio: 688 / 883;
+  aspect-ratio: 2480 / 3508;
   pointer-events: none;
-  transform: translateX(-50%) translate3d(var(--enemy-x), var(--enemy-y), 0) scale(var(--enemy-zoom));
+  transform: translateX(-50%) translate3d(var(--enemy-x), calc(var(--enemy-y) + var(--enemy-lift)), 0) scale(var(--enemy-zoom));
   transform-origin: 50% 27%;
   transition: transform .32s cubic-bezier(.2,.8,.2,1), filter .2s;
   filter: drop-shadow(0 22px 22px rgba(0,0,0,.74));
 }
 
-.enemy-stage canvas {
+.enemy-stage .enemy-sprite {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   animation: enemy-idle 4.8s ease-in-out infinite alternate;
 }
-.enemy-stage:not(.layer-ready) canvas { opacity: 0; }
-.enemy-stage.layer-ready canvas { opacity: 1; transition: opacity .6s; }
-.enemy-stage.blend-fallback canvas { mix-blend-mode: multiply; filter: brightness(1.35) contrast(1.15); }
-
+.enemy-stage.enemy-attacking .enemy-sprite {
+  transform-origin: 50% 32%;
+  animation: enemy-lunge .45s cubic-bezier(.18,.82,.28,1) both;
+}
+.enemy-stage:not(.layer-ready) .enemy-sprite { opacity: 0; }
+.enemy-stage.layer-ready .enemy-sprite { opacity: 1; transition: opacity .6s; }
 .enemy-shadow {
   position: absolute;
   z-index: -1;
@@ -962,7 +971,12 @@ button { font: inherit; }
 @keyframes threat-idle { 0%, 100% { transform: rotate(-45deg) translateY(0) scale(1); } 48% { transform: rotate(-45deg) translateY(-2px) scale(1.08); } 62% { transform: rotate(-45deg) translateY(1px) scale(.98); } }
 @keyframes threat-pop { 0% { transform: rotate(-45deg) scale(.65); opacity: .35; } 55% { transform: rotate(-45deg) scale(1.28); opacity: 1; } 78% { transform: rotate(-45deg) scale(.94); } 100% { transform: rotate(-45deg) scale(1); } }
 @keyframes mist-breathe { from { opacity: .32; filter: blur(14px); } to { opacity: .54; filter: blur(20px); } }
-@keyframes enemy-idle { from { transform: translateY(0) scale(1); } to { transform: translateY(-5px) scale(1.006); } }
+@keyframes enemy-idle { from { transform: translateY(0) scale(.75); } to { transform: translateY(-5px) scale(.7545); } }
+@keyframes enemy-lunge {
+  0% { transform: translateY(0) scale(1.4375); }
+  42% { transform: translateY(12px) scale(1.5625); }
+  100% { transform: translateY(5px) scale(1.5); }
+}
 @keyframes reticle-pulse { to { box-shadow: 0 0 28px rgba(197,47,43,.38); } }
 @keyframes countdown-pop { 50% { transform: scale(1.24); color: #e34a45; } }
 @keyframes intent-interrupted { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); border-color: #f0bd67; } 45% { transform: translateX(6px); } 70% { transform: translateX(-3px); } }

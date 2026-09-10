@@ -21,8 +21,10 @@
 - `world.js`：地图、World State、Inventory、装备、献祭、长休、NPC 交互和战斗桥接。
 - `game.js`：现有卡牌战斗模块及 `BattleBridge`。
 - `deck-config.js`：卡牌 / 牌组配置。
-- `npc-dialogues.js`：NPC 对话配置格式说明和注册表。
-- `npc-dialogues/*.js`：每名 NPC 独立的对白与分支配置。
+- `npc-dialogues.js`：NPC 对话 JSON 的校验、条件求值与运行时解释器。
+- `npc-dialogue-loader.js`：依据 manifest 异步加载 NPC 对话。
+- `npc-dialogues/manifest.json` 与 `npc-dialogues/*.json`：每名 NPC 独立的对白与分支配置。
+- `npc-editor/`：NPC 节点图、属性编辑与状态沙盒。
 
 ## 模块约定
 
@@ -35,16 +37,16 @@
 
 ## NPC 对话配置
 
-修改某名 NPC 时，优先编辑其独立脚本，不把台词重新写回 `world.js`。
+修改某名 NPC 时，优先编辑其独立 JSON，不把台词重新写回 `world.js`。
 
-每份 NPC 脚本包含：
+每份 NPC JSON 包含：
 
 - `name`：NPC 名称。
-- `start(context)`：依据 Day、World Flag、物品或献祭状态选择初始节点。
+- `start.default` 与 `start.rules`：依据 Day、World Flag、物品或献祭状态选择初始节点。
 - `nodes`：对白节点；节点可提供 `body`、`effects` 和 `options`。
-- 选项使用 `next` 跳转本 NPC 的其他节点；需要改变世界时使用 `world.js` 中明确登记的具名 `action`。
+- 选项使用 `next` 跳转本 NPC 的其他节点；Flag 与物品变化使用通用 `effects`，战斗等特殊行为使用 `world.js` 中明确登记的具名 `action`。
 
-新增 NPC 脚本后，记得在 `index.html` 中于 `world.js` 之前加载。
+新增 NPC JSON 后，记得登记到 `npc-dialogues/manifest.json`，并提供对应战斗角色配置（不参与战斗时使用 `combatEnabled: false`）。
 
 ## 修改原则
 
@@ -62,7 +64,10 @@
 node --check game.js
 node --check world.js
 node --check npc-dialogues.js
-Get-ChildItem npc-dialogues -Filter *.js | ForEach-Object { node --check $_.FullName }
+node --check npc-dialogue-loader.js
+node --check npc-editor/editor.js
+Get-Content npc-dialogues/manifest.json | ConvertFrom-Json | Out-Null
+Get-ChildItem npc-dialogues -Filter *.json | ForEach-Object { Get-Content $_.FullName | ConvertFrom-Json | Out-Null }
 git diff --check
 ```
 

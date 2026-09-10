@@ -77,7 +77,7 @@ const NODE_STEP_MS = 160;
 // 敌方攻击出手前的预警停顿
 const ENEMY_TELL_MS = 110;
 // 敌方攻击结算后的余韵停顿
-const ENEMY_STRIKE_MS = 190;
+const ENEMY_STRIKE_MS = 450;
 // 卡牌结算后的短暂收尾停顿
 const RESOLVE_GAP_MS = 130;
 
@@ -146,7 +146,7 @@ const els = {
   enemyFlash: $("#enemyFlash"), introOverlay: $("#introOverlay"), endOverlay: $("#endOverlay"),
   endEyebrow: $("#endEyebrow"), endTitle: $("#endTitle"), endCopy: $("#endCopy"),
   resultNodes: $("#resultNodes"), resultCards: $("#resultCards"), startButton: $("#startButton"),
-  restartButton: $("#restartButton"), enemyCanvas: $("#enemyCanvas"), enemyTarget: $("#enemyTarget"),
+  restartButton: $("#restartButton"), enemyPose: $("#enemyPose"), enemyTarget: $("#enemyTarget"),
   playerDropZone: $("#playerDropZone"), dragHint: $("#dragHint"), refillButton: $("#refillButton"),
   vfxLayer: $("#vfxLayer"), mapScreen: $("#mapScreen"), mapHint: $("#mapHint"),
   enemyName: $("#enemyName"), enemyRole: $("#enemyRole"), escapeBattleButton: $("#escapeBattleButton"),
@@ -159,6 +159,14 @@ const PLAYER_MAX_HP = 60;
 let state = { active: false, choice: null };
 let audioContext;
 let dragState = null;
+let enemyPoseTimer = null;
+
+const ENEMY_POSE_SOURCES = Object.freeze({
+  idle: "assets/bell_idle.png",
+  attack: "assets/bell_attack.png",
+});
+const ENEMY_POSE_VERSION = "bell-pose-20260909-2";
+const enemyPoseLayers = new Map();
 
 // 出牌动作队列：特效播完前不锁输入，玩家可连续出牌，结算按入队顺序依次播放
 const actionQueue = [];
@@ -167,105 +175,43 @@ let processingActions = false;
 const runState = { playerHp: PLAYER_MAX_HP, battlesWon: 0 };
 let lastBattleWon = false;
 
-function loadEnemyLayer() {
+function loadEnemyPose(pose, source) {
   const image = new Image();
   image.decoding = "async";
   image.onload = () => {
-    try {
-      const width = image.naturalWidth;
-      const height = image.naturalHeight;
-      const scratch = document.createElement("canvas");
-      scratch.width = width;
-      scratch.height = height;
-      const context = scratch.getContext("2d", { willReadFrequently: true });
-      context.drawImage(image, 0, 0);
-      const pixels = context.getImageData(0, 0, width, height);
-      const data = pixels.data;
-      const total = width * height;
-      const cleared = new Uint8Array(total);
-      const queue = new Int32Array(total);
-      let head = 0;
-      let tail = 0;
-
-      const isConnectedBackdrop = (pixel) => {
-        const offset = pixel * 4;
-        const r = data[offset];
-        const g = data[offset + 1];
-        const b = data[offset + 2];
-        const high = Math.max(r, g, b);
-        const low = Math.min(r, g, b);
-        const luminance = r * .299 + g * .587 + b * .114;
-        return luminance > 178 && high - low < 30;
-      };
-      const enqueue = (pixel) => {
-        if (pixel < 0 || pixel >= total || cleared[pixel] || !isConnectedBackdrop(pixel)) return;
-        cleared[pixel] = 1;
-        queue[tail++] = pixel;
-      };
-
-      for (let x = 0; x < width; x++) {
-        enqueue(x);
-        enqueue((height - 1) * width + x);
-      }
-      for (let y = 0; y < height; y++) {
-        enqueue(y * width);
-        enqueue(y * width + width - 1);
-      }
-      while (head < tail) {
-        const pixel = queue[head++];
-        const x = pixel % width;
-        if (x > 0) enqueue(pixel - 1);
-        if (x < width - 1) enqueue(pixel + 1);
-        if (pixel >= width) enqueue(pixel - width);
-        if (pixel < total - width) enqueue(pixel + width);
-      }
-
-      let minX = width;
-      let minY = height;
-      let maxX = 0;
-      let maxY = 0;
-      for (let pixel = 0; pixel < total; pixel++) {
-        const offset = pixel * 4;
-        const r = data[offset];
-        const g = data[offset + 1];
-        const b = data[offset + 2];
-        const high = Math.max(r, g, b);
-        const low = Math.min(r, g, b);
-        const luminance = r * .299 + g * .587 + b * .114;
-        const enclosedCheckerPixel = luminance > 231 && high - low < 22;
-        if (cleared[pixel] || enclosedCheckerPixel) {
-          data[offset + 3] = 0;
-        } else {
-          const x = pixel % width;
-          const y = Math.floor(pixel / width);
-          minX = Math.min(minX, x);
-          minY = Math.min(minY, y);
-          maxX = Math.max(maxX, x);
-          maxY = Math.max(maxY, y);
-        }
-      }
-
-      context.putImageData(pixels, 0, 0);
-      const padding = 10;
-      minX = Math.max(0, minX - padding);
-      minY = Math.max(0, minY - padding);
-      maxX = Math.min(width - 1, maxX + padding);
-      maxY = Math.min(height - 1, maxY + padding);
-      const cropWidth = maxX - minX + 1;
-      const cropHeight = maxY - minY + 1;
-      els.enemyCanvas.width = cropWidth;
-      els.enemyCanvas.height = cropHeight;
-      els.enemyCanvas.getContext("2d").drawImage(scratch, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-      els.enemyTarget.classList.add("layer-ready");
-    } catch (error) {
-      els.enemyCanvas.width = image.naturalWidth;
-      els.enemyCanvas.height = image.naturalHeight;
-      els.enemyCanvas.getContext("2d").drawImage(image, 0, 0);
-      els.enemyTarget.classList.add("layer-ready", "blend-fallback");
-      console.warn("Enemy layer extraction fell back to blend mode.", error);
-    }
+    enemyPoseLayers.set(pose, image.src);
+    if (pose === "idle") drawEnemyPose("idle");
   };
-  image.src = "assets/bell-warden-cutout-v2.png";
+  image.onerror = () => console.error(`Enemy pose failed to load: ${source}`);
+  image.src = `${source}?v=${ENEMY_POSE_VERSION}`;
+}
+
+function drawEnemyPose(pose) {
+  const source = enemyPoseLayers.get(pose);
+  if (!source) return false;
+  els.enemyPose.src = source;
+  els.enemyTarget.classList.add("layer-ready");
+  return true;
+}
+
+function resetEnemyPose() {
+  if (enemyPoseTimer) clearTimeout(enemyPoseTimer);
+  enemyPoseTimer = null;
+  els.enemyTarget.classList.remove("enemy-attacking");
+  drawEnemyPose("idle");
+}
+
+function showEnemyAttackPose() {
+  if (enemyPoseTimer) clearTimeout(enemyPoseTimer);
+  drawEnemyPose("attack");
+  els.enemyTarget.classList.remove("enemy-attacking");
+  void els.enemyTarget.offsetWidth;
+  els.enemyTarget.classList.add("enemy-attacking");
+  enemyPoseTimer = setTimeout(resetEnemyPose, ENEMY_STRIKE_MS);
+}
+
+function loadEnemyLayer() {
+  Object.entries(ENEMY_POSE_SOURCES).forEach(([pose, source]) => loadEnemyPose(pose, source));
 }
 
 function shuffled(items) {
@@ -376,6 +322,7 @@ function enterEnemyBreak() {
 function resetState() {
   cancelChoice();
   cancelActiveDrag();
+  resetEnemyPose();
   actionQueue.length = 0;
   const enemyPlan = buildEnemyIntentQueue();
   const maxHp = activeBattle.playerMaxHp || PLAYER_MAX_HP;
@@ -1404,6 +1351,7 @@ async function advanceNode(resolvingCard = null) {
 function resolveEnemyAttack(resolvingCard = null) {
   const entry = getLeadEnemyEntry();
   const intent = getBattleIntents()[entry.intentIndex];
+  showEnemyAttackPose();
   showBanner(intent.name);
   playEnemyAttackVfx(intent);
   pulseTone(55, .26, .075);
@@ -1600,10 +1548,10 @@ function isMapActive() {
   return !els.mapScreen.classList.contains("hidden");
 }
 
-function startGame() {
+async function startGame() {
   els.introOverlay.classList.remove("visible");
   els.startButton.blur();
-  window.WorldGame?.startNewRun();
+  if (await window.WorldGame?.startNewRun() === false) return;
   pulseTone(90, .18, .04);
 }
 

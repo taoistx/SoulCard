@@ -5,14 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#090b0f" />
     <title>余烬刻度 · 魂系卡牌原型</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=bell-pose-20260909-3" />
+    <link rel="stylesheet" href="dungeon-view.css" />
   </head>
   <body>
     <main id="game" class="game" aria-label="余烬刻度战斗界面">
       <div id="sceneBg" class="scene scene-bg" aria-hidden="true"></div>
       <div id="mistLayer" class="mist-layer" aria-hidden="true"></div>
       <div id="enemyTarget" class="enemy-stage" aria-label="丧钟守卫拖拽目标">
-        <canvas id="enemyCanvas" aria-hidden="true"></canvas>
+        <img id="enemyPose" class="enemy-sprite" alt="" aria-hidden="true" />
         <div class="enemy-shadow" aria-hidden="true"></div>
         <div class="target-reticle" aria-hidden="true"><span>释放攻击</span></div>
       </div>
@@ -183,12 +184,14 @@
           <div class="world-hp-track"><i id="worldHpFill"></i></div>
         </div>
         <div class="world-actions">
+          <a id="returnToEditor" class="world-icon-button hidden" href="map-editor/index.html?restorePreview=1">返回编辑器</a>
           <button id="longRestButton" class="world-icon-button rest-action" type="button">长休 <kbd>L</kbd></button>
           <button id="characterButton" class="world-icon-button" type="button">身体 / 背包 <kbd>I</kbd></button>
         </div>
       </header>
 
       <div class="world-stage">
+        <div id="dungeonViewport" class="dungeon-viewport"><p class="dungeon-error" role="status">正在点亮地宫…</p></div>
         <svg id="mapSvg" class="map-svg" viewBox="0 0 1000 680" preserveAspectRatio="xMidYMid meet">
           <defs>
             <filter id="mapSketch" x="-5%" y="-5%" width="110%" height="110%">
@@ -263,13 +266,12 @@
     </section>
 
     <script src="deck-config.js"></script>
-    <script src="npc-dialogues.js"></script>
-    <script src="npc-dialogues/eddie.js"></script>
-    <script src="npc-dialogues/chris.js"></script>
-    <script src="npc-dialogues/bell.js"></script>
+    <script src="npc-dialogues.js?v=json-dialogue-2"></script>
+    <script src="npc-dialogue-loader.js?v=json-dialogue-2"></script>
     <script src="battle-data-loader.js"></script>
-    <script src="game.js"></script>
+    <script src="game.js?v=bell-pose-20260909-2"></script>
     <script src="world-map.js"></script>
+    <script src="map-preview.js"></script>
     <script src="world.js"></script>
   </body>
 </html>

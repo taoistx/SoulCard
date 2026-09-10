@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "dialogues": {
+    "eddie": "eddie.json",
+    "chris": "chris.json",
+    "bell": "bell.json"
+  }
+}

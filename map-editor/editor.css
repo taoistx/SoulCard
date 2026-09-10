@@ -48,7 +48,22 @@ button:disabled { cursor: not-allowed; opacity: .4; }
 }
 .editor-header input:focus, .start-card input:focus { border-color: var(--gold); }
 .header-actions { display: flex; gap: 7px; }
+.editor-link { display: inline-flex; align-items: center; padding: 9px 12px; color: inherit; border: 1px solid var(--line); text-decoration: none; }
+.editor-link:hover { border-color: var(--gold); }
 .header-actions button { padding: 9px 12px; }
+.header-actions { flex-wrap: wrap; justify-content: flex-end; }
+.mapping-help dl { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 5px; font-size: 10px; line-height: 1.5; }
+.mapping-help dt { color: #bbb29b; }
+.mapping-help dd { margin: 0; color: var(--muted); }
+.preview-dialog { position: fixed; inset: 18px; z-index: 20; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: #0c1113; border: 1px solid #5f675b; box-shadow: 0 0 0 30px #030606d9; }
+.preview-dialog > header { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 18px 24px; border-bottom: 1px solid #414a42; }
+.preview-dialog h2 { margin: 5px 0 0; color: #d7c8a9; font-size: 21px; font-weight: 400; }
+.preview-dialog .panel-kicker { margin: 0; }
+.preview-actions { display: flex; align-items: center; gap: 10px; }
+.preview-actions button { padding: 10px 14px; }
+.preview-actions label { color: #a6ad9d; font-size: 11px; }
+.preview-dialog > footer { padding: 12px 24px; color: #8f9a91; border-top: 1px solid #414a42; font-size: 11px; }
+.editor-dungeon-viewport { min-height: 0; position: relative; }
 button.primary { color: #17130d; background: var(--gold); border-color: #d5b97e; }
 .dirty-state { position: absolute; right: 19px; bottom: 2px; color: #9f765d; font-size: 9px; }
 .dirty-state.saved { color: #71846c; }

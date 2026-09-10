@@ -112,23 +112,21 @@
       loaded[id] = deepFreeze(config);
     });
 
-    Object.keys(window.NPC_DIALOGUES || {}).forEach((npcId) => {
+    const dialogues = await window.NpcDialogueData.ready;
+    Object.keys(dialogues).forEach((npcId) => {
       if (!loaded[npcId]) fail(`NPC ${npcId} 缺少对应战斗角色配置`);
     });
     return Object.freeze(loaded);
   }
 
-  const ready = loadRegistry().then(
-    (loaded) => {
-      registry = loaded;
-      return loaded;
-    },
-    (error) => {
-      loadError = error;
-      console.error(error);
-      return null;
-    },
-  );
+  const ready = loadRegistry().then((loaded) => {
+    registry = loaded;
+    return loaded;
+  }).catch((error) => {
+    loadError = error;
+    console.error(error);
+    throw error;
+  });
 
   async function getCombatant(id) {
     await ready;

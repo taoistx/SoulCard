@@ -16,8 +16,8 @@ window.WORLD_MAP_BUNDLE = {
   },
   "map": {
     "meta": {
-      "eyebrow": "粪坑位面 · 外围",
-      "title": "逆流山脚"
+      "eyebrow": "粪坑位面 · 地下第一层",
+      "title": "逆流地宫"
     },
     "grid": [
       "#######################",
