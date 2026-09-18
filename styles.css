@@ -44,7 +44,7 @@
   position: relative;
   z-index: 3;
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto minmax(210px, 1fr) auto;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(220px, .8fr) auto;
   align-items: center;
   gap: 30px;
   padding: 18px 30px 15px;
@@ -60,8 +60,11 @@
 .survival-clock b { color: #dc5550; font-size: 27px; font-weight: 400; }
 .world-vitals { width: min(310px, 100%); justify-self: end; color: #8c8a82; font: 10px sans-serif; letter-spacing: .12em; }
 .world-vitals strong { float: right; color: #d7cec0; font-weight: 500; }
-.world-hp-track { height: 7px; margin-top: 8px; overflow: hidden; border: 1px solid #4c3231; background: #171517; }
+.world-hp-track, .world-stamina-track { height: 7px; margin-top: 8px; overflow: hidden; border: 1px solid #4c3231; background: #171517; }
 .world-hp-track i { display: block; width: 100%; height: 100%; background: linear-gradient(90deg, #65181c, #bd3a39); transition: width .3s; }
+.world-stamina-label { display: block; margin-top: 9px; }
+.world-stamina-track { border-color: #4d4b32; }
+.world-stamina-track i { display: block; width: 100%; height: 100%; background: linear-gradient(90deg, #6f6132, #d0b357); transition: width .3s; }
 .world-actions { display: flex; align-items: center; gap: 8px; }
 .world-icon-button, .character-card button {
   color: #b8afa2;
@@ -77,9 +80,6 @@
 kbd { padding: 2px 5px; border: 1px solid #59564d; background: #20201d; color: #d6c49e; font: 9px sans-serif; }
 
 .world-stage { position: relative; z-index: 1; min-height: 0; display: grid; place-items: stretch; overflow: hidden; }
-.world-stage > .dungeon-viewport { position: absolute; inset: 0; z-index: 1; }
-.world-stage.has-dungeon .map-svg { visibility: hidden; }
-.world-stage.has-dungeon::after { box-shadow: inset 0 0 60px 8px rgba(0, 0, 0, .25); }
 .world-stage .interaction-prompt, .world-stage .map-hint { z-index: 2; }
 .world-stage .map-hint { max-width: 95%; width: max-content; color: #a8ada1; }
 .world-actions a { text-decoration: none; }
@@ -91,62 +91,64 @@ kbd { padding: 2px 5px; border: 1px solid #59564d; background: #20201d; color: #
   box-shadow: inset 0 0 90px 24px rgba(0, 0, 0, .76);
 }
 .map-svg { width: 100%; height: 100%; min-height: 0; }
-.world-ground { fill: rgba(6, 8, 7, .68); stroke: #3b3b34; stroke-width: 3; }
-.world-grid { shape-rendering: geometricPrecision; }
-.grid-tile {
-  stroke-linejoin: round;
-  transition: fill .25s, stroke .25s, opacity .25s;
+.world-ground { fill: rgba(6, 8, 7, .72); stroke: #3b3b34; stroke-width: 3; }
+.world-edges { stroke-linecap: round; }
+.world-edge {
+  stroke: rgba(151, 126, 78, .72);
+  stroke-width: 3;
+  stroke-dasharray: 1 0;
+  filter: drop-shadow(0 0 5px rgba(160, 121, 66, .22));
 }
-.grid-tile.floor {
-  stroke: #827764;
-  stroke-width: 1.25;
+.world-edge.locked {
+  stroke: rgba(96, 91, 82, .45);
+  stroke-width: 2;
+  stroke-dasharray: 9 8;
+  filter: none;
 }
-.grid-tile.room {
-  fill: url("#worldRoomTerrain");
-  stroke: #746b5d;
-  filter: drop-shadow(0 0 4px rgba(188, 161, 107, .07));
+.world-node { cursor: pointer; transition: opacity .2s; }
+.world-node .node-aura {
+  opacity: .16;
+  fill: #d5b777;
+  filter: blur(2px);
+  transition: opacity .2s;
 }
-.grid-tile.corridor {
-  fill: url("#worldCorridorTerrain");
-  stroke: #a1875b;
-  stroke-width: 1.7;
-}
-.grid-tile.wall {
-  fill: url("#worldWallTerrain");
-  stroke: #353a34;
-  stroke-width: 1.15;
-}
-.grid-tile.void {
-  fill: url("#worldVoidTerrain");
-  stroke: rgba(32, 35, 32, .46);
-  stroke-width: .7;
-  opacity: .82;
-}
-.grid-tile.gate-floor.sealed {
-  fill: rgba(88, 25, 28, .96);
-  stroke: #d35c59;
+.world-node .node-ring {
+  fill: rgba(8, 9, 9, .97);
+  stroke: #9b875e;
   stroke-width: 2.5;
-  filter: drop-shadow(0 0 9px rgba(178, 49, 48, .55));
 }
-.grid-tile.gate-floor.opened {
-  fill: rgba(65, 61, 45, .96);
-  stroke: #c8aa6b;
+.world-node text { pointer-events: none; text-anchor: middle; }
+.world-node .node-icon { fill: #e0d4bd; font: 22px Georgia, serif; }
+.world-node .node-label {
+  fill: #b0a796;
+  stroke: #060707;
+  stroke-width: 3px;
+  paint-order: stroke;
+  font: 10px sans-serif;
+  letter-spacing: .08em;
 }
-.world-object { cursor: pointer; transition: opacity .2s; }
-.world-object .object-ring { fill: rgba(8, 9, 9, .95); stroke-width: 2.5; }
-.world-object text { pointer-events: none; text-anchor: middle; }
-.world-object .object-icon { fill: #e0d4bd; font: 22px Georgia, serif; }
-.world-object .object-label { fill: #b0a796; stroke: #060707; stroke-width: 3px; paint-order: stroke; font: 10px sans-serif; letter-spacing: .08em; }
-.world-object.npc .object-ring { stroke: #9f8a64; }
-.world-object.enemy .object-ring { stroke: #a83333; fill: rgba(42, 10, 12, .92); }
-.world-object.poi .object-ring { stroke: #6d7c6a; }
-.world-object.locked .object-ring { stroke: #5f5e58; }
-.world-object.targeted .object-ring { filter: drop-shadow(0 0 10px rgba(224, 197, 139, .75)); animation: world-target 1s ease-in-out infinite alternate; }
-.world-object.dead { display: none; }
+.world-node.npc .node-ring { stroke: #a48d64; }
+.world-node.enemy .node-ring { stroke: #a83333; fill: rgba(42, 10, 12, .94); }
+.world-node.poi .node-ring { stroke: #6d7c6a; }
+.world-node.wilderness .node-ring { stroke: #7c7567; fill: rgba(12, 13, 12, .97); stroke-dasharray: 4 4; }
+.world-node.start .node-ring { stroke: #d0b86e; }
+.world-node.current .node-ring {
+  stroke: #f0d99d;
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 11px rgba(224, 197, 139, .8));
+}
+.world-node.current .node-aura, .world-node.reachable:hover .node-aura { opacity: .36; }
+.world-node.explored.wilderness .node-ring { stroke-dasharray: 1 0; }
+.world-node.resolved .node-ring {
+  fill: rgba(18, 21, 17, .94);
+  stroke: #586c50;
+}
+.world-node.resolved .node-icon { fill: #9eab8d; opacity: .75; }
+.world-node.distant { opacity: .55; cursor: default; }
+.world-node.distant .node-ring { stroke: #55534b; }
 .map-player { pointer-events: none; }
-.map-player circle { fill: rgba(10, 11, 12, .98); stroke: #f0d99d; stroke-width: 3; filter: drop-shadow(0 0 10px rgba(220, 190, 140, .68)); }
-.map-player text { fill: #ecdcbd; font-size: 16px; }
-.fog-of-war { fill: rgba(2, 3, 3, .91); pointer-events: none; }
+.map-player circle { fill: rgba(10, 11, 12, .98); stroke: #f0d99d; stroke-width: 2.5; filter: drop-shadow(0 0 9px rgba(220, 190, 140, .7)); }
+.map-player text { fill: #ecdcbd; font: 9px sans-serif; letter-spacing: .08em; }
 @keyframes world-target { to { opacity: .72; } }
 .map-hint {
   position: absolute;

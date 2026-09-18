@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#090b0f" />
     <title>余烬刻度 · 魂系卡牌原型</title>
-    <link rel="stylesheet" href="styles.css?v=bell-pose-20260909-3" />
-    <link rel="stylesheet" href="dungeon-view.css" />
+    <link rel="stylesheet" href="styles.css?v=point-crawl-20260918-1" />
   </head>
   <body>
     <main id="game" class="game" aria-label="余烬刻度战斗界面">
@@ -113,7 +112,7 @@
         </div>
       </section>
 
-      <button id="refillButton" class="refill-button" type="button" aria-label="保留当前手牌并抽到 5 张，消耗 1 个时间节点">
+      <button id="refillButton" class="refill-button" type="button" aria-label="弃掉当前手牌并重新抽到 6 张，消耗 1 个时间节点">
         <span aria-hidden="true">↻</span>
         补充手牌
         <small>1</small>
@@ -141,16 +140,16 @@
           <p class="eyebrow">五日生存 · 轻量 CRPG 切片</p>
           <h2>你被马桶冲进了<br />一个认真吃人的世界。</h2>
           <p class="intro-copy">
-            五天内吃不到新鲜血肉，你就会化成粪怪。移动、交谈和战斗都不推进日期；
+            五天内吃不到新鲜血肉，你就会化成粪怪。移动和交谈不推进日期；
             只有<strong>长休</strong>会让你满血，也会夺走一天。
           </p>
           <div class="rules">
-            <div><span>01</span><p><strong>探索粪坑边境</strong>，靠近人物、敌人或地点后按 E 交互。</p></div>
-            <div><span>02</span><p><strong>战斗沿用连续时间制</strong>：拖拽卡牌释放，受伤会原样带回世界。</p></div>
+            <div><span>01</span><p><strong>探索粪坑边境</strong>，点击已点亮节点移动，到达后按 E 交互。</p></div>
+            <div><span>02</span><p><strong>体力限制关键动作</strong>：探索、献祭、搜索、开路和战斗都会消耗体力。</p></div>
             <div><span>03</span><p><strong>身体就是角色卡</strong>：保留完整身体或永久献祭器官，都是 Build。</p></div>
           </div>
           <button id="startButton" class="primary-button">从坠落处爬起来 <span>↗</span></button>
-          <small>WASD / 方向键移动 · E 交互 · I 查看身体与背包 · 战斗中空格补牌</small>
+          <small>点击节点移动 · E 交互 · I 查看身体与背包 · 战斗中空格补牌</small>
         </div>
       </section>
 
@@ -182,6 +181,8 @@
         <div class="world-vitals">
           <span>生命 <strong id="worldHp">60 / 60</strong></span>
           <div class="world-hp-track"><i id="worldHpFill"></i></div>
+          <span class="world-stamina-label">体力 <strong id="worldStamina">12 / 12</strong></span>
+          <div class="world-stamina-track"><i id="worldStaminaFill"></i></div>
         </div>
         <div class="world-actions">
           <a id="returnToEditor" class="world-icon-button hidden" href="map-editor/index.html?restorePreview=1">返回编辑器</a>
@@ -191,48 +192,26 @@
       </header>
 
       <div class="world-stage">
-        <div id="dungeonViewport" class="dungeon-viewport"><p class="dungeon-error" role="status">正在点亮地宫…</p></div>
         <svg id="mapSvg" class="map-svg" viewBox="0 0 1000 680" preserveAspectRatio="xMidYMid meet">
           <defs>
             <filter id="mapSketch" x="-5%" y="-5%" width="110%" height="110%">
               <feTurbulence type="fractalNoise" baseFrequency="0.011" numOctaves="2" seed="19" result="noise" />
               <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" />
             </filter>
-            <pattern id="worldRoomTerrain" width="160" height="160" patternUnits="userSpaceOnUse">
-              <rect width="160" height="160" fill="#24231f" />
-              <image href="assets/map-terrain/room-floor-v1.jpg" width="160" height="160" opacity=".86" preserveAspectRatio="xMidYMid slice" />
-            </pattern>
-            <pattern id="worldCorridorTerrain" width="160" height="160" patternUnits="userSpaceOnUse">
-              <rect width="160" height="160" fill="#3b3022" />
-              <image href="assets/map-terrain/drain-corridor-v1.jpg" width="160" height="160" opacity=".9" preserveAspectRatio="xMidYMid slice" />
-            </pattern>
-            <pattern id="worldWallTerrain" width="160" height="160" patternUnits="userSpaceOnUse">
-              <rect width="160" height="160" fill="#0b0d0c" />
-              <image href="assets/map-terrain/thorn-wall-v1.jpg" width="160" height="160" opacity=".78" preserveAspectRatio="xMidYMid slice" />
-            </pattern>
-            <pattern id="worldVoidTerrain" width="200" height="200" patternUnits="userSpaceOnUse">
-              <rect width="200" height="200" fill="#030404" />
-              <image href="assets/map-terrain/flesh-void-v1.jpg" width="200" height="200" opacity=".48" preserveAspectRatio="xMidYMid slice" />
-            </pattern>
-            <filter id="gridShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <filter id="nodeShadow" x="-35%" y="-35%" width="170%" height="170%">
               <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".72" />
             </filter>
-            <mask id="fogMask">
-              <rect id="fogBounds" width="1000" height="680" fill="white" />
-              <circle id="fogReveal" cx="160" cy="600" r="138" fill="black" />
-            </mask>
           </defs>
           <rect id="worldGround" class="world-ground" x="18" y="18" width="964" height="644" rx="26" />
-          <g id="worldGrid" class="world-grid" filter="url(#gridShadow)"></g>
-          <g id="worldObjects"></g>
+          <g id="worldEdges" class="world-edges"></g>
+          <g id="worldNodes" class="world-nodes" filter="url(#nodeShadow)"></g>
           <g id="mapPlayer" class="map-player">
-            <circle r="14" />
-            <text text-anchor="middle" dy="6">✦</text>
+            <circle r="11" />
+            <text text-anchor="middle" dy="5">你</text>
           </g>
-          <rect id="fogOverlay" class="fog-of-war" x="0" y="0" width="1000" height="680" mask="url(#fogMask)" />
         </svg>
         <div id="interactionPrompt" class="interaction-prompt hidden"><kbd>E</kbd><span>交互</span></div>
-        <p id="mapHint" class="map-hint">移动不会消耗时间。靠近目标后按 E。</p>
+        <p id="mapHint" class="map-hint">点击节点移动 · E 交互 · L 长休。</p>
       </div>
 
       <footer class="map-footer">

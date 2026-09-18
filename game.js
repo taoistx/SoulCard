@@ -71,7 +71,7 @@ const REFILL_COOLDOWN = 6;
 // 补充手牌目标手牌大小
 const REFILL_TARGET_HAND_SIZE = 6;
 // 补充手牌前是否弃掉全部当前手牌，再重新抽满
-const REFILL_DISCARD_HAND_BEFORE_DRAW = false;
+const REFILL_DISCARD_HAND_BEFORE_DRAW = true;
 // 每个时间节点的推进间隔（毫秒），越短节奏越流畅
 const NODE_STEP_MS = 160;
 // 敌方攻击出手前的预警停顿
@@ -295,6 +295,10 @@ function getEffectiveHandCardCost(handIndex) {
 
 function getRefillCost() {
   return 1;
+}
+
+function shouldDiscardHandBeforeRefill() {
+  return REFILL_DISCARD_HAND_BEFORE_DRAW && !getCombatModifiers().preserveHandOnRefill;
 }
 
 function resetEnemyPoise(reason = "") {
@@ -610,6 +614,7 @@ function cancelChoice(result = null) {
 function renderRefillButton() {
   const cooldown = state.player.refillCooldown;
   const cooldownDisabled = !isEnemyBroken() && cooldown > 0;
+  const discardHandBeforeRefill = shouldDiscardHandBeforeRefill();
   els.refillButton.disabled = !state.active || cooldownDisabled || Boolean(state.choice);
   els.refillButton.classList.toggle("cooling", cooldownDisabled);
   els.refillButton.classList.toggle("break-free", isEnemyBroken());
@@ -617,7 +622,7 @@ function renderRefillButton() {
   els.refillButton.querySelector("small").textContent = isEnemyBroken() ? "无CD" : cooldownDisabled ? `CD ${cooldown}` : getRefillCost();
   els.refillButton.setAttribute("aria-label", cooldownDisabled
     ? `补充手牌冷却中，还剩 ${cooldown} 个时间节点`
-    : `${REFILL_DISCARD_HAND_BEFORE_DRAW ? "弃掉当前手牌并重新抽到" : "保留当前手牌并抽到"} ${REFILL_TARGET_HAND_SIZE} 张，消耗 ${getRefillCost()} 个时间节点${isEnemyBroken() ? "，失衡期间不产生冷却" : ""}`);
+    : `${discardHandBeforeRefill ? "弃掉当前手牌并重新抽到" : "保留当前手牌并抽到"} ${REFILL_TARGET_HAND_SIZE} 张，消耗 ${getRefillCost()} 个时间节点${isEnemyBroken() ? "，失衡期间不产生冷却" : ""}`);
 }
 
 function renderInnateButton() {
@@ -1069,6 +1074,7 @@ function replenishHand() {
 async function performReplenish() {
   if (!isEnemyBroken() && state.player.refillCooldown > 0) return;
   const noCooldown = isEnemyBroken();
+  const discardHandBeforeRefill = shouldDiscardHandBeforeRefill();
   showBanner("补充手牌");
   playStatusVfx("draw");
   if (state.player.block > 0 && !getCombatModifiers().retainBlockOnRefill) {
@@ -1077,7 +1083,7 @@ async function performReplenish() {
   } else if (state.player.block > 0) {
     addLog("重甲锁住了架势：补牌后格挡仍被保留。", "good");
   }
-  if (REFILL_DISCARD_HAND_BEFORE_DRAW && state.hand.length > 0) {
+  if (discardHandBeforeRefill && state.hand.length > 0) {
     const discardedCount = state.hand.length;
     state.discard.push(...state.hand);
     state.hand.length = 0;
@@ -1090,7 +1096,7 @@ async function performReplenish() {
     drawCards(cardsNeeded);
     const cardsDrawn = state.hand.length - handBeforeDraw;
     addLog(cardsDrawn > 0
-      ? `${REFILL_DISCARD_HAND_BEFORE_DRAW ? "你重新整理牌组，抽取" : "你稳住呼吸，补入"} ${cardsDrawn} 张手牌。`
+      ? `${discardHandBeforeRefill ? "你重新整理牌组，抽取" : "你稳住呼吸，补入"} ${cardsDrawn} 张手牌。`
       : "你试图补充手牌，但已无牌可抽。", "good");
   } else {
     addLog("手牌已足，无需抽牌。", "good");
