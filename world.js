@@ -290,6 +290,37 @@ function areNodesConnected(fromId, toId) {
   return edgesForNode(fromId).some((edge) => isEdgeActive(edge) && (edge.from === toId || edge.to === toId));
 }
 
+function blocksAutoPath(node) {
+  if (!node || isNodeResolved(node)) return false;
+  return node.type === "enemy" || node.id === "bell";
+}
+
+function canPathThrough(nodeId, fromId, toId) {
+  if (nodeId === fromId || nodeId === toId) return true;
+  return !blocksAutoPath(NODE_BY_ID.get(nodeId));
+}
+
+function findReachablePath(fromId, toId) {
+  if (fromId === toId) return [fromId];
+  const queue = [[fromId]];
+  const seen = new Set([fromId]);
+  while (queue.length) {
+    const path = queue.shift();
+    const currentId = path[path.length - 1];
+    for (const edge of edgesForNode(currentId)) {
+      if (!isEdgeActive(edge)) continue;
+      const nextId = edge.from === currentId ? edge.to : edge.from;
+      if (seen.has(nextId) || !world.revealedNodes.has(nextId)) continue;
+      if (!canPathThrough(nextId, fromId, toId)) continue;
+      const nextPath = [...path, nextId];
+      if (nextId === toId) return nextPath;
+      seen.add(nextId);
+      queue.push(nextPath);
+    }
+  }
+  return null;
+}
+
 function renderWorld() {
   if (MAP_CONFIG_ERRORS.length) {
     elsWorld.edges.innerHTML = "";
@@ -342,7 +373,7 @@ function renderPointCrawl() {
     const group = document.createElementNS(SVG_NS, "g");
     const isCurrent = node.id === world.currentNodeId;
     const isVisited = world.visitedNodes.has(node.id);
-    const reachable = isCurrent || areNodesConnected(world.currentNodeId, node.id);
+    const reachable = isCurrent || Boolean(findReachablePath(world.currentNodeId, node.id));
     const explored = world.exploredNodes.has(node.id);
     const resolved = isNodeResolved(node);
     group.classList.add("world-node", node.type);
@@ -380,17 +411,18 @@ function handleNodeClick(nodeId) {
     interactWithCurrentNode();
     return;
   }
-  if (!areNodesConnected(world.currentNodeId, nodeId)) return;
+  if (!findReachablePath(world.currentNodeId, nodeId)) return;
+  const firstVisit = !world.visitedNodes.has(nodeId);
   world.currentNodeId = nodeId;
   world.visitedNodes.add(nodeId);
   renderWorld();
-  enterCurrentNode();
+  enterCurrentNode(firstVisit);
 }
 
-function enterCurrentNode() {
+function enterCurrentNode(firstVisit = false) {
   const node = getCurrentNode();
   if (!node || node.type === "start") return;
-  if (node.type === "npc" || node.type === "enemy") interactWithCurrentNode();
+  if (node.type === "enemy" || (node.type === "npc" && firstVisit)) interactWithCurrentNode();
   else if (node.type === "wilderness" && !world.exploredNodes.has(node.id)) showWilderness(node);
 }
 
