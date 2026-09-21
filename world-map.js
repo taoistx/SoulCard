@@ -32,8 +32,8 @@ window.WORLD_MAP_BUNDLE = {
         "type": "npc",
         "icon": "♜",
         "label": "渔夫 艾迪",
-        "x": 46,
-        "y": 634,
+        "x": 56,
+        "y": 522,
         "npcId": "eddie"
       },
       {
@@ -41,8 +41,8 @@ window.WORLD_MAP_BUNDLE = {
         "type": "wilderness",
         "icon": "?",
         "label": "???",
-        "x": 578,
-        "y": 487,
+        "x": 337,
+        "y": 336,
         "revealWhen": {
           "mode": "all",
           "clauses": [
@@ -63,8 +63,8 @@ window.WORLD_MAP_BUNDLE = {
         "type": "wilderness",
         "icon": "?",
         "label": "腐叶原野",
-        "x": 526,
-        "y": 634,
+        "x": 417,
+        "y": 445,
         "revealWhen": {
           "mode": "all",
           "clauses": [
@@ -85,8 +85,8 @@ window.WORLD_MAP_BUNDLE = {
         "type": "wilderness",
         "icon": "?",
         "label": "???",
-        "x": 806,
-        "y": 634,
+        "x": 443,
+        "y": 598,
         "revealWhen": {
           "mode": "all",
           "clauses": [
@@ -107,8 +107,8 @@ window.WORLD_MAP_BUNDLE = {
         "type": "npc",
         "icon": "♛",
         "label": "失眠者 克里斯",
-        "x": 706,
-        "y": 157,
+        "x": 666,
+        "y": 89,
         "npcId": "chris",
         "revealWhen": {
           "mode": "all",
@@ -127,8 +127,8 @@ window.WORLD_MAP_BUNDLE = {
         "type": "poi",
         "icon": "⌂",
         "label": "废弃小屋",
-        "x": 808,
-        "y": 634,
+        "x": 496,
+        "y": 266,
         "locationId": "hut",
         "revealWhen": {
           "mode": "all",
@@ -147,8 +147,8 @@ window.WORLD_MAP_BUNDLE = {
         "type": "npc",
         "icon": "☠",
         "label": "丧钟",
-        "x": 954,
-        "y": 634,
+        "x": 937,
+        "y": 628,
         "npcId": "bell",
         "revealWhen": {
           "mode": "all",
@@ -167,8 +167,8 @@ window.WORLD_MAP_BUNDLE = {
         "type": "poi",
         "icon": "╫",
         "label": "封锁山道",
-        "x": 954,
-        "y": 438,
+        "x": 901,
+        "y": 216,
         "locationId": "gate",
         "revealWhen": {
           "mode": "any",
@@ -199,8 +199,8 @@ window.WORLD_MAP_BUNDLE = {
         "type": "enemy",
         "icon": "●",
         "label": "粪怪",
-        "x": 954,
-        "y": 328,
+        "x": 879,
+        "y": 110,
         "enemyId": "dungling",
         "battleSourceId": "dungA",
         "revealWhen": {
@@ -220,8 +220,8 @@ window.WORLD_MAP_BUNDLE = {
         "type": "enemy",
         "icon": "●",
         "label": "粪怪",
-        "x": 954,
-        "y": 206,
+        "x": 748,
+        "y": 427,
         "enemyId": "dungling",
         "battleSourceId": "dungB",
         "revealWhen": {
@@ -229,7 +229,7 @@ window.WORLD_MAP_BUNDLE = {
           "clauses": [
             {
               "source": "flag",
-              "key": "dungAKilled",
+              "key": "eddieMet",
               "operator": "eq",
               "value": true
             }
@@ -241,8 +241,8 @@ window.WORLD_MAP_BUNDLE = {
         "type": "poi",
         "icon": "♰",
         "label": "逆抽水器",
-        "x": 910,
-        "y": 350,
+        "x": 924,
+        "y": 46,
         "locationId": "church",
         "revealWhen": {
           "mode": "all",
@@ -261,8 +261,8 @@ window.WORLD_MAP_BUNDLE = {
         "type": "poi",
         "icon": "#",
         "label": "空地",
-        "x": 206,
-        "y": 285,
+        "x": 141,
+        "y": 119,
         "description": "",
         "locationId": "hut"
       },
@@ -271,17 +271,21 @@ window.WORLD_MAP_BUNDLE = {
         "type": "wilderness",
         "icon": "?",
         "label": "腐叶原野",
-        "x": 696,
-        "y": 634,
-        "description": ""
+        "x": 622,
+        "y": 435,
+        "description": "",
+        "revealWhen": {
+          "mode": "all",
+          "clauses": []
+        }
       },
       {
         "id": "node3",
         "type": "wilderness",
         "icon": "?",
         "label": "弦一螂",
-        "x": 954,
-        "y": 533,
+        "x": 844,
+        "y": 320,
         "description": ""
       }
     ],
@@ -377,10 +381,6 @@ window.WORLD_MAP_BUNDLE = {
         }
       },
       {
-        "from": "eddie",
-        "to": "node"
-      },
-      {
         "from": "siltWoods",
         "to": "hut"
       },
@@ -408,64 +408,64 @@ window.WORLD_MAP_BUNDLE = {
     "editor": {
       "positions": {
         "start": {
-          "x": 37,
-          "y": 992
+          "x": 50,
+          "y": 634
         },
         "eddie": {
-          "x": 35,
-          "y": 843
+          "x": 56,
+          "y": 522
         },
         "siltWoods": {
-          "x": 579,
-          "y": 454
+          "x": 337,
+          "y": 336
         },
         "drownedHuts": {
-          "x": 526,
-          "y": 712
+          "x": 417,
+          "y": 445
         },
         "bellRoad": {
-          "x": 806,
-          "y": 957
+          "x": 443,
+          "y": 598
         },
         "chris": {
-          "x": 595,
-          "y": 64
+          "x": 666,
+          "y": 89
         },
         "hut": {
-          "x": 594,
-          "y": 271
+          "x": 496,
+          "y": 266
         },
         "bell": {
-          "x": 1361,
-          "y": 955
+          "x": 937,
+          "y": 628
         },
         "gate": {
-          "x": 1355,
-          "y": 222
+          "x": 901,
+          "y": 216
         },
         "dungA": {
-          "x": 1004,
-          "y": 227
+          "x": 879,
+          "y": 110
         },
         "dungB": {
-          "x": 1060,
-          "y": 582
+          "x": 748,
+          "y": 427
         },
         "church": {
-          "x": 1280,
-          "y": 56
+          "x": 924,
+          "y": 46
         },
         "node": {
-          "x": 206,
-          "y": 285
+          "x": 141,
+          "y": 119
         },
         "node2": {
-          "x": 789,
-          "y": 651
+          "x": 622,
+          "y": 435
         },
         "node3": {
-          "x": 1266,
-          "y": 413
+          "x": 844,
+          "y": 320
         }
       }
     }

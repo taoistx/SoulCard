@@ -2,64 +2,155 @@
   "schemaVersion": 1,
   "id": "eddie",
   "name": "渔夫 艾迪",
-  "start": { "default": "root", "rules": [] },
+  "start": {
+    "default": "root",
+    "rules": []
+  },
   "nodes": {
     "root": {
       "kicker": "NPC · 第 {{day}} 天货物",
       "title": "渔夫 艾迪",
       "body": {
         "default": "中年男人站在粪海边，似乎在打捞着什么东西。\n他注意到了你，“嗯……又有新来者了”",
-        "variants": [{
-          "when": { "mode": "all", "clauses": [{ "source": "flag", "key": "eddieMet", "operator": "eq", "value": true }] },
-          "text": "“我这有好东西你可能用得着。”\n“但得给我血肉来——你自己的，或者别人的都行。”"
-        }]
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "eddieMet",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "“我这有好东西你可能用得着。”\n“但得拿东西来交换，有用的道具，肢体，都可以”"
+          }
+        ]
       },
-      "effects": [{ "type": "setFlag", "key": "eddieMet", "value": true }],
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "eddieMet",
+          "value": true
+        }
+      ],
       "options": [
-        { "id": "ask_place", "label": "这里是什么地方？", "hint": "免费情报", "next": "church_info" },
         {
-          "id": "buy_daily",
-          "label": "用 1 份血肉换 {{dailyStockName}}",
-          "hint": { "default": "缺少新鲜血肉", "variants": [{ "when": { "mode": "all", "clauses": [{ "source": "item", "itemId": "freshFlesh", "operator": "has", "amount": 1 }] }, "text": "可交易" }] },
-          "enabledWhen": { "mode": "all", "clauses": [{ "source": "item", "itemId": "freshFlesh", "operator": "has", "amount": 1 }] },
-          "effects": [
-            { "type": "removeItem", "itemId": "freshFlesh", "amount": 1 },
-            { "type": "addItem", "itemId": "{{dailyStockId}}", "amount": 1 },
-            { "type": "setFlag", "key": "eddieBoughtDay{{day}}", "value": true }
-          ],
-          "next": "root"
+          "id": "ask_place",
+          "label": "这里是什么地方？",
+          "hint": "免费情报",
+          "next": "church_info"
         },
         {
-          "id": "buy_key",
-          "label": "用 1 份血肉换老旧钥匙",
-          "hint": {
-            "default": "缺少新鲜血肉",
-            "variants": [
-              { "when": { "mode": "all", "clauses": [{ "source": "item", "itemId": "oldKey", "operator": "has", "amount": 1 }] }, "text": "已经拥有" },
-              { "when": { "mode": "all", "clauses": [{ "source": "item", "itemId": "freshFlesh", "operator": "has", "amount": 1 }] }, "text": "可交易" }
-            ]
+          "id": "attack",
+          "label": {
+            "default": "袭击艾迪，夺走货物",
+            "variants": []
           },
-          "enabledWhen": { "mode": "all", "clauses": [{ "source": "item", "itemId": "oldKey", "operator": "lacks", "amount": 1 }, { "source": "item", "itemId": "freshFlesh", "operator": "has", "amount": 1 }] },
-          "effects": [{ "type": "removeItem", "itemId": "freshFlesh", "amount": 1 }, { "type": "addItem", "itemId": "oldKey", "amount": 1 }],
-          "next": "root"
-        },
-        { "id": "attack", "label": "袭击艾迪，夺走货物", "hint": "触发战斗", "action": "fight_eddie" }
+          "hint": "触发战斗",
+          "action": "fight_eddie"
+        }
       ]
     },
     "church_info": {
       "kicker": "艾迪 · 情报",
       "title": "山顶的建筑是唯一出口",
       "body": "“这里就是粪世界，粪坑的东西都会到的一个奇怪次元。如果5天内你回不去原来的世界，你就会变成粪怪，永远的留在这。当然，如果你能吃到正常人的血肉，你能撑得更久。唯一离开这里的东西在山顶那建筑里，但这一路上不好走”",
-      "options": [{ "id": "ask_identity", "label": "你是谁？", "hint": "情报", "next": "eddie_info" }, { "id": "ask_flesh", "label": "吃人的血肉？！", "hint": "情报", "next": "flesh_info" }, { "id": "back_trade", "label": "继续交易", "hint": "返回", "next": "root" }]
+      "options": [
+        {
+          "id": "ask_identity",
+          "label": "你是谁？",
+          "hint": "情报",
+          "next": "eddie_info"
+        },
+        {
+          "id": "ask_flesh",
+          "label": "吃人的血肉？！",
+          "hint": "情报",
+          "next": "flesh_info"
+        },
+        {
+          "id": "back_trade",
+          "label": "返回",
+          "hint": "返回",
+          "next": "root"
+        }
+      ],
+      "effects": []
     },
     "eddie_info": {
       "kicker": "艾迪 · 情报",
       "title": "这里能交易",
-      "body": "“我叫艾迪，也是一个坠入粪坑的倒霉蛋…………已经记不得在这里多久了。靠捞点有用的东西换点血肉维持着……你要有血肉也可以拿来跟我换点东西，你肯定不会后悔的”",
-      "options": [{ "id": "ask_stay", "label": "你为什么不去那建筑？", "hint": "情报", "next": "whyhere_info" }, { "id": "back_trade", "label": "继续交易", "hint": "返回", "next": "root" }]
+      "body": "“我叫艾迪，也是一个坠入这里的倒霉蛋了…………已经记不得在这里多久了。靠捞点有用的东西换点血肉维持着……你要有血肉也可以拿来跟我换点东西，你肯定不会后悔的”",
+      "options": [
+        {
+          "id": "ask_stay",
+          "label": "你为什么不去那建筑？",
+          "hint": "情报",
+          "next": "whyhere_info"
+        },
+        {
+          "id": "back_trade",
+          "label": "继续交易",
+          "hint": "返回",
+          "next": "root"
+        }
+      ],
+      "effects": []
     },
-    "flesh_info": { "kicker": "艾迪 · 情报", "title": "主动献上血肉能获得异能", "body": "“是的，唯一维持自我的方式。甚至如果自愿把血肉献给其他人吃，你还能获得异能…………你要试试么？”", "options": [{ "id": "back_trade", "label": "继续交易", "hint": "返回", "next": "root" }] },
-    "whyhere_info": { "kicker": "艾迪 · 情报", "title": "这里能交易", "body": "“我老了，没那个本事…………在山里，大量以前想回去的人困在那变成了粪怪……唉，太难了”", "options": [{ "id": "back_trade", "label": "继续交易", "hint": "返回", "next": "root" }] }
+    "flesh_info": {
+      "kicker": "艾迪 · 情报",
+      "title": "主动献上血肉能获得异能",
+      "body": "“是的，唯一维持自我的方式了”",
+      "options": [
+        {
+          "id": "back_trade",
+          "label": "返回",
+          "hint": "返回",
+          "next": "root"
+        }
+      ],
+      "effects": []
+    },
+    "whyhere_info": {
+      "kicker": "艾迪 · 情报",
+      "title": "这里能交易",
+      "body": "“我老了，没那个本事…………在山里，大量以前想回去的人困在那变成了粪怪……唉，太难了”",
+      "options": [
+        {
+          "id": "back_trade",
+          "label": "返回",
+          "hint": "返回",
+          "next": "root"
+        }
+      ],
+      "effects": []
+    }
   },
-  "editor": { "positions": { "root": { "x": 70, "y": 190 }, "church_info": { "x": 390, "y": 70 }, "eddie_info": { "x": 700, "y": 70 }, "flesh_info": { "x": 700, "y": 260 }, "whyhere_info": { "x": 1010, "y": 70 } } }
+  "editor": {
+    "positions": {
+      "root": {
+        "x": 16,
+        "y": 173
+      },
+      "church_info": {
+        "x": 390,
+        "y": 70
+      },
+      "eddie_info": {
+        "x": 700,
+        "y": 70
+      },
+      "flesh_info": {
+        "x": 700,
+        "y": 260
+      },
+      "whyhere_info": {
+        "x": 1010,
+        "y": 70
+      }
+    }
+  }
 }

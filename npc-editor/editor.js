@@ -32,6 +32,9 @@ let cleanSnapshot = null;
 let feedbackTimer = null;
 let battleManifest = null;
 let drag = null;
+let graphPan = null;
+let graphOffset = { x: 0, y: 0 };
+let linkDrag = null;
 let sandboxState = null;
 let sandboxNodeId = null;
 
@@ -302,6 +305,93 @@ function nodePosition(id, index) {
   return positions.positions[id] ||= { x: 60 + (index % 3) * 320, y: 60 + Math.floor(index / 3) * 230 };
 }
 
+function graphPointerPoint(event) {
+  const rect = els.graph.getBoundingClientRect();
+  return {
+    x: event.clientX - rect.left - graphOffset.x,
+    y: event.clientY - rect.top - graphOffset.y,
+  };
+}
+
+function edgePathData(x1, y1, x2, y2) {
+  return `M ${x1} ${y1} C ${x1 + 80} ${y1}, ${x2 - 80} ${y2}, ${x2} ${y2}`;
+}
+
+function optionPortPoint(nodeId, nodeIndex, optionIndex) {
+  const pos = nodePosition(nodeId, nodeIndex);
+  return { x: pos.x + 250, y: pos.y + 104 + optionIndex * 25 };
+}
+
+function nodeFromPointer(event) {
+  return document.elementFromPoint(event.clientX, event.clientY)?.closest?.(".graph-node")?.dataset?.nodeId || null;
+}
+
+function disconnectOption(nodeId, optionIndex) {
+  const option = current().nodes[nodeId]?.options?.[optionIndex];
+  if (!option?.next) return;
+  mutate(() => {
+    delete option.next;
+    selectedNodeId = nodeId;
+    selectedOptionIndex = optionIndex;
+    linking = null;
+  });
+  showFeedback("已断开连线");
+}
+
+function startLinkDrag(event, nodeId, optionIndex) {
+  if (event.button !== 0) return;
+  const ids = Object.keys(current().nodes);
+  const start = optionPortPoint(nodeId, ids.indexOf(nodeId), optionIndex);
+  event.preventDefault();
+  event.stopPropagation();
+  try { event.currentTarget.setPointerCapture(event.pointerId); } catch {}
+  linking = null;
+  selectedNodeId = nodeId;
+  selectedOptionIndex = optionIndex;
+  linkDrag = {
+    nodeId,
+    optionIndex,
+    pointerId: event.pointerId,
+    startClientX: event.clientX,
+    startClientY: event.clientY,
+    x1: start.x,
+    y1: start.y,
+    moved: false,
+    path: document.createElementNS("http://www.w3.org/2000/svg", "path"),
+  };
+  linkDrag.path.setAttribute("class", "graph-edge draft");
+  const pointer = graphPointerPoint(event);
+  linkDrag.path.setAttribute("d", edgePathData(linkDrag.x1, linkDrag.y1, pointer.x, pointer.y));
+  els.graphEdges.appendChild(linkDrag.path);
+}
+
+function updateLinkDrag(event) {
+  if (!linkDrag || linkDrag.pointerId !== event.pointerId) return;
+  event.preventDefault();
+  const pointer = graphPointerPoint(event);
+  if (Math.hypot(event.clientX - linkDrag.startClientX, event.clientY - linkDrag.startClientY) > 4) linkDrag.moved = true;
+  linkDrag.path.setAttribute("d", edgePathData(linkDrag.x1, linkDrag.y1, pointer.x, pointer.y));
+}
+
+function finishLinkDrag(event) {
+  if (!linkDrag || linkDrag.pointerId !== event.pointerId) return;
+  event.preventDefault();
+  const dragState = linkDrag;
+  dragState.path.remove();
+  linkDrag = null;
+  if (!dragState.moved) return renderEdges();
+  const targetNodeId = nodeFromPointer(event);
+  if (!targetNodeId) return renderEdges();
+  const option = current().nodes[dragState.nodeId]?.options?.[dragState.optionIndex];
+  if (!option) return renderEdges();
+  mutate(() => {
+    option.next = targetNodeId;
+    selectedNodeId = dragState.nodeId;
+    selectedOptionIndex = dragState.optionIndex;
+    linking = null;
+  });
+}
+
 function renderEdges() {
   els.graphEdges.replaceChildren();
   const ids = Object.keys(current().nodes);
@@ -310,11 +400,23 @@ function renderEdges() {
     (current().nodes[nodeId].options || []).forEach((option, optionIndex) => {
       if (!option.next || !current().nodes[option.next]) return;
       const targetIndex = ids.indexOf(option.next), to = nodePosition(option.next, targetIndex);
-      const x1 = from.x + 250, y1 = from.y + 104 + optionIndex * 25, x2 = to.x, y2 = to.y + 45;
+      const { x: x1, y: y1 } = optionPortPoint(nodeId, nodeIndex, optionIndex);
+      const x2 = to.x, y2 = to.y + 45;
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      path.setAttribute("d", `M ${x1} ${y1} C ${x1 + 80} ${y1}, ${x2 - 80} ${y2}, ${x2} ${y2}`);
+      path.setAttribute("d", edgePathData(x1, y1, x2, y2));
       path.setAttribute("class", `graph-edge${selectedNodeId === nodeId && selectedOptionIndex === optionIndex ? " selected" : ""}`);
       els.graphEdges.appendChild(path);
+      const hit = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      hit.setAttribute("d", edgePathData(x1, y1, x2, y2));
+      hit.setAttribute("class", "graph-edge-hit");
+      hit.setAttribute("role", "button");
+      hit.setAttribute("aria-label", `断开 ${nodeId} 到 ${option.next}`);
+      hit.addEventListener("dblclick", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        disconnectOption(nodeId, optionIndex);
+      });
+      els.graphEdges.appendChild(hit);
     });
   });
 }
@@ -329,7 +431,7 @@ function renderGraph() {
     const head = h("header", "node-head"); if (entries.has(nodeId)) head.appendChild(h("span", "entry-badge", "入口")); head.appendChild(h("strong", "", simpleText(node.title) || nodeId)); head.appendChild(h("small", "", nodeId)); card.appendChild(head);
     card.appendChild(h("p", "node-excerpt", simpleText(node.body).replace(/\n/g, " ") || "空白节点"));
     const options = h("div", "node-options");
-    (node.options || []).forEach((option, optionIndex) => { const row = h("div", `node-option${selectedNodeId === nodeId && selectedOptionIndex === optionIndex ? " active" : ""}`); row.appendChild(h("span", "", simpleText(option.label) || option.id)); const port = h("i", "port"); port.title = "点击后选择目标节点"; port.addEventListener("click", (event) => { event.stopPropagation(); linking = { nodeId, optionIndex }; selectedNodeId = nodeId; selectedOptionIndex = optionIndex; renderAll(); showFeedback("点击目标节点完成连线"); }); row.appendChild(port); row.addEventListener("click", (event) => { event.stopPropagation(); selectedNodeId = nodeId; selectedOptionIndex = optionIndex; linking = null; renderAll(); }); options.appendChild(row); });
+    (node.options || []).forEach((option, optionIndex) => { const row = h("div", `node-option${selectedNodeId === nodeId && selectedOptionIndex === optionIndex ? " active" : ""}`); row.appendChild(h("span", "", simpleText(option.label) || option.id)); const port = h("i", "port"); port.title = "拖到目标节点连接；也可点击后选择目标节点"; port.addEventListener("pointerdown", (event) => startLinkDrag(event, nodeId, optionIndex)); port.addEventListener("click", (event) => { event.stopPropagation(); linking = { nodeId, optionIndex }; selectedNodeId = nodeId; selectedOptionIndex = optionIndex; renderAll(); showFeedback("点击目标节点完成连线"); }); row.appendChild(port); row.addEventListener("click", (event) => { event.stopPropagation(); selectedNodeId = nodeId; selectedOptionIndex = optionIndex; linking = null; renderAll(); }); options.appendChild(row); });
     card.appendChild(options);
     card.addEventListener("click", () => {
       if (linking) { const source = current().nodes[linking.nodeId]?.options?.[linking.optionIndex]; if (source) mutate(() => { source.next = nodeId; linking = null; selectedNodeId = nodeId; selectedOptionIndex = null; }); return; }
@@ -341,6 +443,13 @@ function renderGraph() {
     els.graphNodes.appendChild(card);
   });
   renderEdges();
+}
+
+function applyGraphOffset() {
+  const transform = `translate(${graphOffset.x}px, ${graphOffset.y}px)`;
+  els.graphNodes.style.transform = transform;
+  els.graphEdges.style.transform = transform;
+  els.graph.style.backgroundPosition = `${graphOffset.x}px ${graphOffset.y}px, ${graphOffset.x}px ${graphOffset.y}px, 0 0`;
 }
 
 function renderNodeList() {
@@ -408,8 +517,7 @@ function validationResult() {
   const warnings = [...result.warnings];
   const manifest = window.NpcDialogueData.getManifest();
   if (!manifest?.dialogues?.[currentId]) warnings.push(`manifest.json 尚未登记 ${currentId}`);
-  if (!window.WORLD_MAP_BUNDLE?.objectDefinitions?.[currentId]) warnings.push(`world-map.js 没有对象定义 ${currentId}`);
-  else if (!window.WORLD_MAP_BUNDLE?.map?.objects?.some((object) => object.id === currentId)) warnings.push(`world-map.js 尚未摆放对象 ${currentId}`);
+  if (!window.WORLD_MAP_BUNDLE?.map?.nodes?.some((node) => node.type === "npc" && node.npcId === currentId)) warnings.push(`world-map.js 尚未摆放 NPC 节点 ${currentId}`);
   if (!battleManifest?.combatants?.[currentId]) warnings.push(`battle-data/manifest.json 没有角色 ${currentId}`);
   return { errors: result.errors, warnings: [...new Set(warnings)] };
 }
@@ -537,7 +645,45 @@ els.importButton.addEventListener("click", () => els.importFile.click()); els.im
 els.validate.addEventListener("click", showValidation); els.export.addEventListener("click", exportCurrent);
 els.sandboxButton.addEventListener("click", () => { els.sandbox.classList.remove("is-hidden"); startSandbox(); }); els.closeSandbox.addEventListener("click", () => els.sandbox.classList.add("is-hidden")); els.startSandbox.addEventListener("click", startSandbox);
 els.sandbox.addEventListener("click", (event) => { if (event.target === els.sandbox) els.sandbox.classList.add("is-hidden"); });
-document.addEventListener("keydown", (event) => { if (event.key === "Escape") { linking = null; els.sandbox.classList.add("is-hidden"); renderGraph(); } if (event.ctrlKey && event.key.toLowerCase() === "z") { event.preventDefault(); restoreHistory(historyIndex - 1); } if (event.ctrlKey && event.key.toLowerCase() === "y") { event.preventDefault(); restoreHistory(historyIndex + 1); } });
+els.graph.addEventListener("pointerdown", (event) => {
+  if (event.button !== 0 || event.target.closest?.(".graph-node, .graph-edge-hit, .graph-edge")) return;
+  event.preventDefault();
+  try { els.graph.setPointerCapture(event.pointerId); } catch {}
+  graphPan = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    offsetX: graphOffset.x,
+    offsetY: graphOffset.y,
+  };
+  els.graph.classList.add("is-panning");
+}, { capture: true });
+els.graph.addEventListener("selectstart", (event) => event.preventDefault());
+document.addEventListener("pointermove", (event) => {
+  if (!graphPan || graphPan.pointerId !== event.pointerId) return;
+  event.preventDefault();
+  graphOffset = {
+    x: graphPan.offsetX + event.clientX - graphPan.startX,
+    y: graphPan.offsetY + event.clientY - graphPan.startY,
+  };
+  applyGraphOffset();
+});
+document.addEventListener("pointermove", updateLinkDrag);
+document.addEventListener("pointerup", finishLinkDrag);
+document.addEventListener("pointercancel", (event) => {
+  if (!linkDrag || linkDrag.pointerId !== event.pointerId) return;
+  linkDrag.path.remove();
+  linkDrag = null;
+  renderEdges();
+});
+function stopGraphPan(event) {
+  if (!graphPan || (event && graphPan.pointerId !== event.pointerId)) return;
+  graphPan = null;
+  els.graph.classList.remove("is-panning");
+}
+document.addEventListener("pointerup", stopGraphPan);
+document.addEventListener("pointercancel", stopGraphPan);
+document.addEventListener("keydown", (event) => { if (event.key === "Escape") { if (linkDrag) { linkDrag.path.remove(); linkDrag = null; } linking = null; els.sandbox.classList.add("is-hidden"); renderGraph(); } if (event.ctrlKey && event.key.toLowerCase() === "z") { event.preventDefault(); restoreHistory(historyIndex - 1); } if (event.ctrlKey && event.key.toLowerCase() === "y") { event.preventDefault(); restoreHistory(historyIndex + 1); } });
 window.addEventListener("beforeunload", (event) => {
   const dirty = Object.entries(documents).some(([id, dialogue]) => JSON.stringify(dialogue) !== originalSnapshots[id]);
   if (dirty) { event.preventDefault(); event.returnValue = ""; }

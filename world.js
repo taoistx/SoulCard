@@ -59,7 +59,6 @@ function validateMapBundle(bundle) {
 }
 
 const MAP_CONFIG_ERRORS = validateMapBundle(window.WORLD_MAP_BUNDLE);
-if (window.MAP_PREVIEW_ERROR) MAP_CONFIG_ERRORS.push(window.MAP_PREVIEW_ERROR);
 const WORLD_MAP_BUNDLE = MAP_CONFIG_ERRORS.length ? {
   schemaVersion: 2,
   map: {
@@ -1237,10 +1236,6 @@ renderWorld();
 $w("#startButton").disabled = true;
 WORLD_DATA_READY.then(() => {
   $w("#startButton").disabled = false;
-  if (window.IS_MAP_PREVIEW) {
-    $w("#returnToEditor").classList.remove("hidden");
-    startNewRun();
-  }
 }).catch((error) => {
   worldDataError = error;
   showWorldDataError();

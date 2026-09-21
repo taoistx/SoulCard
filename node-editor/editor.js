@@ -29,9 +29,6 @@ const KNOWN_WORLD_FLAGS = [
   "bridgeOpened", "searchedHouse", "dungAKilled", "dungBKilled",
   "becameDung", "escapedPlane", "restedDay2", "restedDay3", "restedDay4", "restedDay5",
 ];
-const GRAPH_NODE_WIDTH = 150;
-const GRAPH_CANVAS_WIDTH = 1600;
-const GRAPH_CANVAS_HEIGHT = 1050;
 const MIN_GRAPH_ZOOM = 0.45;
 const MAX_GRAPH_ZOOM = 1.8;
 const MAP_NODE_MARGIN = 46;
@@ -52,6 +49,7 @@ let feedbackTimer = null;
 let graphZoom = Number(sessionStorage.getItem("node-editor-graph-zoom")) || 1;
 let graphPan = null;
 let linkDrag = null;
+let conditionClipboard = null;
 
 function normalizeBundle(source) {
   const next = clone(source || {});
@@ -71,7 +69,7 @@ function normalizeBundle(source) {
     node.label ||= node.id;
     node.x = Number.isFinite(node.x) ? node.x : 120 + index * 120;
     node.y = Number.isFinite(node.y) ? node.y : 340;
-    next.map.editor.positions[node.id] ||= { x: node.x, y: node.y };
+    next.map.editor.positions[node.id] = { x: node.x, y: node.y };
   });
   Object.keys(next.map.editor.positions).forEach((id) => {
     if (!next.map.nodes.some((node) => node.id === id)) delete next.map.editor.positions[id];
@@ -153,6 +151,31 @@ function showFeedback(message, isError = false) {
   feedbackTimer = setTimeout(() => { els.feedback.textContent = ""; els.feedback.classList.remove("error"); }, 4200);
 }
 
+function loadConditionClipboard() {
+  if (conditionClipboard) return conditionClipboard;
+  try {
+    const saved = JSON.parse(sessionStorage.getItem("node-editor-condition-clipboard") || "null");
+    if (saved?.mode && Array.isArray(saved.clauses)) conditionClipboard = saved;
+  } catch {}
+  return conditionClipboard;
+}
+
+function copyConditionGroup(value) {
+  if (!value) return showFeedback("没有可复制的条件组", true);
+  conditionClipboard = clone(value);
+  sessionStorage.setItem("node-editor-condition-clipboard", JSON.stringify(conditionClipboard));
+  showFeedback("已复制条件组");
+}
+
+function canPasteConditionGroup() {
+  return Boolean(loadConditionClipboard());
+}
+
+function pastedConditionGroup() {
+  const group = loadConditionClipboard();
+  return group ? clone(group) : null;
+}
+
 function uniqueId(base, collection, field = "id") {
   let id = base.replace(/[^A-Za-z0-9_-]/g, "") || "node";
   if (!/^[A-Za-z]/.test(id)) id = `node${id}`;
@@ -207,6 +230,7 @@ function clampMapY(value) {
 function setNodeMapPosition(node, x, y) {
   node.x = clampMapX(x);
   node.y = clampMapY(y);
+  syncEditorPosition(node);
 }
 
 function firstParentNode(node) {
@@ -239,18 +263,6 @@ function mapPositionNear(parent) {
   const [dx, dy] = offsets[slot % offsets.length];
   const ring = Math.floor(slot / offsets.length) * 54;
   return { x: clampMapX(parent.x + dx + ring), y: clampMapY(parent.y + dy) };
-}
-
-function editorPositionNear(parent) {
-  if (!parent) {
-    return { x: 140 + map.nodes.length * 42, y: 160 + map.nodes.length * 34 };
-  }
-  const parentPos = nodePosition(parent);
-  const slot = childSlot(parent.id);
-  return {
-    x: parentPos.x + 220,
-    y: Math.max(16, parentPos.y + (slot - 1) * 62),
-  };
 }
 
 function optionSelect(value, choices, onChange) {
@@ -300,14 +312,32 @@ function defaultClause(source = "flag") {
 
 function conditionEditor(value, onChange, optional = true) {
   const root = h("div", "card");
+  const actions = h("div", "condition-toolbar");
+  const paste = h("button", "", "粘贴条件组");
+  paste.type = "button";
+  paste.disabled = !canPasteConditionGroup();
+  paste.addEventListener("click", () => {
+    const group = pastedConditionGroup();
+    if (!group) return showFeedback("还没有复制过条件组", true);
+    onChange(group);
+  });
   if (!value) {
     root.appendChild(h("p", "subtle", "无条件：始终满足。"));
     const add = h("button", "", "添加条件组");
     add.type = "button";
     add.addEventListener("click", () => onChange({ mode: "all", clauses: [defaultClause()] }));
-    root.appendChild(add);
+    actions.append(add, paste);
+    root.appendChild(actions);
     return root;
   }
+  const copy = h("button", "", "复制条件组");
+  copy.type = "button";
+  copy.addEventListener("click", () => {
+    copyConditionGroup(value);
+    renderAll();
+  });
+  actions.append(copy, paste);
+  root.appendChild(actions);
   root.appendChild(makeSelect("组合方式", value.mode || "all", [["all", "全部满足（AND）"], ["any", "任一满足（OR）"]], (mode) => { value.mode = mode; onChange(value); }, { wide: true }));
   value.clauses ||= [];
   value.clauses.forEach((clause, index) => {
@@ -366,18 +396,18 @@ function conditionEditor(value, onChange, optional = true) {
     }
     root.appendChild(row);
   });
-  const actions = h("div", "row-actions");
+  const rowActions = h("div", "row-actions");
   const add = h("button", "", "添加条件");
   add.type = "button";
   add.addEventListener("click", () => { value.clauses.push(defaultClause()); onChange(value); });
-  actions.appendChild(add);
+  rowActions.appendChild(add);
   if (optional) {
     const clear = h("button", "danger", "清除条件组");
     clear.type = "button";
     clear.addEventListener("click", () => onChange(null));
-    actions.appendChild(clear);
+    rowActions.appendChild(clear);
   }
-  root.appendChild(actions);
+  root.appendChild(rowActions);
   return root;
 }
 
@@ -442,8 +472,8 @@ function renderNodeInspector() {
   fields.appendChild(makeSelect("类型", node.type, Object.entries(TYPE_LABELS), (value) => mutate(() => setNodeType(node, value))));
   fields.appendChild(makeInput("显示名", node.label, (value) => mutate(() => { node.label = value; })));
   fields.appendChild(makeInput("图标", node.icon, (value) => mutate(() => { node.icon = value || DEFAULT_ICONS[node.type] || "?"; })));
-  fields.appendChild(makeInput("游戏 X", node.x, (value) => mutate(() => { node.x = clampMapX(value); }), { type: "number" }));
-  fields.appendChild(makeInput("游戏 Y", node.y, (value) => mutate(() => { node.y = clampMapY(value); }), { type: "number" }));
+  fields.appendChild(makeInput("游戏 X", node.x, (value) => mutate(() => setNodeMapPosition(node, value, node.y)), { type: "number" }));
+  fields.appendChild(makeInput("游戏 Y", node.y, (value) => mutate(() => setNodeMapPosition(node, node.x, value)), { type: "number" }));
   fields.appendChild(makeInput("描述", node.description || "", (value) => mutate(() => { if (value) node.description = value; else delete node.description; }), { multiline: true, rows: 3, wide: true }));
   els.inspector.appendChild(fields);
   renderCoordinateTools(node);
@@ -454,18 +484,10 @@ function renderNodeInspector() {
 }
 
 function renderCoordinateTools(node) {
-  const editorPos = nodePosition(node);
   const parent = firstParentNode(node);
   const card = h("div", "card");
-  card.appendChild(h("p", "subtle", `游戏坐标决定启动游戏后的地图位置。中间节点图只用于编辑排布，不会自动改变游戏坐标。当前图中位置：${Math.round(editorPos.x)}, ${Math.round(editorPos.y)}`));
+  card.appendChild(h("p", "subtle", `节点图坐标和游戏运行坐标一致。拖动图中的圆点会直接修改游戏 X/Y；圆点中心就是节点坐标。`));
   const actions = h("div", "row-actions");
-  const useEditorPosition = h("button", "", "图中位置写入游戏坐标");
-  useEditorPosition.type = "button";
-  useEditorPosition.addEventListener("click", () => mutate(() => setNodeMapPosition(node, editorPos.x, editorPos.y)));
-  const useGamePosition = h("button", "", "游戏坐标同步到图中");
-  useGamePosition.type = "button";
-  useGamePosition.addEventListener("click", () => mutate(() => setNodeEditorPosition(node, node.x, node.y)));
-  actions.append(useEditorPosition, useGamePosition);
   if (parent) {
     const placeNearParent = h("button", "", "放到父节点旁");
     placeNearParent.type = "button";
@@ -475,7 +497,7 @@ function renderCoordinateTools(node) {
     }));
     actions.appendChild(placeNearParent);
   }
-  card.appendChild(actions);
+  if (actions.children.length) card.appendChild(actions);
   els.inspector.appendChild(card);
 }
 
@@ -643,16 +665,13 @@ function renderInspector() {
 }
 
 function nodePosition(node) {
-  map.editor ||= {};
-  map.editor.positions ||= {};
-  const position = map.editor.positions[node.id] || { x: node.x, y: node.y };
-  return { x: Math.max(16, position.x), y: Math.max(16, position.y) };
+  return { x: clampMapX(node.x), y: clampMapY(node.y) };
 }
 
-function setNodeEditorPosition(node, x, y) {
+function syncEditorPosition(node) {
   map.editor ||= {};
   map.editor.positions ||= {};
-  map.editor.positions[node.id] = { x, y };
+  map.editor.positions[node.id] = { x: node.x, y: node.y };
 }
 
 function graphPoint(node) {
@@ -663,10 +682,10 @@ function graphPoint(node) {
 function edgePoints(from, to) {
   const fromPos = graphPoint(from), toPos = graphPoint(to);
   return {
-    x1: fromPos.x + GRAPH_NODE_WIDTH * graphZoom,
-    y1: fromPos.y + 18 * graphZoom,
+    x1: fromPos.x,
+    y1: fromPos.y,
     x2: toPos.x,
-    y2: toPos.y + 18 * graphZoom,
+    y2: toPos.y,
   };
 }
 
@@ -680,6 +699,22 @@ function graphPointerPoint(event) {
 
 function edgePathData(points) {
   return `M ${points.x1} ${points.y1} C ${points.x1 + 80 * graphZoom} ${points.y1}, ${points.x2 - 80 * graphZoom} ${points.y2}, ${points.x2} ${points.y2}`;
+}
+
+function edgeMidpoint(points) {
+  return {
+    x: (points.x1 + points.x2) / 2,
+    y: (points.y1 + points.y2) / 2,
+  };
+}
+
+function disconnectEdge(index) {
+  mutate(() => {
+    map.edges.splice(index, 1);
+    selectedEdgeIndex = null;
+    selectedRandomIndex = null;
+  });
+  showFeedback("已断开连线");
 }
 
 function nodeFromPointer(event) {
@@ -700,8 +735,8 @@ function startLinkDrag(event, options) {
   linkDrag = {
     ...options,
     pointerId: event.pointerId,
-    x1: start.x + GRAPH_NODE_WIDTH * graphZoom,
-    y1: start.y + 18 * graphZoom,
+    x1: start.x,
+    y1: start.y,
     path: document.createElementNS("http://www.w3.org/2000/svg", "path"),
   };
   linkDrag.path.setAttribute("class", "graph-edge draft");
@@ -772,8 +807,9 @@ function clampGraphZoom(value) {
 function applyGraphZoom() {
   graphZoom = clampGraphZoom(graphZoom);
   sessionStorage.setItem("node-editor-graph-zoom", String(graphZoom));
-  const width = `${GRAPH_CANVAS_WIDTH * graphZoom}px`;
-  const height = `${GRAPH_CANVAS_HEIGHT * graphZoom}px`;
+  const { width: mapWidth, height: mapHeight } = mapSize();
+  const width = `${mapWidth * graphZoom}px`;
+  const height = `${mapHeight * graphZoom}px`;
   els.graphNodes.style.width = width;
   els.graphNodes.style.height = height;
   els.graphEdges.style.width = width;
@@ -807,13 +843,45 @@ function renderEdges() {
     const hit = document.createElementNS("http://www.w3.org/2000/svg", "path");
     hit.setAttribute("d", edgePathData(points));
     hit.setAttribute("class", "graph-edge-hit");
-    hit.addEventListener("click", () => {
+    hit.addEventListener("click", (event) => {
+      if (event.detail >= 2) {
+        event.preventDefault();
+        disconnectEdge(index);
+        return;
+      }
       selectedNodeId = edge.from;
       selectedEdgeIndex = index;
       selectedRandomIndex = null;
       renderAll();
     });
+    hit.addEventListener("dblclick", (event) => {
+      event.preventDefault();
+      disconnectEdge(index);
+    });
     els.graphEdges.appendChild(hit);
+    const mid = edgeMidpoint(points);
+    const breaker = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    breaker.setAttribute("class", "edge-breaker");
+    breaker.setAttribute("transform", `translate(${mid.x} ${mid.y})`);
+    breaker.setAttribute("role", "button");
+    breaker.setAttribute("aria-label", `断开 ${edge.from} 到 ${edge.to}`);
+    const breakerCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    breakerCircle.setAttribute("r", 8 * graphZoom);
+    const breakerText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    breakerText.setAttribute("text-anchor", "middle");
+    breakerText.setAttribute("dominant-baseline", "central");
+    breakerText.textContent = "×";
+    breaker.append(breakerCircle, breakerText);
+    breaker.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+    breaker.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      disconnectEdge(index);
+    });
+    els.graphEdges.appendChild(breaker);
     const handle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     handle.setAttribute("class", "edge-end-handle");
     handle.setAttribute("cx", points.x2);
@@ -839,9 +907,9 @@ function renderGraph() {
     card.style.top = `${pos.y}px`;
     card.style.transform = `scale(${graphZoom})`;
     card.style.transformOrigin = "0 0";
-    const head = h("header", "node-head");
-    head.appendChild(h("strong", "", node.label || node.id));
-    card.appendChild(head);
+    const dot = h("span", "node-dot", node.icon || "?");
+    const label = h("strong", "node-label", node.label || node.id);
+    card.append(dot, label);
     const port = h("i", "port");
     port.title = "拖到另一个节点创建子节点连线";
     port.addEventListener("pointerdown", (event) => startLinkDrag(event, { mode: "create", fromId: node.id }));
@@ -852,24 +920,25 @@ function renderGraph() {
       selectedRandomIndex = null;
       renderAll();
     });
-    head.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0) return;
+    card.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || event.target.closest?.(".port")) return;
       event.stopPropagation();
-      head.setPointerCapture(event.pointerId);
+      card.setPointerCapture(event.pointerId);
       const original = nodePosition(node);
       drag = { node, startX: event.clientX, startY: event.clientY, originalX: original.x, originalY: original.y, moved: false, element: card };
     });
-    head.addEventListener("pointermove", (event) => {
+    card.addEventListener("pointermove", (event) => {
       if (!drag || drag.node !== node) return;
-      const nextX = Math.max(16, drag.originalX + (event.clientX - drag.startX) / graphZoom);
-      const nextY = Math.max(16, drag.originalY + (event.clientY - drag.startY) / graphZoom);
-      setNodeEditorPosition(node, nextX, nextY);
+      const nextX = clampMapX(drag.originalX + (event.clientX - drag.startX) / graphZoom);
+      const nextY = clampMapY(drag.originalY + (event.clientY - drag.startY) / graphZoom);
+      setNodeMapPosition(node, nextX, nextY);
+      syncEditorPosition(node);
       drag.moved = true;
       card.style.left = `${nextX * graphZoom}px`;
       card.style.top = `${nextY * graphZoom}px`;
       renderEdges();
     });
-    head.addEventListener("pointerup", () => {
+    card.addEventListener("pointerup", () => {
       if (drag?.moved) recordHistory();
       drag = null;
     });
@@ -927,11 +996,10 @@ function addNode() {
     const id = uniqueId("node", map.nodes);
     const parent = currentNode();
     const gamePos = mapPositionNear(parent);
-    const editorPos = editorPositionNear(parent);
     map.nodes.push({ id, type: "wilderness", icon: "?", label: "新节点", x: gamePos.x, y: gamePos.y, description: "" });
     map.editor ||= {};
     map.editor.positions ||= {};
-    map.editor.positions[id] = editorPos;
+    map.editor.positions[id] = gamePos;
     selectedNodeId = id;
     selectedEdgeIndex = null;
     selectedRandomIndex = null;
@@ -1141,7 +1209,7 @@ els.graph.addEventListener("wheel", (event) => {
   zoomGraphAt(nextZoom, event.clientX, event.clientY);
 }, { passive: false });
 els.graph.addEventListener("pointerdown", (event) => {
-  if (event.button !== 0 || event.target.closest?.(".graph-node, .graph-edge-hit, .edge-end-handle, .graph-edge")) return;
+  if (event.button !== 0 || event.target.closest?.(".graph-node, .graph-edge-hit, .edge-end-handle, .edge-breaker, .graph-edge")) return;
   event.preventDefault();
   els.graph.setPointerCapture(event.pointerId);
   graphPan = {
