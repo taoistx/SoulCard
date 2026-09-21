@@ -2,12 +2,15 @@
 
 // A playtest uses a per-tab draft. It never replaces the default map file.
 if (new URLSearchParams(window.location.search).get("mapPreview") === "1") {
-  window.IS_MAP_PREVIEW = true;
   try {
     const saved = JSON.parse(sessionStorage.getItem("dungeon-map-playtest"));
-    if (!saved?.bundle) throw new Error("没有找到试玩草稿，请返回编辑器重新开始试玩。");
-    window.WORLD_MAP_BUNDLE = saved.bundle;
+    if (saved?.bundle && saved.previewKind === "legacy-map-editor") {
+      window.IS_MAP_PREVIEW = true;
+      window.WORLD_MAP_BUNDLE = saved.bundle;
+    } else {
+      console.warn("忽略缺失或过期的地图试玩缓存，改用项目根目录 world-map.js。");
+    }
   } catch (error) {
-    window.MAP_PREVIEW_ERROR = error.message;
+    console.warn("地图试玩缓存读取失败，改用项目根目录 world-map.js。", error);
   }
 }

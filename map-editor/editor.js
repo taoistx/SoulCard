@@ -115,7 +115,7 @@ function startPlaytest() {
   if (renderValidation().errors.length) return;
   try {
     sessionStorage.setItem("dungeon-map-playtest", JSON.stringify({
-      bundle: currentBundle(), cleanSnapshot, history, historyIndex,
+      previewKind: "legacy-map-editor", bundle: currentBundle(), cleanSnapshot, history, historyIndex,
     }));
     playtestNavigation = true;
     window.location.href = "../index.html?mapPreview=1";

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#090b0f" />
     <title>余烬刻度 · 魂系卡牌原型</title>
-    <link rel="stylesheet" href="styles.css?v=point-crawl-20260918-1" />
+    <link rel="stylesheet" href="styles.css?v=point-crawl-20260920-1" />
   </head>
   <body>
     <main id="game" class="game" aria-label="余烬刻度战斗界面">
@@ -201,7 +201,20 @@
             <filter id="nodeShadow" x="-35%" y="-35%" width="170%" height="170%">
               <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".72" />
             </filter>
+            <clipPath id="worldGroundClip">
+              <rect x="18" y="18" width="964" height="644" rx="26" />
+            </clipPath>
           </defs>
+          <image
+            class="world-terrain"
+            href="assets/point-crawl-terrain-bg.png"
+            x="18"
+            y="18"
+            width="964"
+            height="644"
+            preserveAspectRatio="xMidYMid slice"
+            clip-path="url(#worldGroundClip)"
+          />
           <rect id="worldGround" class="world-ground" x="18" y="18" width="964" height="644" rx="26" />
           <g id="worldEdges" class="world-edges"></g>
           <g id="worldNodes" class="world-nodes" filter="url(#nodeShadow)"></g>
@@ -249,8 +262,8 @@
     <script src="npc-dialogue-loader.js?v=json-dialogue-2"></script>
     <script src="battle-data-loader.js"></script>
     <script src="game.js?v=bell-pose-20260909-2"></script>
-    <script src="world-map.js"></script>
-    <script src="map-preview.js"></script>
+    <script>document.write(`<script src="world-map.js?v=${Date.now()}"><\/script>`);</script>
+    <script src="map-preview.js?v=node-map-20260920-1"></script>
     <script src="world.js"></script>
   </body>
 </html>

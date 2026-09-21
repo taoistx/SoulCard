@@ -24,13 +24,27 @@ function validateMapBundle(bundle) {
     if (typeof node?.id !== "string" || !node.id) errors.push("节点 id 必须是非空字符串");
     if (nodeIds.has(node?.id)) errors.push(`节点 id 重复：${node.id}`);
     nodeIds.add(node?.id);
-    if (!["start", "npc", "poi", "enemy", "wilderness"].includes(node?.type)) errors.push(`节点 ${node?.id || "(空)"} 类型无效`);
+    if (!["start", "npc", "poi", "enemy", "wilderness", "random"].includes(node?.type)) errors.push(`节点 ${node?.id || "(空)"} 类型无效`);
     if (typeof node?.label !== "string" || !node.label) errors.push(`节点 ${node?.id || "(空)"} 缺少 label`);
     if (!Number.isFinite(node?.x) || node.x < 0 || node.x > width) errors.push(`节点 ${node?.id || "(空)"} x 越界`);
     if (!Number.isFinite(node?.y) || node.y < 0 || node.y > height) errors.push(`节点 ${node?.id || "(空)"} y 越界`);
     if (node?.type === "npc" && typeof node.npcId !== "string") errors.push(`NPC 节点 ${node.id} 缺少 npcId`);
     if (node?.type === "enemy" && typeof node.enemyId !== "string") errors.push(`敌人节点 ${node.id} 缺少 enemyId`);
     if (node?.type === "poi" && typeof node.locationId !== "string") errors.push(`地点节点 ${node.id} 缺少 locationId`);
+    if (node?.type === "random") {
+      if (!node.random || !Array.isArray(node.random.entries)) errors.push(`随机节点 ${node.id} 缺少 random.entries`);
+      const entryIds = new Set();
+      (node.random?.entries || []).forEach((entry, index) => {
+        const field = `随机节点 ${node.id}.entries[${index}]`;
+        if (typeof entry?.id !== "string" || !entry.id) errors.push(`${field} 缺少 id`);
+        if (entryIds.has(entry?.id)) errors.push(`${field} id 重复：${entry.id}`);
+        entryIds.add(entry?.id);
+        if (!["npc", "battle", "empty"].includes(entry?.type)) errors.push(`${field} 类型无效`);
+        if (!Number.isFinite(entry?.weight) || entry.weight <= 0) errors.push(`${field} weight 必须大于 0`);
+        if (entry?.type === "npc" && typeof entry.npcId !== "string") errors.push(`${field} 缺少 npcId`);
+        if (entry?.type === "battle" && typeof entry.enemyId !== "string") errors.push(`${field} 缺少 enemyId`);
+      });
+    }
   });
   if (!nodeIds.has(map.startNodeId)) errors.push("startNodeId 必须指向现有节点");
   (map.initialRevealed || []).forEach((id) => {
@@ -161,6 +175,8 @@ function createInitialWorld() {
     stamina: MAX_STAMINA,
     maxStamina: MAX_STAMINA,
     battlesWon: 0,
+    randomNodeRolls: {},
+    dailyNpcLocations: {},
   };
 }
 
@@ -240,6 +256,18 @@ function staminaHint(text, amount = 1) {
 function evaluateWorldCondition(condition) {
   if (!condition) return true;
   return window.NPCDialogueRuntime.evaluateCondition(condition, getNpcDialogueContext());
+}
+
+function assignNpcLocationForToday(npcId, nodeId) {
+  if (!npcId || !nodeId) return true;
+  const existing = world.dailyNpcLocations[npcId];
+  if (existing && existing !== nodeId) return false;
+  world.dailyNpcLocations[npcId] = nodeId;
+  return true;
+}
+
+function getNpcLocationForToday(npcId) {
+  return world.dailyNpcLocations[npcId] || null;
 }
 
 function refreshRevealedNodes() {
@@ -422,7 +450,7 @@ function handleNodeClick(nodeId) {
 function enterCurrentNode(firstVisit = false) {
   const node = getCurrentNode();
   if (!node || node.type === "start") return;
-  if (node.type === "enemy" || (node.type === "npc" && firstVisit)) interactWithCurrentNode();
+  if (node.type === "enemy" || node.type === "random" || (node.type === "npc" && firstVisit)) interactWithCurrentNode();
   else if (node.type === "wilderness" && !world.exploredNodes.has(node.id)) showWilderness(node);
 }
 
@@ -721,6 +749,74 @@ function showEddie() { showNpcDialogue("eddie"); }
 function showChris() { showNpcDialogue("chris"); }
 function showBell() { showNpcDialogue("bell"); }
 
+function showNpcAway(node) {
+  const script = window.NpcDialogueData.get(node.npcId);
+  const assignedNode = NODE_BY_ID.get(getNpcLocationForToday(node.npcId));
+  showWorldModal({
+    kicker: "节点 · 今日行踪",
+    title: node.label,
+    body: `${script?.name || node.label}今天不在这里。${assignedNode ? `有人说在「${assignedNode.label}」附近见过对方。` : "这片污雾暂时吞掉了所有脚印。"}`,
+  });
+}
+
+function weightedRandomEntry(entries) {
+  const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
+  let roll = Math.random() * total;
+  for (const entry of entries) {
+    roll -= entry.weight;
+    if (roll <= 0) return entry;
+  }
+  return entries[entries.length - 1] || null;
+}
+
+function resolveRandomNodeEntry(node) {
+  if (world.randomNodeRolls[node.id]) return world.randomNodeRolls[node.id];
+  const candidates = (node.random?.entries || []).filter((entry) => {
+    if (!evaluateWorldCondition(entry.when)) return false;
+    if (entry.type !== "npc") return true;
+    const assignedNodeId = getNpcLocationForToday(entry.npcId);
+    return !assignedNodeId || assignedNodeId === node.id;
+  });
+  const entry = weightedRandomEntry(candidates) || {
+    id: "empty",
+    type: "empty",
+    weight: 1,
+    title: node.random?.emptyTitle || node.label,
+    text: node.random?.emptyText || "今天这里没有遇到任何人。",
+  };
+  world.randomNodeRolls[node.id] = { ...entry };
+  if (entry.type === "npc") assignNpcLocationForToday(entry.npcId, node.id);
+  return world.randomNodeRolls[node.id];
+}
+
+function showRandomNode(node) {
+  const entry = resolveRandomNodeEntry(node);
+  if (entry.type === "npc") {
+    if (!assignNpcLocationForToday(entry.npcId, node.id)) return showWorldModal({
+      kicker: "随机节点 · 空缺",
+      title: node.label,
+      body: "你找到的是刚被雨水抹平的脚印。那个人今天已经去了别处。",
+    });
+    return showNpcDialogue(entry.npcId);
+  }
+  if (entry.type === "battle") return showWorldModal({
+    kicker: "随机节点 · 遭遇",
+    title: entry.title || node.label,
+    body: entry.text || "有什么东西从污雾里扑了出来。",
+    options: [{
+      label: entry.actionLabel || "迎战",
+      hint: staminaHint("进入战斗", 1),
+      enabled: canSpendStamina(),
+      action: () => runBattle(entry.enemyId, entry.battleSourceId || `${node.id}_${entry.id}`),
+    }],
+  });
+  return showWorldModal({
+    kicker: "随机节点 · 今日结果",
+    title: entry.title || node.random?.emptyTitle || node.label,
+    body: entry.text || node.random?.emptyText || "今天这里没有遇到任何人。",
+  });
+}
+
 function sacrificeOption(partId, action) {
   return () => {
     if (!spendStamina()) return;
@@ -863,6 +959,8 @@ function longRest() {
   world.day++;
   world.hp = world.maxHp;
   world.stamina = world.maxStamina;
+  world.randomNodeRolls = {};
+  world.dailyNpcLocations = {};
   setFlag(`restedDay${world.day}`, true);
   showWorldModal({
     kicker: "时间推进",
@@ -956,7 +1054,13 @@ function interactWithCurrentNode() {
   }
   if (node.type === "start") return showStartNode();
   if (node.type === "wilderness") return showWilderness(node);
-  if (node.type === "npc") return ({ eddie: showEddie, chris: showChris, bell: showBell })[node.npcId]?.();
+  if (node.type === "random") return showRandomNode(node);
+  if (node.type === "npc") {
+    const assignedNodeId = getNpcLocationForToday(node.npcId);
+    if (assignedNodeId && assignedNodeId !== node.id) return showNpcAway(node);
+    assignNpcLocationForToday(node.npcId, node.id);
+    return showNpcDialogue(node.npcId);
+  }
   if (node.type === "enemy") return runBattle(node.enemyId, node.battleSourceId || node.id);
   if (node.type === "poi") return ({ hut: showHut, gate: showGate, church: showChurch })[node.locationId]?.();
 }
@@ -1093,6 +1197,8 @@ window.WorldGame = Object.freeze({
     exploredNodes: [...world.exploredNodes],
     visitedNodes: [...world.visitedNodes],
     equipment: { ...world.equipment },
+    randomNodeRolls: { ...world.randomNodeRolls },
+    dailyNpcLocations: { ...world.dailyNpcLocations },
   }),
 });
 

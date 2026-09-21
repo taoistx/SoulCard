@@ -1,4 +1,5 @@
 assets/*
+!assets/point-crawl-terrain-bg.png
 !assets/map-terrain/
 !assets/map-terrain/*.jpg
 *.rar

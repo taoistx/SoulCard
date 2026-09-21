@@ -10,8 +10,6 @@ if errorlevel 1 (
   exit /b 1
 )
 
-start "Demo Static Server - close this window to stop" /D "%~dp0" python -m http.server 8000 --bind 127.0.0.1
-timeout /t 1 /nobreak >nul
-start "" "http://127.0.0.1:8000/index.html"
+python demo-server.py
 
 endlocal

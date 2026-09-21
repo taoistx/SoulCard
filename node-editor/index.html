@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>节点地图编辑器</title>
+    <link rel="stylesheet" href="editor.css" />
+  </head>
+  <body>
+    <main id="editorApp" class="editor-app is-loading">
+      <header class="editor-header">
+        <div class="brand"><p>WORLD AUTHORING TOOL</p><h1>节点地图编辑器</h1></div>
+        <nav><a href="../npc-editor/index.html">剧情编辑器</a><a href="../index.html">返回游戏</a></nav>
+        <div class="header-actions">
+          <button id="addNodeButton" type="button">新建节点</button>
+          <button id="undoButton" type="button">撤销</button>
+          <button id="redoButton" type="button">重做</button>
+          <button id="validateButton" type="button">检查</button>
+          <button id="exportButton" class="primary" type="button">保存 world-map.js</button>
+        </div>
+        <span id="dirtyState" class="dirty-state">载入中</span>
+      </header>
+
+      <div class="editor-layout">
+        <aside class="panel navigator-panel">
+          <section>
+            <p class="panel-kicker">地图</p>
+            <button id="mapSettingsButton" class="wide-button" type="button">地图设置</button>
+          </section>
+          <section class="node-section">
+            <div class="panel-heading"><p class="panel-kicker">节点</p><button id="deleteNodeButton" type="button">删除</button></div>
+            <div id="nodeList" class="node-list"></div>
+          </section>
+          <section>
+            <p class="panel-kicker">图例</p>
+            <p class="help"><i class="entry-dot"></i> 起点 / 初始点亮<br />从节点右侧圆点拖到目标节点即可连线。中间图的拖拽只整理编辑视图；游戏位置请在右侧设置游戏 X/Y。<br />用启动批处理打开时，保存会直接覆盖根目录 world-map.js；普通静态服务器不能保存。</p>
+          </section>
+        </aside>
+
+        <section class="graph-column">
+          <div id="graphViewport" class="graph-viewport">
+            <svg id="graphEdges" class="graph-edges" aria-hidden="true"></svg>
+            <div id="graphNodes" class="graph-nodes"></div>
+          </div>
+          <footer class="graph-status"><span id="selectionStatus">地图设置</span><span id="feedback" role="status"></span></footer>
+        </section>
+
+        <aside class="panel inspector-panel">
+          <div class="panel-heading"><p class="panel-kicker">属性</p><span id="inspectorKind"></span></div>
+          <div id="inspector" class="inspector"></div>
+        </aside>
+      </div>
+    </main>
+
+    <datalist id="npcIds"></datalist>
+    <datalist id="enemyIds"></datalist>
+    <datalist id="nodeIds"></datalist>
+    <script src="../world-map.js"></script>
+    <script src="../npc-dialogues.js?v=json-dialogue-2"></script>
+    <script src="editor.js"></script>
+  </body>
+</html>
