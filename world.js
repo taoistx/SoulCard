@@ -5,77 +5,87 @@ const $w = (selector) => document.querySelector(selector);
 const SVG_NS = "http://www.w3.org/2000/svg";
 const DEFAULT_MAP_VIEW_WIDTH = 1000;
 const DEFAULT_MAP_VIEW_HEIGHT = 680;
-const MAX_STAMINA = 12;
+const MAP_MARGIN = 70;
+const CAMERA_SAFE_MARGIN = 120;
+const MAX_STAMINA = 6;
+const WORLD_DIALOGUE_IDS = new Set(["start", "siltWoods", "drownedHuts", "bellRoad", "hut", "gate", "church", "quietClearing", "node2", "node3"]);
 
-function validateMapBundle(bundle) {
+function validateConditionConfig(group, field, errors) {
+  if (!group) return;
+  if (!["all", "any"].includes(group.mode) || !Array.isArray(group.clauses)) {
+    errors.push(`${field} 条件组格式无效`);
+    return;
+  }
+  group.clauses.forEach((clause, index) => {
+    if (!clause || typeof clause.source !== "string" || typeof clause.operator !== "string") errors.push(`${field}.clauses[${index}] 条件无效`);
+  });
+}
+
+function validateWorldConfiguration(mapBundle, eventBundle) {
   const errors = [];
-  if (!bundle || bundle.schemaVersion !== 2) return ["缺少受支持的 WORLD_MAP_BUNDLE（schemaVersion 必须为 2）"];
-  const map = bundle.map;
+  if (!mapBundle || mapBundle.schemaVersion !== 3) return ["缺少受支持的 WORLD_MAP_BUNDLE（schemaVersion 必须为 3）"];
+  if (!eventBundle || eventBundle.schemaVersion !== 1 || !eventBundle.eventSets) return ["缺少受支持的 WORLD_EVENT_SET_BUNDLE"];
+  const map = mapBundle.map;
   if (!map || typeof map !== "object") return ["map 必须是对象"];
-  const width = map.viewBox?.width || DEFAULT_MAP_VIEW_WIDTH;
-  const height = map.viewBox?.height || DEFAULT_MAP_VIEW_HEIGHT;
-  if (!Number.isFinite(width) || width < 320 || width > 3000) errors.push("viewBox.width 必须在 320–3000 之间");
-  if (!Number.isFinite(height) || height < 240 || height > 2000) errors.push("viewBox.height 必须在 240–2000 之间");
   if (!Array.isArray(map.nodes) || !map.nodes.length) errors.push("nodes 必须是非空数组");
   if (!Array.isArray(map.edges)) errors.push("edges 必须是数组");
+
+  const eventSetIds = new Set(Object.keys(eventBundle.eventSets));
+  Object.entries(eventBundle.eventSets).forEach(([setId, set]) => {
+    if (!set || typeof set.name !== "string" || !set.name.trim()) errors.push(`事件集 ${setId} 缺少名称`);
+    if (!Array.isArray(set?.entries) || !set.entries.length) errors.push(`事件集 ${setId} 至少需要一个元素`);
+    const entryIds = new Set();
+    (set?.entries || []).forEach((entry, index) => {
+      const field = `事件集 ${setId}.entries[${index}]`;
+      if (typeof entry?.id !== "string" || !entry.id) errors.push(`${field} 缺少 id`);
+      if (entryIds.has(entry?.id)) errors.push(`${field} id 重复：${entry.id}`);
+      entryIds.add(entry?.id);
+      if (!["npc", "dialogue", "battle"].includes(entry?.kind)) errors.push(`${field} kind 无效`);
+      if (!Number.isFinite(entry?.weight) || entry.weight <= 0) errors.push(`${field} weight 必须大于 0`);
+      if (entry?.kind === "npc" && typeof entry.npcId !== "string") errors.push(`${field} 缺少 npcId`);
+      if (entry?.kind === "dialogue" && !WORLD_DIALOGUE_IDS.has(entry.dialogueId)) errors.push(`${field} 引用了未知世界对话`);
+      if (entry?.kind === "battle" && typeof entry.enemyId !== "string") errors.push(`${field} 缺少 enemyId`);
+      validateConditionConfig(entry?.when, `${field}.when`, errors);
+    });
+  });
 
   const nodeIds = new Set();
   (Array.isArray(map.nodes) ? map.nodes : []).forEach((node) => {
     if (typeof node?.id !== "string" || !node.id) errors.push("节点 id 必须是非空字符串");
     if (nodeIds.has(node?.id)) errors.push(`节点 id 重复：${node.id}`);
     nodeIds.add(node?.id);
-    if (!["start", "npc", "poi", "enemy", "wilderness", "random"].includes(node?.type)) errors.push(`节点 ${node?.id || "(空)"} 类型无效`);
     if (typeof node?.label !== "string" || !node.label) errors.push(`节点 ${node?.id || "(空)"} 缺少 label`);
-    if (!Number.isFinite(node?.x) || node.x < 0 || node.x > width) errors.push(`节点 ${node?.id || "(空)"} x 越界`);
-    if (!Number.isFinite(node?.y) || node.y < 0 || node.y > height) errors.push(`节点 ${node?.id || "(空)"} y 越界`);
-    if (node?.type === "npc" && typeof node.npcId !== "string") errors.push(`NPC 节点 ${node.id} 缺少 npcId`);
-    if (node?.type === "enemy" && typeof node.enemyId !== "string") errors.push(`敌人节点 ${node.id} 缺少 enemyId`);
-    if (node?.type === "poi" && typeof node.locationId !== "string") errors.push(`地点节点 ${node.id} 缺少 locationId`);
-    if (node?.type === "random") {
-      if (!node.random || !Array.isArray(node.random.entries)) errors.push(`随机节点 ${node.id} 缺少 random.entries`);
-      const entryIds = new Set();
-      (node.random?.entries || []).forEach((entry, index) => {
-        const field = `随机节点 ${node.id}.entries[${index}]`;
-        if (typeof entry?.id !== "string" || !entry.id) errors.push(`${field} 缺少 id`);
-        if (entryIds.has(entry?.id)) errors.push(`${field} id 重复：${entry.id}`);
-        entryIds.add(entry?.id);
-        if (!["npc", "battle", "empty"].includes(entry?.type)) errors.push(`${field} 类型无效`);
-        if (!Number.isFinite(entry?.weight) || entry.weight <= 0) errors.push(`${field} weight 必须大于 0`);
-        if (entry?.type === "npc" && typeof entry.npcId !== "string") errors.push(`${field} 缺少 npcId`);
-        if (entry?.type === "battle" && typeof entry.enemyId !== "string") errors.push(`${field} 缺少 enemyId`);
-      });
-    }
+    if (!Number.isFinite(node?.x) || node.x < 0) errors.push(`节点 ${node?.id || "(空)"} x 必须大于等于 0`);
+    if (!Number.isFinite(node?.y) || node.y < 0) errors.push(`节点 ${node?.id || "(空)"} y 必须大于等于 0`);
+    if (typeof node?.eventSetId !== "string" || !eventSetIds.has(node.eventSetId)) errors.push(`节点 ${node?.id || "(空)"} 引用了未知事件集`);
+    if (node?.revealFlag !== undefined && (typeof node.revealFlag !== "string" || !node.revealFlag.trim())) errors.push(`节点 ${node.id} revealFlag 无效`);
   });
   if (!nodeIds.has(map.startNodeId)) errors.push("startNodeId 必须指向现有节点");
-  (map.initialRevealed || []).forEach((id) => {
-    if (!nodeIds.has(id)) errors.push(`initialRevealed 指向未知节点：${id}`);
-  });
+  if (map.nodes?.find((node) => node.id === map.startNodeId)?.revealFlag) errors.push("起点不能是隐藏节点");
   (Array.isArray(map.edges) ? map.edges : []).forEach((edge, index) => {
     if (!nodeIds.has(edge?.from)) errors.push(`edges[${index}].from 指向未知节点`);
     if (!nodeIds.has(edge?.to)) errors.push(`edges[${index}].to 指向未知节点`);
     if (edge?.from === edge?.to) errors.push(`edges[${index}] 不能连接自身`);
+    validateConditionConfig(edge?.activeWhen, `edges[${index}].activeWhen`, errors);
   });
   return [...new Set(errors)];
 }
 
-const MAP_CONFIG_ERRORS = validateMapBundle(window.WORLD_MAP_BUNDLE);
+const MAP_CONFIG_ERRORS = validateWorldConfiguration(window.WORLD_MAP_BUNDLE, window.WORLD_EVENT_SET_BUNDLE);
 const WORLD_MAP_BUNDLE = MAP_CONFIG_ERRORS.length ? {
-  schemaVersion: 2,
+  schemaVersion: 3,
   map: {
     meta: { eyebrow: "地图配置错误", title: "无法载入地图" },
-    viewBox: { width: DEFAULT_MAP_VIEW_WIDTH, height: DEFAULT_MAP_VIEW_HEIGHT },
     startNodeId: "start",
-    initialRevealed: ["start"],
-    nodes: [{ id: "start", type: "start", icon: "!", label: "配置错误", x: 500, y: 340 }],
+    nodes: [{ id: "start", icon: "!", label: "配置错误", x: 0, y: 0, eventSetId: "error" }],
     edges: [],
   },
 } : window.WORLD_MAP_BUNDLE;
 const WORLD_MAP = WORLD_MAP_BUNDLE.map;
-const MAP_VIEW_WIDTH = WORLD_MAP.viewBox?.width || DEFAULT_MAP_VIEW_WIDTH;
-const MAP_VIEW_HEIGHT = WORLD_MAP.viewBox?.height || DEFAULT_MAP_VIEW_HEIGHT;
 const WORLD_NODES = WORLD_MAP.nodes.map((node) => ({ icon: "?", description: "", ...node }));
 const WORLD_EDGES = WORLD_MAP.edges || [];
 const NODE_BY_ID = new Map(WORLD_NODES.map((node) => [node.id, node]));
+const WORLD_EVENT_SETS = MAP_CONFIG_ERRORS.length ? {} : window.WORLD_EVENT_SET_BUNDLE.eventSets;
 
 const ITEM_LIBRARY = {
   freshFlesh: { name: "新鲜血肉", description: "仍有人血肉特征的部分。艾迪只认这个。", stackable: true },
@@ -106,6 +116,7 @@ const elsWorld = {
   mapScreen: $w("#mapScreen"),
   game: $w("#game"),
   mapSvg: $w("#mapSvg"),
+  mapContent: $w("#mapContent"),
   ground: $w("#worldGround"),
   edges: $w("#worldEdges"),
   nodes: $w("#worldNodes"),
@@ -134,12 +145,80 @@ const elsWorld = {
   bodySlots: $w("#bodySlots"),
   inventoryList: $w("#inventoryList"),
   deckSummary: $w("#deckSummary"),
+  focusPlayerButton: $w("#focusPlayerButton"),
 };
 
+const mapExtent = {
+  width: Math.max(DEFAULT_MAP_VIEW_WIDTH, ...WORLD_NODES.map((node) => node.x + MAP_MARGIN * 2)),
+  height: Math.max(DEFAULT_MAP_VIEW_HEIGHT, ...WORLD_NODES.map((node) => node.y + MAP_MARGIN * 2)),
+};
+const camera = { x: 0, y: 0, width: DEFAULT_MAP_VIEW_WIDTH, height: DEFAULT_MAP_VIEW_HEIGHT };
+let mapDrag = null;
+let suppressMapClick = false;
+let cameraAnimationFrame = null;
+
+function mapPoint(node) {
+  return { x: MAP_MARGIN + node.x, y: mapExtent.height - MAP_MARGIN - node.y };
+}
+
+function clampCamera() {
+  camera.x = Math.max(0, Math.min(camera.x, Math.max(0, mapExtent.width - camera.width)));
+  camera.y = Math.max(0, Math.min(camera.y, Math.max(0, mapExtent.height - camera.height)));
+}
+
+function applyCamera() {
+  clampCamera();
+  elsWorld.mapSvg.setAttribute("viewBox", `${camera.x} ${camera.y} ${camera.width} ${camera.height}`);
+}
+
+function animateCameraTo(x, y) {
+  if (cameraAnimationFrame) cancelAnimationFrame(cameraAnimationFrame);
+  const start = { x: camera.x, y: camera.y };
+  camera.x = x;
+  camera.y = y;
+  clampCamera();
+  const target = { x: camera.x, y: camera.y };
+  camera.x = start.x;
+  camera.y = start.y;
+  const startedAt = performance.now();
+  const frame = (now) => {
+    const progress = Math.min(1, (now - startedAt) / 240);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    camera.x = start.x + (target.x - start.x) * eased;
+    camera.y = start.y + (target.y - start.y) * eased;
+    applyCamera();
+    if (progress < 1) cameraAnimationFrame = requestAnimationFrame(frame);
+    else cameraAnimationFrame = null;
+  };
+  cameraAnimationFrame = requestAnimationFrame(frame);
+}
+
+function focusCameraOnNode(node, forceCenter = false) {
+  if (!node) return;
+  const point = mapPoint(node);
+  const left = camera.x + CAMERA_SAFE_MARGIN;
+  const right = camera.x + camera.width - CAMERA_SAFE_MARGIN;
+  const top = camera.y + CAMERA_SAFE_MARGIN;
+  const bottom = camera.y + camera.height - CAMERA_SAFE_MARGIN;
+  if (forceCenter || point.x < left || point.x > right || point.y < top || point.y > bottom) {
+    animateCameraTo(point.x - camera.width / 2, point.y - camera.height / 2);
+  }
+}
+
 function configureMapFrame() {
-  elsWorld.mapSvg.setAttribute("viewBox", `0 0 ${MAP_VIEW_WIDTH} ${MAP_VIEW_HEIGHT}`);
-  elsWorld.ground.setAttribute("width", MAP_VIEW_WIDTH - 36);
-  elsWorld.ground.setAttribute("height", MAP_VIEW_HEIGHT - 36);
+  elsWorld.ground.setAttribute("x", 0);
+  elsWorld.ground.setAttribute("y", 0);
+  elsWorld.ground.setAttribute("width", mapExtent.width);
+  elsWorld.ground.setAttribute("height", mapExtent.height);
+  const terrain = elsWorld.mapSvg.querySelector(".world-terrain");
+  if (terrain) {
+    terrain.setAttribute("x", 0);
+    terrain.setAttribute("y", 0);
+    terrain.setAttribute("width", mapExtent.width);
+    terrain.setAttribute("height", mapExtent.height);
+    terrain.removeAttribute("clip-path");
+  }
+  applyCamera();
   elsWorld.eyebrow.textContent = WORLD_MAP.meta?.eyebrow || "未命名区域";
   elsWorld.title.textContent = WORLD_MAP.meta?.title || "未命名地图";
 }
@@ -155,16 +234,12 @@ WORLD_DATA_READY.catch((error) => { worldDataError = error; });
 
 function createInitialWorld() {
   const deck = window.BattleBridge.getDefaultDeck();
-  const revealedNodes = new Set(WORLD_MAP.initialRevealed || [WORLD_MAP.startNodeId]);
-  revealedNodes.add(WORLD_MAP.startNodeId);
   return {
     day: 1,
     hp: 60,
     maxHp: 60,
     currentNodeId: WORLD_MAP.startNodeId,
-    revealedNodes,
-    visitedNodes: new Set([WORLD_MAP.startNodeId]),
-    exploredNodes: new Set(),
+    exploredNodes: new Set([WORLD_MAP.startNodeId]),
     flags: {},
     inventory: { rustySword: 1, healingPotion: 1 },
     equipment: { leftHand: null, rightHand: null, body: null, head: null, eye: null, heart: null, brain: null },
@@ -174,7 +249,7 @@ function createInitialWorld() {
     stamina: MAX_STAMINA,
     maxStamina: MAX_STAMINA,
     battlesWon: 0,
-    randomNodeRolls: {},
+    dailyEventRolls: {},
     dailyNpcLocations: {},
   };
 }
@@ -189,7 +264,6 @@ function getFlag(key) {
 
 function setFlag(key, value = true) {
   world.flags[key] = value;
-  refreshRevealedNodes();
   renderWorld();
   return value;
 }
@@ -269,40 +343,37 @@ function getNpcLocationForToday(npcId) {
   return world.dailyNpcLocations[npcId] || null;
 }
 
-function refreshRevealedNodes() {
-  for (const node of WORLD_NODES) {
-    if (evaluateWorldCondition(node.revealWhen)) world.revealedNodes.add(node.id);
-  }
-  for (const edge of WORLD_EDGES) {
-    if (!evaluateWorldCondition(edge.revealWhen)) continue;
-    const fromRevealed = world.revealedNodes.has(edge.from);
-    const toRevealed = world.revealedNodes.has(edge.to);
-    if (fromRevealed || toRevealed) {
-      world.revealedNodes.add(edge.from);
-      world.revealedNodes.add(edge.to);
-    }
-  }
+function incomingEdges(nodeId) {
+  return WORLD_EDGES.filter((edge) => edge.to === nodeId);
 }
 
 function isNodeAvailable(node) {
-  if (!node || !world.revealedNodes.has(node.id)) return false;
-  return true;
+  if (!node) return false;
+  if (world.exploredNodes.has(node.id) || node.id === WORLD_MAP.startNodeId) return true;
+  if (node.revealFlag && !getFlag(node.revealFlag)) return false;
+  return incomingEdges(node.id).some((edge) => world.exploredNodes.has(edge.from));
 }
 
-function isNodeResolved(node) {
-  if (!node) return false;
-  if (node.id === "eddie") return Boolean(getFlag("eddieKilled"));
-  if (node.id === "chris") return Boolean(getFlag("chrisGone"));
-  if (node.id === "bell") return Boolean(getFlag("bellKilled") || getFlag("bellSpared"));
-  if (node.id === "dungA") return Boolean(getFlag("dungAKilled"));
-  if (node.id === "dungB") return Boolean(getFlag("dungBKilled"));
+function isEventEntryResolved(entry, node = null) {
+  if (!entry) return false;
+  if (entry.kind === "battle") return Boolean(getFlag(`${entry.battleSourceId || `${node?.id || "node"}_${entry.id}`}Killed`));
+  if (entry.kind === "npc") {
+    if (entry.npcId === "eddie") return Boolean(getFlag("eddieKilled"));
+    if (entry.npcId === "chris") return Boolean(getFlag("chrisGone"));
+    if (entry.npcId === "bell") return Boolean(getFlag("bellKilled") || getFlag("bellSpared"));
+  }
   return false;
 }
 
+function isNodeResolved(node) {
+  const entryId = world.dailyEventRolls[node?.id];
+  const set = WORLD_EVENT_SETS[node?.eventSetId];
+  const entry = set?.entries?.find((item) => item.id === entryId) || (set?.entries?.length === 1 ? set.entries[0] : null);
+  return isEventEntryResolved(entry, node);
+}
+
 function isEdgeRevealed(edge) {
-  return world.revealedNodes.has(edge.from) &&
-    world.revealedNodes.has(edge.to) &&
-    evaluateWorldCondition(edge.revealWhen);
+  return isNodeAvailable(NODE_BY_ID.get(edge.from)) && isNodeAvailable(NODE_BY_ID.get(edge.to));
 }
 
 function isEdgeActive(edge) {
@@ -319,7 +390,8 @@ function areNodesConnected(fromId, toId) {
 
 function blocksAutoPath(node) {
   if (!node || isNodeResolved(node)) return false;
-  return node.type === "enemy" || node.id === "bell";
+  const set = WORLD_EVENT_SETS[node.eventSetId];
+  return (set?.entries || []).some((entry) => entry.kind === "battle" || (entry.kind === "npc" && entry.npcId === "bell"));
 }
 
 function canPathThrough(nodeId, fromId, toId) {
@@ -337,7 +409,8 @@ function findReachablePath(fromId, toId) {
     for (const edge of edgesForNode(currentId)) {
       if (!isEdgeActive(edge)) continue;
       const nextId = edge.from === currentId ? edge.to : edge.from;
-      if (seen.has(nextId) || !world.revealedNodes.has(nextId)) continue;
+      if (seen.has(nextId) || !isNodeAvailable(NODE_BY_ID.get(nextId))) continue;
+      if (nextId !== toId && !world.exploredNodes.has(nextId)) continue;
       if (!canPathThrough(nextId, fromId, toId)) continue;
       const nextPath = [...path, nextId];
       if (nextId === toId) return nextPath;
@@ -351,7 +424,7 @@ function findReachablePath(fromId, toId) {
 function renderWorld() {
   if (MAP_CONFIG_ERRORS.length) {
     elsWorld.edges.innerHTML = "";
-    elsWorld.nodes.innerHTML = `<text class="map-config-error-text" x="${MAP_VIEW_WIDTH / 2}" y="${MAP_VIEW_HEIGHT / 2}" text-anchor="middle">地图配置无效</text>`;
+    elsWorld.nodes.innerHTML = `<text class="map-config-error-text" x="${camera.width / 2}" y="${camera.height / 2}" text-anchor="middle">地图配置无效</text>`;
     elsWorld.player.classList.add("hidden");
     elsWorld.prompt.classList.add("hidden");
     elsWorld.mapHint.classList.add("map-config-error");
@@ -360,7 +433,6 @@ function renderWorld() {
     return;
   }
   syncMaxHp();
-  refreshRevealedNodes();
   renderPointCrawl();
   elsWorld.day.textContent = world.day;
   elsWorld.daysLeft.textContent = world.day < 5 ? `余 ${5 - world.day} 次安全长休` : "再睡一次就不再是人";
@@ -372,7 +444,7 @@ function renderWorld() {
   currentTarget = getCurrentNode();
   elsWorld.prompt.classList.toggle("hidden", !currentTarget || isOverlayOpen());
   if (currentTarget) elsWorld.prompt.querySelector("span").textContent = `调查${currentTarget.label}`;
-  elsWorld.mapHint.textContent = "点击已点亮节点移动 · E 交互 · L 长休 · 探索/献祭/战斗消耗体力";
+  elsWorld.mapHint.textContent = "拖动空白处查看地图 · 点击节点移动 · E 调查 · L 长休";
   if (!elsWorld.characterPanel.classList.contains("hidden")) renderCharacterPanel();
 }
 
@@ -388,10 +460,12 @@ function renderPointCrawl() {
     const line = document.createElementNS(SVG_NS, "line");
     line.classList.add("world-edge");
     if (!isEdgeActive(edge)) line.classList.add("locked");
-    line.setAttribute("x1", from.x);
-    line.setAttribute("y1", from.y);
-    line.setAttribute("x2", to.x);
-    line.setAttribute("y2", to.y);
+    const fromPoint = mapPoint(from);
+    const toPoint = mapPoint(to);
+    line.setAttribute("x1", fromPoint.x);
+    line.setAttribute("y1", fromPoint.y);
+    line.setAttribute("x2", toPoint.x);
+    line.setAttribute("y2", toPoint.y);
     elsWorld.edges.appendChild(line);
   }
 
@@ -399,18 +473,18 @@ function renderPointCrawl() {
     if (!isNodeAvailable(node)) continue;
     const group = document.createElementNS(SVG_NS, "g");
     const isCurrent = node.id === world.currentNodeId;
-    const isVisited = world.visitedNodes.has(node.id);
+    const isExplored = world.exploredNodes.has(node.id);
     const reachable = isCurrent || Boolean(findReachablePath(world.currentNodeId, node.id));
-    const explored = world.exploredNodes.has(node.id);
     const resolved = isNodeResolved(node);
-    group.classList.add("world-node", node.type);
+    group.classList.add("world-node");
     if (isCurrent) group.classList.add("current");
-    if (isVisited) group.classList.add("visited");
+    if (isExplored) group.classList.add("explored");
+    else group.classList.add("unexplored");
     if (reachable) group.classList.add("reachable");
-    if (explored) group.classList.add("explored");
     if (resolved) group.classList.add("resolved");
     if (!reachable) group.classList.add("distant");
-    group.setAttribute("transform", `translate(${node.x} ${node.y})`);
+    const point = mapPoint(node);
+    group.setAttribute("transform", `translate(${point.x} ${point.y})`);
     group.dataset.nodeId = node.id;
     group.innerHTML = `
       <circle class="node-aura" r="30"></circle>
@@ -423,8 +497,9 @@ function renderPointCrawl() {
 
   const current = getCurrentNode();
   if (current) {
+    const point = mapPoint(current);
     elsWorld.player.classList.remove("hidden");
-    elsWorld.player.setAttribute("transform", `translate(${current.x} ${current.y - 34})`);
+    elsWorld.player.setAttribute("transform", `translate(${point.x} ${point.y - 34})`);
   } else {
     elsWorld.player.classList.add("hidden");
   }
@@ -432,25 +507,22 @@ function renderPointCrawl() {
 
 function handleNodeClick(nodeId) {
   if (!isWorldActive() || isOverlayOpen() || interactionLocked) return;
+  if (suppressMapClick) return;
   const node = NODE_BY_ID.get(nodeId);
   if (!isNodeAvailable(node)) return;
-  if (nodeId === world.currentNodeId) {
-    interactWithCurrentNode();
+  if (nodeId === world.currentNodeId) return;
+  if (!findReachablePath(world.currentNodeId, nodeId)) return;
+  const firstVisit = !world.exploredNodes.has(nodeId);
+  if (firstVisit && !canSpendStamina()) {
+    showWorldModal({ kicker: "体力不足", title: "无法探索新节点", body: "首次到达尚未探索的节点需要 1 点体力。你仍可在已探索节点间移动，或长休恢复体力。" });
     return;
   }
-  if (!findReachablePath(world.currentNodeId, nodeId)) return;
-  const firstVisit = !world.visitedNodes.has(nodeId);
+  if (firstVisit) spendStamina();
   world.currentNodeId = nodeId;
-  world.visitedNodes.add(nodeId);
+  if (firstVisit) world.exploredNodes.add(nodeId);
   renderWorld();
-  enterCurrentNode(firstVisit);
-}
-
-function enterCurrentNode(firstVisit = false) {
-  const node = getCurrentNode();
-  if (!node || node.type === "start") return;
-  if (node.type === "enemy" || node.type === "random" || (node.type === "npc" && firstVisit)) interactWithCurrentNode();
-  else if (node.type === "wilderness" && !world.exploredNodes.has(node.id)) showWilderness(node);
+  focusCameraOnNode(node);
+  if (firstVisit) triggerNodeEvent(node, { arrivalPaid: true });
 }
 
 function closeWorldModal() {
@@ -768,52 +840,67 @@ function weightedRandomEntry(entries) {
   return entries[entries.length - 1] || null;
 }
 
-function resolveRandomNodeEntry(node) {
-  if (world.randomNodeRolls[node.id]) return world.randomNodeRolls[node.id];
-  const candidates = (node.random?.entries || []).filter((entry) => {
+function resolveNodeEventEntry(node) {
+  const eventSet = WORLD_EVENT_SETS[node.eventSetId];
+  const lockedId = world.dailyEventRolls[node.id];
+  if (lockedId) return eventSet?.entries?.find((entry) => entry.id === lockedId) || null;
+  const candidates = (eventSet?.entries || []).filter((entry) => {
     if (!evaluateWorldCondition(entry.when)) return false;
-    if (entry.type !== "npc") return true;
+    if (entry.kind !== "npc") return true;
     const assignedNodeId = getNpcLocationForToday(entry.npcId);
     return !assignedNodeId || assignedNodeId === node.id;
   });
-  const entry = weightedRandomEntry(candidates) || {
-    id: "empty",
-    type: "empty",
-    weight: 1,
-    title: node.random?.emptyTitle || node.label,
-    text: node.random?.emptyText || "今天这里没有遇到任何人。",
-  };
-  world.randomNodeRolls[node.id] = { ...entry };
-  if (entry.type === "npc") assignNpcLocationForToday(entry.npcId, node.id);
-  return world.randomNodeRolls[node.id];
+  const entry = candidates.length === 1 ? candidates[0] : weightedRandomEntry(candidates);
+  world.dailyEventRolls[node.id] = entry?.id || "__empty";
+  if (entry?.kind === "npc") assignNpcLocationForToday(entry.npcId, node.id);
+  return entry || null;
 }
 
-function showRandomNode(node) {
-  const entry = resolveRandomNodeEntry(node);
-  if (entry.type === "npc") {
+function showNoEvent(node) {
+  showWorldModal({ kicker: "节点 · 今日结果", title: node.label, body: "今天这里没有发生任何事。" });
+}
+
+function showDiscovery(node, flag, title, text) {
+  if (flag) setFlag(flag, true);
+  showWorldModal({ kicker: "探索完成", title: title || node.label, body: text || node.description || "雾气散开，新的道路显出轮廓。" });
+}
+
+function runWorldDialogue(dialogueId, node) {
+  const handlers = {
+    start: () => showStartNode(),
+    siltWoods: () => showDiscovery(node, "exploredSiltWoods", "污泥林", "你拨开像湿发一样缠绕的草根，发现一条仍有人类足迹的窄路。"),
+    drownedHuts: () => showDiscovery(node, "exploredDrownedHuts", "腐叶原野", "几间半沉的小屋在粪水里吱呀作响，门缝里露出还没烂尽的家具。"),
+    bellRoad: () => showDiscovery(node, "exploredBellRoad", "碎钟坡", "越往坡上走，空气里的钟声越像骨头互相敲击。远处站着一个无头的人影。"),
+    hut: showHut,
+    gate: showGate,
+    church: showChurch,
+    quietClearing: () => showWorldModal({ kicker: "地点", title: node.label, body: node.description || "这里只剩风吹过空地。" }),
+    node2: () => showWorldModal({ kicker: "地点", title: node.label, body: node.description || "腐烂的叶片铺成一条继续向前的路。" }),
+    node3: () => showWorldModal({ kicker: "地点", title: node.label, body: node.description || "弦鸣一样的虫声贴着泥水滑过。" }),
+  };
+  const handler = handlers[dialogueId];
+  if (handler) return handler();
+  showWorldModal({ kicker: "配置错误", title: node.label, body: `未登记世界对话：${dialogueId}` });
+}
+
+function triggerNodeEvent(node, { arrivalPaid = false } = {}) {
+  const entry = resolveNodeEventEntry(node);
+  if (!entry) return showNoEvent(node);
+  if (isEventEntryResolved(entry, node)) {
+    showWorldModal({ kicker: "节点 · 已解决", title: node.label, body: "这里的主要事件已经解决，节点仍可作为通路使用。" });
+    return;
+  }
+  if (entry.kind === "npc") {
     if (!assignNpcLocationForToday(entry.npcId, node.id)) return showWorldModal({
-      kicker: "随机节点 · 空缺",
+      kicker: "节点 · 空缺",
       title: node.label,
       body: "你找到的是刚被雨水抹平的脚印。那个人今天已经去了别处。",
     });
     return showNpcDialogue(entry.npcId);
   }
-  if (entry.type === "battle") return showWorldModal({
-    kicker: "随机节点 · 遭遇",
-    title: entry.title || node.label,
-    body: entry.text || "有什么东西从污雾里扑了出来。",
-    options: [{
-      label: entry.actionLabel || "迎战",
-      hint: staminaHint("进入战斗", 1),
-      enabled: canSpendStamina(),
-      action: () => runBattle(entry.enemyId, entry.battleSourceId || `${node.id}_${entry.id}`),
-    }],
-  });
-  return showWorldModal({
-    kicker: "随机节点 · 今日结果",
-    title: entry.title || node.random?.emptyTitle || node.label,
-    body: entry.text || node.random?.emptyText || "今天这里没有遇到任何人。",
-  });
+  if (entry.kind === "battle") return runBattle(entry.enemyId, entry.battleSourceId || `${node.id}_${entry.id}`, { prepaid: arrivalPaid });
+  if (entry.kind === "dialogue") return runWorldDialogue(entry.dialogueId, node);
+  return showNoEvent(node);
 }
 
 function sacrificeOption(partId, action) {
@@ -863,40 +950,6 @@ function showSacrificeMenu(npcId) {
       },
       { label: "返回对话", hint: npcName, action: () => showNpcDialogue(npcId) },
     ],
-  });
-}
-
-function showWilderness(node) {
-  const explored = world.exploredNodes.has(node.id);
-  showWorldModal({
-    kicker: explored ? "荒野 · 已探索" : "荒野 · 未知节点",
-    title: explored ? node.exploreTitle || node.label : node.label,
-    body: explored
-      ? `${node.exploreTitle || node.label}已经被你点亮。这里不会再消耗体力。`
-      : node.description || "前方被粪雾盖住，只有真正踏进去才会显出后路。",
-    options: explored ? [] : [{
-      label: "探索",
-      hint: staminaHint("点亮无条件子节点", 1),
-      enabled: canSpendStamina(),
-      action: () => exploreWilderness(node),
-    }],
-  });
-}
-
-function exploreWilderness(node) {
-  if (world.exploredNodes.has(node.id)) return showWilderness(node);
-  if (!spendStamina()) return showWilderness(node);
-  world.exploredNodes.add(node.id);
-  setFlag(node.exploreFlag || `explored${node.id[0].toUpperCase()}${node.id.slice(1)}`, true);
-  edgesForNode(node.id).forEach((edge) => {
-    const otherId = edge.from === node.id ? edge.to : edge.from;
-    const otherNode = NODE_BY_ID.get(otherId);
-    if (otherNode && !edge.activeWhen && evaluateWorldCondition(edge.revealWhen)) world.revealedNodes.add(otherId);
-  });
-  showWorldModal({
-    kicker: "探索完成",
-    title: node.exploreTitle || node.label,
-    body: node.exploreText || "粪雾退开了一些，新的节点在远处显形。",
   });
 }
 
@@ -958,7 +1011,7 @@ function longRest() {
   world.day++;
   world.hp = world.maxHp;
   world.stamina = world.maxStamina;
-  world.randomNodeRolls = {};
+  world.dailyEventRolls = {};
   world.dailyNpcLocations = {};
   setFlag(`restedDay${world.day}`, true);
   showWorldModal({
@@ -1041,42 +1094,23 @@ function showStartNode() {
 function interactWithCurrentNode() {
   const node = getCurrentNode();
   if (!node || interactionLocked || !isNodeAvailable(node)) return;
-  if (isNodeResolved(node)) {
-    showWorldModal({
-      kicker: "节点 · 已解决",
-      title: node.label,
-      body: node.id === "bell" && getFlag("bellSpared")
-        ? "丧钟已经让出道路。这个节点仍保留在地图上，作为通往山道的已点亮支点。"
-        : "这里的主要威胁或人物状态已经改变。这个节点仍保留在地图上，作为已点亮路径的一部分。",
-    });
-    return;
-  }
-  if (node.type === "start") return showStartNode();
-  if (node.type === "wilderness") return showWilderness(node);
-  if (node.type === "random") return showRandomNode(node);
-  if (node.type === "npc") {
-    const assignedNodeId = getNpcLocationForToday(node.npcId);
-    if (assignedNodeId && assignedNodeId !== node.id) return showNpcAway(node);
-    assignNpcLocationForToday(node.npcId, node.id);
-    return showNpcDialogue(node.npcId);
-  }
-  if (node.type === "enemy") return runBattle(node.enemyId, node.battleSourceId || node.id);
-  if (node.type === "poi") return ({ hut: showHut, gate: showGate, church: showChurch })[node.locationId]?.();
+  return triggerNodeEvent(node);
 }
 
-async function runBattle(enemyId, sourceId) {
-  if (!canSpendStamina()) {
+async function runBattle(enemyId, sourceId, options = {}) {
+  const prepaid = Boolean(options.prepaid);
+  if (!prepaid && !canSpendStamina()) {
     showWorldModal({ kicker: "体力不足", title: "无法进入战斗", body: "战斗需要 1 点体力。你仍可以在已经点亮的节点之间移动，或长休恢复体力。" });
     return false;
   }
-  spendStamina();
+  if (!prepaid) spendStamina();
   interactionLocked = true;
   let battle;
   try {
     battle = await window.BattleBridge.startBattle(enemyId, { playerHp: world.hp, playerMaxHp: world.maxHp });
   } catch (error) {
     console.error(`无法开始战斗：${enemyId}`, error);
-    world.stamina = Math.min(world.maxStamina, world.stamina + 1);
+    if (!prepaid) world.stamina = Math.min(world.maxStamina, world.stamina + 1);
     interactionLocked = false;
     elsWorld.mapScreen.classList.remove("hidden");
     renderWorld();
@@ -1163,6 +1197,7 @@ async function startNewRun() {
   elsWorld.game.classList.add("hidden");
   elsWorld.mapScreen.classList.remove("hidden");
   renderWorld();
+  focusCameraOnNode(getCurrentNode(), true);
   return true;
 }
 
@@ -1192,11 +1227,9 @@ window.WorldGame = Object.freeze({
     currentNodeId: world.currentNodeId,
     stamina: world.stamina,
     maxStamina: world.maxStamina,
-    revealedNodes: [...world.revealedNodes],
     exploredNodes: [...world.exploredNodes],
-    visitedNodes: [...world.visitedNodes],
     equipment: { ...world.equipment },
-    randomNodeRolls: { ...world.randomNodeRolls },
+    dailyEventRolls: { ...world.dailyEventRolls },
     dailyNpcLocations: { ...world.dailyNpcLocations },
   }),
 });
@@ -1207,6 +1240,38 @@ elsWorld.closeCharacterButton.addEventListener("click", closeCharacterPanel);
 elsWorld.characterPanel.addEventListener("click", (event) => {
   if (event.target === elsWorld.characterPanel) closeCharacterPanel();
 });
+elsWorld.focusPlayerButton.addEventListener("click", () => focusCameraOnNode(getCurrentNode(), true));
+
+elsWorld.mapSvg.addEventListener("pointerdown", (event) => {
+  if (event.button !== 0 || event.target.closest?.(".world-node") || isOverlayOpen()) return;
+  if (cameraAnimationFrame) cancelAnimationFrame(cameraAnimationFrame);
+  cameraAnimationFrame = null;
+  elsWorld.mapSvg.setPointerCapture(event.pointerId);
+  mapDrag = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, cameraX: camera.x, cameraY: camera.y, moved: false };
+  elsWorld.mapSvg.classList.add("is-panning");
+});
+
+elsWorld.mapSvg.addEventListener("pointermove", (event) => {
+  if (!mapDrag || mapDrag.pointerId !== event.pointerId) return;
+  const rect = elsWorld.mapSvg.getBoundingClientRect();
+  const dx = (event.clientX - mapDrag.startX) * camera.width / Math.max(1, rect.width);
+  const dy = (event.clientY - mapDrag.startY) * camera.height / Math.max(1, rect.height);
+  if (Math.abs(dx) + Math.abs(dy) > 4) mapDrag.moved = true;
+  camera.x = mapDrag.cameraX - dx;
+  camera.y = mapDrag.cameraY - dy;
+  applyCamera();
+});
+
+function finishMapDrag(event) {
+  if (!mapDrag || mapDrag.pointerId !== event.pointerId) return;
+  suppressMapClick = mapDrag.moved;
+  mapDrag = null;
+  elsWorld.mapSvg.classList.remove("is-panning");
+  if (suppressMapClick) setTimeout(() => { suppressMapClick = false; }, 0);
+}
+
+elsWorld.mapSvg.addEventListener("pointerup", finishMapDrag);
+elsWorld.mapSvg.addEventListener("pointercancel", finishMapDrag);
 
 document.addEventListener("keydown", (event) => {
   if (!isWorldActive()) return;
@@ -1233,6 +1298,7 @@ document.addEventListener("keydown", (event) => {
 });
 
 renderWorld();
+focusCameraOnNode(getCurrentNode(), true);
 $w("#startButton").disabled = true;
 WORLD_DATA_READY.then(() => {
   $w("#startButton").disabled = false;

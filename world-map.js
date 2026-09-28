@@ -1,292 +1,335 @@
 "use strict";
 
-// 由 node-editor 导出。节点与连线描述 World Point Crawl 布局。
+// 由 node-editor 导出。坐标原点位于地图左下角，X 向右、Y 向上。
 window.WORLD_MAP_BUNDLE = {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "map": {
     "meta": {
       "eyebrow": "粪坑位面 · 外围",
       "title": "逆流山脚"
     },
-    "viewBox": {
-      "width": 1000,
-      "height": 680
-    },
     "startNodeId": "start",
-    "initialRevealed": [
-      "start",
-      "eddie"
-    ],
     "nodes": [
       {
         "id": "start",
-        "type": "start",
         "icon": "✦",
         "label": "坠落处",
         "x": 50,
-        "y": 634,
-        "description": "你从瓷白裂口里爬起来。这里没有路，只有会逐渐显形的选择。"
+        "y": 46,
+        "description": "你从瓷白裂口里爬起来。这里没有路，只有会逐渐显形的选择。",
+        "eventSetId": "startArrival"
       },
       {
         "id": "eddie",
-        "type": "npc",
         "icon": "♜",
         "label": "渔夫 艾迪",
-        "x": 56,
-        "y": 522,
-        "npcId": "eddie"
+        "x": 114,
+        "y": 162,
+        "eventSetId": "eddieMeeting"
       },
       {
         "id": "siltWoods",
-        "type": "wilderness",
         "icon": "?",
         "label": "???",
-        "x": 337,
-        "y": 336,
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "eddieMet",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        },
-        "exploreTitle": "污泥林",
-        "exploreText": "你拨开像湿发一样缠绕的草根，发现一条仍有人类足迹的窄路。",
-        "exploreFlag": "exploredSiltWoods"
+        "x": 754,
+        "y": 1060,
+        "eventSetId": "siltWoodsDiscovery"
       },
       {
         "id": "drownedHuts",
-        "type": "wilderness",
         "icon": "?",
-        "label": "腐叶原野",
-        "x": 417,
-        "y": 445,
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "eddieMet",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        },
-        "exploreTitle": "腐叶原野",
-        "exploreText": "几间半沉的小屋在粪水里吱呀作响，门缝里露出还没烂尽的家具。",
-        "exploreFlag": "exploredDrownedHuts"
+        "label": "上山的路",
+        "x": 522,
+        "y": 233,
+        "eventSetId": "drownedHutsDiscovery"
       },
       {
         "id": "bellRoad",
-        "type": "wilderness",
         "icon": "?",
         "label": "???",
-        "x": 443,
-        "y": 598,
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "eddieMet",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        },
-        "exploreTitle": "碎钟坡",
-        "exploreText": "越往坡上走，空气里的钟声越像骨头互相敲击。远处站着一个无头的人影。",
-        "exploreFlag": "exploredBellRoad"
+        "x": 1096,
+        "y": 243,
+        "eventSetId": "bellRoadDiscovery"
       },
       {
         "id": "chris",
-        "type": "npc",
         "icon": "♛",
         "label": "失眠者 克里斯",
-        "x": 666,
-        "y": 89,
-        "npcId": "chris",
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "exploredSiltWoods",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        }
+        "x": 1529,
+        "y": 660,
+        "eventSetId": "chrisMeeting"
       },
       {
         "id": "hut",
-        "type": "poi",
         "icon": "⌂",
         "label": "废弃小屋",
-        "x": 496,
-        "y": 266,
-        "locationId": "hut",
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "exploredDrownedHuts",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        }
+        "x": 810,
+        "y": 1196,
+        "eventSetId": "hutSearch"
       },
       {
         "id": "bell",
-        "type": "npc",
         "icon": "☠",
         "label": "丧钟",
-        "x": 937,
-        "y": 628,
-        "npcId": "bell",
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "exploredBellRoad",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        }
-      },
-      {
-        "id": "gate",
-        "type": "poi",
-        "icon": "╫",
-        "label": "封锁山道",
-        "x": 901,
-        "y": 216,
-        "locationId": "gate",
-        "revealWhen": {
-          "mode": "any",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "exploredSiltWoods",
-              "operator": "eq",
-              "value": true
-            },
-            {
-              "source": "flag",
-              "key": "exploredDrownedHuts",
-              "operator": "eq",
-              "value": true
-            },
-            {
-              "source": "flag",
-              "key": "exploredBellRoad",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        }
-      },
-      {
-        "id": "dungA",
-        "type": "enemy",
-        "icon": "●",
-        "label": "粪怪",
-        "x": 879,
-        "y": 110,
-        "enemyId": "dungling",
-        "battleSourceId": "dungA",
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "bridgeOpened",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        }
-      },
-      {
-        "id": "dungB",
-        "type": "enemy",
-        "icon": "●",
-        "label": "粪怪",
-        "x": 748,
-        "y": 427,
-        "enemyId": "dungling",
-        "battleSourceId": "dungB",
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "eddieMet",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        }
-      },
-      {
-        "id": "church",
-        "type": "poi",
-        "icon": "♰",
-        "label": "逆抽水器",
-        "x": 924,
-        "y": 46,
-        "locationId": "church",
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "dungBKilled",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        }
-      },
-      {
-        "id": "node",
-        "type": "poi",
-        "icon": "#",
-        "label": "空地",
-        "x": 141,
-        "y": 119,
-        "description": "",
-        "locationId": "hut"
+        "x": 1420,
+        "y": 252,
+        "eventSetId": "bellMeeting"
       },
       {
         "id": "node2",
-        "type": "wilderness",
         "icon": "?",
         "label": "腐叶原野",
-        "x": 622,
-        "y": 435,
-        "description": "",
-        "revealWhen": {
-          "mode": "all",
-          "clauses": []
-        }
+        "x": 713,
+        "y": 360,
+        "eventSetId": "eventSet"
       },
       {
         "id": "node3",
-        "type": "wilderness",
         "icon": "?",
         "label": "弦一螂",
-        "x": 844,
-        "y": 320,
-        "description": ""
+        "x": 1048,
+        "y": 649,
+        "eventSetId": "node3Discovery"
+      },
+      {
+        "id": "node",
+        "label": "腐叶原野 路口",
+        "icon": "?",
+        "x": 352,
+        "y": 292,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node4",
+        "label": "泥滩",
+        "icon": "?",
+        "x": 306,
+        "y": 75,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node4Copy",
+        "label": "泥滩",
+        "icon": "?",
+        "x": 522,
+        "y": 75,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node4CopyCopy",
+        "label": "泥滩",
+        "icon": "?",
+        "x": 1024,
+        "y": 78,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node2Copy",
+        "icon": "?",
+        "label": "腐叶原野",
+        "x": 712,
+        "y": 500,
+        "eventSetId": "eventSet"
+      },
+      {
+        "id": "node2Copy2",
+        "icon": "?",
+        "label": "腐叶原野",
+        "x": 806,
+        "y": 652,
+        "eventSetId": "eventSet"
+      },
+      {
+        "id": "node5",
+        "label": "安全区域",
+        "icon": "?",
+        "x": 796,
+        "y": 251,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node6",
+        "label": "静默岗哨",
+        "icon": "?",
+        "x": 252,
+        "y": 465,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node7",
+        "label": "荒野",
+        "icon": "?",
+        "x": 535,
+        "y": 435,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node7Copy",
+        "label": "荒野 副本",
+        "icon": "?",
+        "x": 183,
+        "y": 576,
+        "eventSetId": "eventSet"
+      },
+      {
+        "id": "node7Copy2",
+        "label": "荒野 副本",
+        "icon": "?",
+        "x": 181,
+        "y": 718,
+        "eventSetId": "eventSet"
+      },
+      {
+        "id": "node7Copy3",
+        "label": "荒野",
+        "icon": "?",
+        "x": 113,
+        "y": 867,
+        "eventSetId": "eventSet"
+      },
+      {
+        "id": "node8",
+        "label": "杂物屏障",
+        "icon": "?",
+        "x": 242,
+        "y": 856,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node8Copy",
+        "label": "杂物屏障",
+        "icon": "?",
+        "x": 522,
+        "y": 854,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node9",
+        "label": "领地入口",
+        "icon": "?",
+        "x": 387,
+        "y": 856,
+        "eventSetId": "startArrival"
+      },
+      {
+        "id": "node10",
+        "label": "安全区域",
+        "icon": "?",
+        "x": 367,
+        "y": 596,
+        "eventSetId": "startArrival"
+      },
+      {
+        "id": "node7CopyCopy",
+        "label": "荒野",
+        "icon": "?",
+        "x": 537,
+        "y": 549,
+        "eventSetId": "eventSet"
+      },
+      {
+        "id": "node7CopyCopy2",
+        "label": "荒野",
+        "icon": "?",
+        "x": 610,
+        "y": 666,
+        "eventSetId": "eventSet"
+      },
+      {
+        "id": "node7CopyCopy3",
+        "label": "荒芜居所",
+        "icon": "?",
+        "x": 532,
+        "y": 750,
+        "eventSetId": "eventSet"
+      },
+      {
+        "id": "node8CopyCopy",
+        "label": "杂物屏障",
+        "icon": "?",
+        "x": 632,
+        "y": 1066,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node11",
+        "label": "皇帝领地",
+        "icon": "?",
+        "x": 381,
+        "y": 1088,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node11Copy",
+        "label": "囚禁区",
+        "icon": "?",
+        "x": 523,
+        "y": 1001,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node11CopyCopy",
+        "label": "营地棚屋",
+        "icon": "?",
+        "x": 249,
+        "y": 998,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node11CopyCopyCopy",
+        "label": "营地棚屋",
+        "icon": "?",
+        "x": 380,
+        "y": 1261,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node11CopyCopyCopyCopy",
+        "label": "管道入口",
+        "icon": "?",
+        "x": 580,
+        "y": 1335,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node11CopyCopy2",
+        "label": "物资库",
+        "icon": "?",
+        "x": 527,
+        "y": 1154,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node11Copy2",
+        "label": "肢解区",
+        "icon": "?",
+        "x": 243,
+        "y": 1176,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node8Copy2",
+        "label": "杂物屏障",
+        "icon": "?",
+        "x": 113,
+        "y": 1052,
+        "eventSetId": "quietClearing"
+      },
+      {
+        "id": "node2Copy2Copy",
+        "icon": "?",
+        "label": "腐叶原野",
+        "x": 757,
+        "y": 850,
+        "eventSetId": "eventSet"
+      },
+      {
+        "id": "node12",
+        "label": "荒野",
+        "icon": "?",
+        "x": 1054,
+        "y": 433,
+        "eventSetId": "quietClearing"
       }
     ],
     "edges": [
@@ -295,179 +338,197 @@ window.WORLD_MAP_BUNDLE = {
         "to": "eddie"
       },
       {
-        "from": "eddie",
-        "to": "siltWoods",
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "eddieMet",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        }
-      },
-      {
-        "from": "eddie",
-        "to": "drownedHuts",
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "eddieMet",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        }
-      },
-      {
-        "from": "eddie",
-        "to": "bellRoad",
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "eddieMet",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        }
-      },
-      {
         "from": "bellRoad",
-        "to": "bell",
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "exploredBellRoad",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        }
-      },
-      {
-        "from": "gate",
-        "to": "dungA",
-        "revealWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "bridgeOpened",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        },
-        "activeWhen": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "bridgeOpened",
-              "operator": "eq",
-              "value": true
-            }
-          ]
-        }
+        "to": "bell"
       },
       {
         "from": "siltWoods",
         "to": "hut"
       },
       {
-        "from": "hut",
-        "to": "chris"
-      },
-      {
         "from": "drownedHuts",
         "to": "node2"
       },
       {
-        "from": "node2",
-        "to": "dungB"
+        "from": "eddie",
+        "to": "node"
       },
       {
-        "from": "dungB",
+        "from": "node",
+        "to": "drownedHuts"
+      },
+      {
+        "from": "eddie",
+        "to": "node4"
+      },
+      {
+        "from": "node4",
+        "to": "node4Copy"
+      },
+      {
+        "from": "node4Copy",
+        "to": "node4CopyCopy"
+      },
+      {
+        "from": "node4Copy",
+        "to": "drownedHuts"
+      },
+      {
+        "from": "node4CopyCopy",
+        "to": "bellRoad"
+      },
+      {
+        "from": "node2",
+        "to": "node2Copy"
+      },
+      {
+        "from": "node2Copy",
+        "to": "node2Copy2"
+      },
+      {
+        "from": "node2Copy2",
         "to": "node3"
       },
       {
         "from": "node3",
-        "to": "gate"
+        "to": "node5"
+      },
+      {
+        "from": "node5",
+        "to": "drownedHuts"
+      },
+      {
+        "from": "node",
+        "to": "node6"
+      },
+      {
+        "from": "node",
+        "to": "node7"
+      },
+      {
+        "from": "node6",
+        "to": "node7Copy"
+      },
+      {
+        "from": "node7Copy",
+        "to": "node7Copy2"
+      },
+      {
+        "from": "node7Copy2",
+        "to": "node7Copy3"
+      },
+      {
+        "from": "node7Copy3",
+        "to": "node8"
+      },
+      {
+        "from": "node8",
+        "to": "node9"
+      },
+      {
+        "from": "node8Copy",
+        "to": "node9"
+      },
+      {
+        "from": "node9",
+        "to": "node10"
+      },
+      {
+        "from": "node10",
+        "to": "node"
+      },
+      {
+        "from": "node7",
+        "to": "node7CopyCopy"
+      },
+      {
+        "from": "node7CopyCopy",
+        "to": "node7CopyCopy2"
+      },
+      {
+        "from": "node7CopyCopy2",
+        "to": "node7CopyCopy3"
+      },
+      {
+        "from": "node10",
+        "to": "node7CopyCopy3"
+      },
+      {
+        "from": "node7CopyCopy3",
+        "to": "node8Copy"
+      },
+      {
+        "from": "node2Copy",
+        "to": "node7CopyCopy"
+      },
+      {
+        "from": "node9",
+        "to": "node11"
+      },
+      {
+        "from": "node8Copy",
+        "to": "node11Copy"
+      },
+      {
+        "from": "node8CopyCopy",
+        "to": "node11CopyCopy2"
+      },
+      {
+        "from": "node11",
+        "to": "node11CopyCopy2"
+      },
+      {
+        "from": "node11",
+        "to": "node11Copy"
+      },
+      {
+        "from": "node11",
+        "to": "node11CopyCopy"
+      },
+      {
+        "from": "node11",
+        "to": "node11Copy2"
+      },
+      {
+        "from": "node11",
+        "to": "node11CopyCopyCopy"
+      },
+      {
+        "from": "node11",
+        "to": "node11CopyCopyCopyCopy"
+      },
+      {
+        "from": "node8Copy2",
+        "to": "node11Copy2"
+      },
+      {
+        "from": "node8Copy2",
+        "to": "node11CopyCopy"
+      },
+      {
+        "from": "node7Copy3",
+        "to": "node8Copy2"
+      },
+      {
+        "from": "siltWoods",
+        "to": "node8CopyCopy"
+      },
+      {
+        "from": "node2Copy2",
+        "to": "node2Copy2Copy"
+      },
+      {
+        "from": "node2Copy2Copy",
+        "to": "siltWoods"
+      },
+      {
+        "from": "bellRoad",
+        "to": "node12"
+      },
+      {
+        "from": "node12",
+        "to": "node3"
       }
-    ],
-    "editor": {
-      "positions": {
-        "start": {
-          "x": 50,
-          "y": 634
-        },
-        "eddie": {
-          "x": 56,
-          "y": 522
-        },
-        "siltWoods": {
-          "x": 337,
-          "y": 336
-        },
-        "drownedHuts": {
-          "x": 417,
-          "y": 445
-        },
-        "bellRoad": {
-          "x": 443,
-          "y": 598
-        },
-        "chris": {
-          "x": 666,
-          "y": 89
-        },
-        "hut": {
-          "x": 496,
-          "y": 266
-        },
-        "bell": {
-          "x": 937,
-          "y": 628
-        },
-        "gate": {
-          "x": 901,
-          "y": 216
-        },
-        "dungA": {
-          "x": 879,
-          "y": 110
-        },
-        "dungB": {
-          "x": 748,
-          "y": 427
-        },
-        "church": {
-          "x": 924,
-          "y": 46
-        },
-        "node": {
-          "x": 141,
-          "y": 119
-        },
-        "node2": {
-          "x": 622,
-          "y": 435
-        },
-        "node3": {
-          "x": 844,
-          "y": 320
-        }
-      }
-    }
+    ]
   }
 };

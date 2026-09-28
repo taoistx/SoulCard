@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>事件集编辑器</title>
+    <link rel="stylesheet" href="editor.css" />
+  </head>
+  <body>
+    <main id="eventEditorApp" class="editor-app is-loading">
+      <header class="editor-header">
+        <div class="brand"><p>WORLD AUTHORING TOOL</p><h1>事件集编辑器</h1></div>
+        <nav><a href="index.html">地图节点编辑器</a><a href="../npc-editor/index.html">剧情编辑器</a><a href="../index.html">返回游戏</a></nav>
+        <div class="header-actions">
+          <button id="newSetButton" type="button">新建事件集</button>
+          <button id="duplicateSetButton" type="button">复制事件集</button>
+          <button id="deleteSetButton" type="button">删除事件集</button>
+          <button id="undoButton" type="button">撤销</button>
+          <button id="redoButton" type="button">重做</button>
+          <button id="validateButton" type="button">检查</button>
+          <button id="saveButton" class="primary" type="button">保存 world-events.js</button>
+        </div>
+        <span id="dirtyState" class="dirty-state">载入中</span>
+      </header>
+      <div class="editor-layout event-editor-layout">
+        <aside class="panel navigator-panel">
+          <section><p class="panel-kicker">事件集</p><div id="eventSetList" class="node-list"></div></section>
+          <section><p class="panel-kicker">说明</p><p class="help">地图节点只引用事件集 ID。单元素事件集必定命中；多元素按权重随机，结果按节点锁定到当天结束。</p></section>
+        </aside>
+        <section class="event-entry-column">
+          <header class="event-entry-header"><div><p class="panel-kicker">事件元素</p><h2 id="setTitle">—</h2></div><div class="row-actions"><button id="addNpcButton" type="button">＋ NPC</button><button id="addDialogueButton" type="button">＋ 世界对话</button><button id="addBattleButton" type="button">＋ 战斗</button></div></header>
+          <div id="eventEntryList" class="event-entry-list"></div>
+          <footer class="graph-status"><span id="selectionStatus">事件集</span><span id="feedback" role="status"></span></footer>
+        </section>
+        <aside class="panel inspector-panel"><div class="panel-heading"><p class="panel-kicker">属性</p><span id="inspectorKind"></span></div><div id="inspector" class="inspector"></div></aside>
+      </div>
+    </main>
+    <script src="../world-events.js"></script>
+    <script src="../world-map.js"></script>
+    <script src="event-editor.js"></script>
+  </body>
+</html>

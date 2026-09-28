@@ -144,12 +144,12 @@
             只有<strong>长休</strong>会让你满血，也会夺走一天。
           </p>
           <div class="rules">
-            <div><span>01</span><p><strong>探索粪坑边境</strong>，点击已点亮节点移动，到达后按 E 交互。</p></div>
+            <div><span>01</span><p><strong>探索粪坑边境</strong>，首次进入暗色节点消耗 1 点体力并触发事件；重访后按 E 调查。</p></div>
             <div><span>02</span><p><strong>体力限制关键动作</strong>：探索、献祭、搜索、开路和战斗都会消耗体力。</p></div>
             <div><span>03</span><p><strong>身体就是角色卡</strong>：保留完整身体或永久献祭器官，都是 Build。</p></div>
           </div>
           <button id="startButton" class="primary-button">从坠落处爬起来 <span>↗</span></button>
-          <small>点击节点移动 · E 交互 · I 查看身体与背包 · 战斗中空格补牌</small>
+          <small>拖动地图查看 · 点击节点移动 · E 调查 · I 查看身体与背包 · 战斗中空格补牌</small>
         </div>
       </section>
 
@@ -204,6 +204,7 @@
               <rect x="18" y="18" width="964" height="644" rx="26" />
             </clipPath>
           </defs>
+          <g id="mapContent">
           <image
             class="world-terrain"
             href="assets/point-crawl-terrain-bg.png"
@@ -221,16 +222,18 @@
             <circle r="11" />
             <text text-anchor="middle" dy="5">你</text>
           </g>
+          </g>
         </svg>
+        <button id="focusPlayerButton" class="focus-player-button" type="button" aria-label="回到玩家">回到玩家</button>
         <div id="interactionPrompt" class="interaction-prompt hidden"><kbd>E</kbd><span>交互</span></div>
         <p id="mapHint" class="map-hint">点击节点移动 · E 交互 · L 长休。</p>
       </div>
 
       <footer class="map-footer">
         <span><i class="legend-player"></i>你</span>
-        <span><i class="legend-npc"></i>幸存者</span>
-        <span><i class="legend-enemy"></i>敌意</span>
-        <span><i class="legend-poi"></i>地点</span>
+        <span><i class="legend-npc"></i>已探索</span>
+        <span><i class="legend-enemy"></i>未探索</span>
+        <span><i class="legend-poi"></i>锁定通路</span>
         <span>World Flags <strong id="flagCount">0</strong></span>
       </footer>
 
@@ -261,7 +264,7 @@
     <script src="npc-dialogue-loader.js?v=json-dialogue-2"></script>
     <script src="battle-data-loader.js"></script>
     <script src="game.js?v=bell-pose-20260909-2"></script>
-    <script>document.write(`<script src="world-map.js?v=${Date.now()}"><\/script>`);</script>
+    <script>document.write(`<script src="world-events.js?v=${Date.now()}"><\/script><script src="world-map.js?v=${Date.now()}"><\/script>`);</script>
     <script src="world.js"></script>
   </body>
 </html>

@@ -31,12 +31,17 @@ label { display:grid; gap:5px; color:var(--muted); font-size:12px; }
 .help { color:var(--muted); font-size:11px; line-height:1.7; }
 .entry-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--gold); }
 .graph-column { min-width:0; min-height:0; display:grid; grid-template-rows:minmax(0,1fr) auto; }
-.graph-viewport { position:relative; overflow:auto; min-height:0; background-color:#0b0e0c; background-image:linear-gradient(#202620 1px,transparent 1px),linear-gradient(90deg,#202620 1px,transparent 1px); background-size:24px 24px; }
+.graph-viewport { position:relative; overflow:auto; min-height:0; background:#0b0e0c; cursor:grab; user-select:none; -webkit-user-select:none; }
 .graph-viewport.is-panning { cursor:grabbing; }
+.graph-surface { position:relative; width:1600px; height:1050px; overflow:hidden; background-color:#0b0e0c; background-image:linear-gradient(#202620 1px,transparent 1px),linear-gradient(90deg,#202620 1px,transparent 1px); background-size:24px 24px; }
 .graph-nodes,.graph-edges { position:absolute; width:1600px; height:1050px; inset:0; }
 .graph-nodes { pointer-events:none; }
 .graph-edges { pointer-events:auto; overflow:visible; }
 .graph-edge { fill:none; stroke:#687566; stroke-width:2; }
+.graph-edge + .graph-edge-hit { pointer-events:stroke; }
+.graph-edges marker path { fill:var(--gold); }
+.graph-axis { stroke:#8a819f; stroke-width:1.5; stroke-dasharray:5 5; opacity:.7; }
+.axis-label { fill:#7c6d9b; font:700 12px "Segoe UI","Microsoft YaHei",sans-serif; }
 .graph-edge.locked { stroke-dasharray:7 5; opacity:.75; }
 .graph-edge.selected { stroke:var(--gold); stroke-width:3; }
 .graph-edge.draft { stroke:var(--gold); stroke-dasharray:6 4; pointer-events:none; }
@@ -53,14 +58,15 @@ label { display:grid; gap:5px; color:var(--muted); font-size:12px; }
 .node-dot { position:absolute; left:0; top:0; width:34px; height:34px; display:grid; place-items:center; transform:translate(-50%,-50%); border:2px solid #6d746b; border-radius:50%; background:#111610; color:#f0e5c9; box-shadow:0 4px 16px #000b; font-size:16px; line-height:1; }
 .node-label { position:absolute; left:0; top:24px; min-width:82px; max-width:130px; transform:translateX(-50%); color:#d9d0b9; font-size:11px; line-height:1.25; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 2px 4px #000; pointer-events:none; }
 .graph-node.selected .node-dot { border-color:var(--gold); box-shadow:0 0 0 4px #c6a96a2f,0 8px 22px #000; }
-.graph-node.linking-target .node-dot { border-color:var(--green); }
+.graph-node.link-drop-target .node-dot { border-color:var(--green); background:#e5fff0; box-shadow:0 0 0 6px rgba(25,201,151,.2),0 8px 22px #0003; }
 .graph-node.npc .node-dot { border-color:#b9a36f; }
 .graph-node.enemy .node-dot { border-color:#b15b55; }
 .graph-node.random .node-dot { border-color:#7e9bbb; }
 .graph-node.poi .node-dot { border-color:#b6ad88; }
 .graph-node.wilderness .node-dot { border-style:dashed; }
 .node-excerpt { display:none; }
-.port { position:absolute; left:14px; top:-7px; width:14px; height:14px; border:2px solid var(--gold); border-radius:50%; background:#111; cursor:crosshair; }
+.port { position:absolute; left:14px; top:-7px; width:14px; height:14px; border:2px solid var(--gold); border-radius:50%; background:#111; cursor:crosshair; touch-action:none; }
+.port { min-width:0; padding:0; box-shadow:none; }
 .port:hover { background:#2a261b; }
 .graph-status { display:flex; justify-content:space-between; min-height:34px; padding:8px 14px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; }
 .graph-status .error { color:var(--red); }
@@ -82,7 +88,21 @@ label { display:grid; gap:5px; color:var(--muted); font-size:12px; }
 .validation-list .error { color:var(--red); }
 .validation-list .warning { color:#d1ad66; }
 .subtle { color:var(--muted); font-size:11px; line-height:1.6; }
+.toggle-row { display:flex; grid-column:1/-1; align-items:center; gap:8px; }
+.toggle-row input { width:auto; }
 @media (max-width:1250px) { .editor-layout { grid-template-columns:220px minmax(520px,1fr) 350px; }.editor-header { grid-template-columns:auto 1fr; }.editor-header .dirty-state { justify-self:end; } }
+
+.event-editor-layout { grid-template-columns:260px minmax(520px,1fr) 390px; }
+.event-entry-column { min-width:0; min-height:0; display:grid; grid-template-rows:auto minmax(0,1fr) auto; background:#faf9ff; }
+.event-entry-header { display:flex; justify-content:space-between; align-items:center; gap:18px; padding:18px 22px; border-bottom:1px solid var(--line); background:rgba(255,255,255,.9); }
+.event-entry-header h2 { margin:4px 0 0; font-size:21px; }
+.event-entry-list { overflow:auto; padding:22px; display:grid; align-content:start; gap:12px; }
+.event-entry-card { position:relative; overflow:hidden; width:100%; padding:16px; display:grid; grid-template-columns:1fr auto; align-items:center; gap:12px; text-align:left; }
+.event-entry-card.active { border-color:var(--purple); background:#f1edff; }
+.event-entry-heading { display:grid; gap:4px; }
+.event-entry-heading small { color:var(--muted); }
+.event-entry-chance { color:var(--purple); font-size:18px; font-weight:800; }
+.event-weight-bar { position:absolute; left:0; bottom:0; height:4px; background:linear-gradient(90deg,var(--pink),var(--purple)); }
 
 /* Bright dopamine app theme */
 :root {
@@ -181,7 +201,8 @@ label { color:#68617d; font-weight:600; }
 .node-list button.active { border-color:#8064f5; background:#eee9ff; color:#5537d7; box-shadow:0 5px 13px rgba(94,66,191,.12); }
 .node-list small,.help,.subtle,.graph-status { color:var(--muted); }
 .entry-dot { background:#ff4fa3; box-shadow:0 0 0 3px #ffd6e9; }
-.graph-viewport {
+.graph-viewport { background:#f2effa; }
+.graph-surface {
   background-color:#faf9ff;
   background-image:
     linear-gradient(rgba(124,92,255,.08) 1px,transparent 1px),

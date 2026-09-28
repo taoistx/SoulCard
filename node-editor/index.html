@@ -10,9 +10,11 @@
     <main id="editorApp" class="editor-app is-loading">
       <header class="editor-header">
         <div class="brand"><p>WORLD AUTHORING TOOL</p><h1>节点地图编辑器</h1></div>
-        <nav><a href="../npc-editor/index.html">剧情编辑器</a><a href="../index.html">返回游戏</a></nav>
+        <nav><a href="events.html">事件集编辑器</a><a href="../npc-editor/index.html">剧情编辑器</a><a href="../index.html">返回游戏</a></nav>
         <div class="header-actions">
           <button id="addNodeButton" type="button">新建节点</button>
+          <button id="copyNodeButton" type="button">复制节点</button>
+          <button id="pasteNodeButton" type="button">粘贴节点</button>
           <button id="undoButton" type="button">撤销</button>
           <button id="redoButton" type="button">重做</button>
           <button id="validateButton" type="button">检查</button>
@@ -33,14 +35,16 @@
           </section>
           <section>
             <p class="panel-kicker">图例</p>
-            <p class="help"><i class="entry-dot"></i> 起点 / 初始点亮<br />节点图坐标对应游戏运行坐标；拖动圆点会修改游戏 X/Y。从节点右侧小圆点拖到目标节点即可连线；点连线中间的 × 可断开，拖动终点可重连。<br />用启动批处理打开时，保存会直接覆盖根目录 world-map.js；普通静态服务器不能保存。</p>
+            <p class="help"><i class="entry-dot"></i> 已选择节点<br />左下角为 (0,0)，X 向右、Y 向上。从父节点右侧端口拖到子节点即可建立有向连线，箭头指向子节点；双击连线可断开。选中节点后可用 Ctrl+C / Ctrl+V 复制粘贴，按 Delete 删除；复制不会包含连线。移动仍为双向。<br />用启动批处理打开时，保存会直接覆盖根目录 world-map.js。</p>
           </section>
         </aside>
 
         <section class="graph-column">
           <div id="graphViewport" class="graph-viewport">
-            <svg id="graphEdges" class="graph-edges" aria-hidden="true"></svg>
-            <div id="graphNodes" class="graph-nodes"></div>
+            <div id="graphSurface" class="graph-surface">
+              <svg id="graphEdges" class="graph-edges" aria-hidden="true"></svg>
+              <div id="graphNodes" class="graph-nodes"></div>
+            </div>
           </div>
           <footer class="graph-status"><span id="selectionStatus">地图设置</span><span id="feedback" role="status"></span></footer>
         </section>
@@ -52,9 +56,7 @@
       </div>
     </main>
 
-    <datalist id="npcIds"></datalist>
-    <datalist id="enemyIds"></datalist>
-    <datalist id="nodeIds"></datalist>
+    <script src="../world-events.js"></script>
     <script src="../world-map.js"></script>
     <script src="../npc-dialogues.js?v=json-dialogue-2"></script>
     <script src="editor.js"></script>

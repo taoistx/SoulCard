@@ -5,6 +5,7 @@ import json
 
 ROOT = Path(__file__).resolve().parent.parent
 WORLD_MAP = ROOT / "world-map.js"
+WORLD_EVENTS = ROOT / "world-events.js"
 PORT = 8765
 
 
@@ -17,20 +18,25 @@ class NodeEditorHandler(SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_POST(self):
-        if self.path != "/__node_editor/save_world_map":
+        targets = {
+            "/__node_editor/save_world_map": (WORLD_MAP, "window.WORLD_MAP_BUNDLE"),
+            "/__node_editor/save_world_events": (WORLD_EVENTS, "window.WORLD_EVENT_SET_BUNDLE"),
+        }
+        if self.path not in targets:
             self.send_error(404, "Unknown endpoint")
             return
         try:
+            target, marker = targets[self.path]
             length = int(self.headers.get("Content-Length", "0"))
             payload = json.loads(self.rfile.read(length).decode("utf-8"))
             source = payload.get("source")
-            if not isinstance(source, str) or "window.WORLD_MAP_BUNDLE" not in source:
-                raise ValueError("source must be a world-map.js string")
-            WORLD_MAP.write_text(source, encoding="utf-8", newline="\n")
+            if not isinstance(source, str) or marker not in source:
+                raise ValueError(f"source must contain {marker}")
+            target.write_text(source, encoding="utf-8", newline="\n")
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
-            self.wfile.write(json.dumps({"ok": True, "path": str(WORLD_MAP)}).encode("utf-8"))
+            self.wfile.write(json.dumps({"ok": True, "path": str(target)}).encode("utf-8"))
         except Exception as error:
             self.send_response(400)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -42,4 +48,5 @@ if __name__ == "__main__":
     server = ThreadingHTTPServer(("127.0.0.1", PORT), NodeEditorHandler)
     print(f"Node editor server: http://127.0.0.1:{PORT}/node-editor/index.html")
     print("Saving exports to:", WORLD_MAP)
+    print("Saving event sets to:", WORLD_EVENTS)
     server.serve_forever()

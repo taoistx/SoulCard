@@ -67,9 +67,9 @@ const DEFAULT_ENEMY_POISE = 3;
 // 敌方意图中断持续时间
 const ENEMY_BREAK_DURATION = 6;
 // 补充手牌冷却时间
-const REFILL_COOLDOWN = 6;
+const REFILL_COOLDOWN = 5;
 // 补充手牌目标手牌大小
-const REFILL_TARGET_HAND_SIZE = 6;
+const REFILL_TARGET_HAND_SIZE = 5;
 // 补充手牌前是否弃掉全部当前手牌，再重新抽满
 const REFILL_DISCARD_HAND_BEFORE_DRAW = true;
 // 每个时间节点的推进间隔（毫秒），越短节奏越流畅
