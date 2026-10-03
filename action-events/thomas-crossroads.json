@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "id": "thomasCrossroads",
+  "name": "路口的喘息",
+  "enemyId": "dungling",
+  "lureNodeId": "node7",
+  "start": "opening",
+  "slots": [
+    {
+      "id": "thomas",
+      "name": "托马斯",
+      "icon": "♟",
+      "npcId": "thomas"
+    },
+    {
+      "id": "field",
+      "name": "路口 · 场地",
+      "icon": "⌖"
+    },
+    {
+      "id": "monster",
+      "name": "粪怪",
+      "icon": "☣"
+    }
+  ],
+  "stages": {
+    "opening": {
+      "body": "在路口，你见到一个衣服还比较干净的陌生人，他看看你，然后惊恐地指向路口\n\n路口那边一个摇摇晃晃的人影，抬起头，看到全是空洞的脸，然后身上开始长出不明的条状物，突然，那人影像是受到了什么刺激，用极其扭曲但又有迅捷的动作向你们靠近",
+      "recipes": [
+        {
+          "id": "kill_and_strike",
+          "priority": 30,
+          "slots": {
+            "thomas": {
+              "kind": "card",
+              "category": "attack"
+            },
+            "monster": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "action": "kill_thomas_and_attack_dung",
+          "result": "你杀死了陌生人，怪兽被鲜血气味所吸引，你抢到了额外 4 刻先机。"
+        },
+        {
+          "id": "kill",
+          "priority": 20,
+          "slots": {
+            "thomas": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "action": "kill_thomas",
+          "result": "你杀死了陌生人，你将独自面对粪怪"
+        },
+        {
+          "id": "strike",
+          "priority": 20,
+          "slots": {
+            "monster": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "action": "attack_dung",
+          "result": "怪物并未注意到你，你获得了先机。你抢到了额外 4 刻先机。"
+        },
+        {
+          "id": "observe",
+          "slots": {
+            "monster": {
+              "kind": "card",
+              "category": "technique",
+              "cardId": "focus"
+            }
+          },
+          "action": "observe_dung",
+          "next": "infected",
+          "result": "你看清了粪怪追逐气味和动静的规律。但这片刻迟疑已足够：它扑倒托马斯，孢子涌入他的口鼻。获得知识「粪怪习性」：对粪怪伤害 +15%，也可作为诱导依据。"
+        },
+        {
+          "id": "observe_field",
+          "slots": {
+            "field": {
+              "kind": "card",
+              "category": "technique",
+              "cardId": "focus"
+            }
+          },
+          "action": "observe_dung",
+          "next": "infected",
+          "result": "你借路口的地势看清了粪怪追逐气味和动静的规律。但这片刻迟疑已足够：它扑倒托马斯，孢子涌入他的口鼻。获得知识「粪怪习性」：对粪怪伤害 +15%，也可作为诱导依据。"
+        },
+        {
+          "id": "protect",
+          "priority": 10,
+          "slots": {
+            "thomas": {
+              "kind": "card",
+              "category": "defense"
+            }
+          },
+          "action": "protect_thomas",
+          "result": "你将托马斯拽到身后，挡住扑来的粪怪。他紧抓着路边的石头，等你解决眼前的威胁。"
+        },
+        {
+          "id": "lure",
+          "slots": {
+            "field": {
+              "kind": "card",
+              "category": "technique",
+              "excludeCardId": "focus"
+            },
+            "monster": {
+              "kind": "rhetoric",
+              "tag": "lure"
+            }
+          },
+          "action": "lure_dung",
+          "result": "你把粪怪的注意力牵向岔路，利用地势将它引到东边的荒野。托马斯趁机逃走，路口安静下来。"
+        },
+        {
+          "id": "trap",
+          "slots": {
+            "monster": {
+              "kind": "card",
+              "category": "technique",
+              "excludeCardId": "focus"
+            },
+            "field": {
+              "kind": "rhetoric",
+              "tag": "lure"
+            }
+          },
+          "action": "trap_dung",
+          "result": "你让粪怪反复扑向同一处泥洼。它暂时困在这里，足够你安全离开；下一次长休后，它就会挣脱。托马斯已逃得不见踪影。"
+        }
+      ]
+    },
+    "infected": {
+      "body": "托马斯被粪怪扑倒，捂住嘴咳出满是孢子的黏液。粪怪再次弓起背。你已看懂它的行为，却必须决定接下来怎么做。",
+      "recipes": [
+        {
+          "id": "kill_and_strike",
+          "priority": 30,
+          "slots": {
+            "thomas": {
+              "kind": "card",
+              "category": "attack"
+            },
+            "monster": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "action": "kill_thomas_and_attack_dung",
+          "result": "你同时向托马斯和粪怪出手。托马斯倒在泥水里；粪怪被迫回身，你抢到了额外 4 刻先机。"
+        },
+        {
+          "id": "kill",
+          "priority": 20,
+          "slots": {
+            "thomas": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "action": "kill_thomas",
+          "result": "托马斯甚至没来得及看清你的刀。他倒进泥水里，粪怪转向了你。"
+        },
+        {
+          "id": "strike",
+          "priority": 20,
+          "slots": {
+            "monster": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "action": "attack_dung",
+          "result": "你趁粪怪扑向托马斯之前出手。它踉跄着回头——你抢到了额外 4 刻先机。"
+        },
+        {
+          "id": "observe_again",
+          "slots": {
+            "monster": {
+              "kind": "card",
+              "category": "technique",
+              "cardId": "focus"
+            }
+          },
+          "action": "observe_infected",
+          "result": "你继续盯着粪怪，没有出手。它当着你的面杀死托马斯，只留下一具布满孢子的感染尸体，然后朝你扑来。"
+        },
+        {
+          "id": "observe_field_again",
+          "slots": {
+            "field": {
+              "kind": "card",
+              "category": "technique",
+              "cardId": "focus"
+            }
+          },
+          "action": "observe_infected",
+          "result": "你继续观察路口与粪怪的动静，没有出手。它当着你的面杀死托马斯，只留下一具布满孢子的感染尸体，然后朝你扑来。"
+        },
+        {
+          "id": "protect",
+          "priority": 10,
+          "slots": {
+            "thomas": {
+              "kind": "card",
+              "category": "defense"
+            }
+          },
+          "action": "protect_thomas",
+          "result": "你将托马斯拽到身后，挡住扑来的粪怪。他紧抓着路边的石头，等你解决眼前的威胁。"
+        },
+        {
+          "id": "lure",
+          "slots": {
+            "field": {
+              "kind": "card",
+              "category": "technique",
+              "excludeCardId": "focus"
+            },
+            "monster": {
+              "kind": "rhetoric",
+              "tag": "lure"
+            }
+          },
+          "action": "lure_dung",
+          "result": "你把粪怪的注意力牵向岔路，利用地势将它引到东边的荒野。托马斯趁机逃走，路口安静下来。"
+        },
+        {
+          "id": "trap",
+          "slots": {
+            "monster": {
+              "kind": "card",
+              "category": "technique",
+              "excludeCardId": "focus"
+            },
+            "field": {
+              "kind": "rhetoric",
+              "tag": "lure"
+            }
+          },
+          "action": "trap_dung",
+          "result": "粪怪被血肉的气味所吸引，忽略了你们的存在。陌生人已经不见踪影dd。"
+        }
+      ]
+    }
+  }
+}

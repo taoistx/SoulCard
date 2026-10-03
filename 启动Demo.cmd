@@ -10,6 +10,8 @@ if errorlevel 1 (
   exit /b 1
 )
 
-python demo-server.py
+start "Demo Server - close this window to stop" /D "%CD%" python node-editor\server.py
+powershell -NoProfile -Command "Start-Sleep -Seconds 1"
+start "" "http://127.0.0.1:8765/index.html"
 
 endlocal

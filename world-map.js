@@ -78,10 +78,10 @@ window.WORLD_MAP_BUNDLE = {
       {
         "id": "node2",
         "icon": "?",
-        "label": "腐叶原野",
+        "label": "山道粪怪",
         "x": 713,
         "y": 360,
-        "eventSetId": "eventSet"
+        "eventSetId": "dungAEncounter"
       },
       {
         "id": "node3",
@@ -97,7 +97,7 @@ window.WORLD_MAP_BUNDLE = {
         "icon": "?",
         "x": 352,
         "y": 292,
-        "eventSetId": "quietClearing"
+        "eventSetId": "thomasEncounter"
       },
       {
         "id": "node4",
@@ -126,10 +126,10 @@ window.WORLD_MAP_BUNDLE = {
       {
         "id": "node2Copy",
         "icon": "?",
-        "label": "腐叶原野",
+        "label": "原野粪怪",
         "x": 712,
         "y": 500,
-        "eventSetId": "eventSet"
+        "eventSetId": "dungBEncounter"
       },
       {
         "id": "node2Copy2",

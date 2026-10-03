@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "thomas",
+  "name": "幸存者 托马斯",
+  "start": {
+    "default": "root",
+    "rules": [
+      {
+        "when": {
+          "mode": "all",
+          "clauses": [
+            {
+              "source": "flag",
+              "key": "thomasInfected",
+              "operator": "eq",
+              "value": true
+            }
+          ]
+        },
+        "node": "infected"
+      }
+    ]
+  },
+  "nodes": {
+    "root": {
+      "body": "“刚才要不是你挡在前面，我已经死了。”托马斯仍在发抖，但没有再跑。\n“我先留在这里……至少这里有你走过的脚印。”",
+      "options": [
+        {
+          "id": "ask",
+          "label": "你感觉怎么样？",
+          "next": "thanks"
+        }
+      ]
+    },
+    "thanks": {
+      "body": "“腿还是软的，脑子倒是清楚。那些东西闻得到我们……走路小心。”",
+      "options": [
+        {
+          "id": "back",
+          "label": "返回",
+          "next": "root"
+        }
+      ]
+    },
+    "infected": {
+      "body": "托马斯缩在路边，指缝间渗出灰白的泡沫。\n“你把我救下来了……可我身体里好像有什么在动。”\n你挡住了后来的袭击，却无法抹去先前吸入的孢子。",
+      "options": [
+        {
+          "id": "ask",
+          "label": "问他是否还能撑住",
+          "next": "infected_reply"
+        }
+      ]
+    },
+    "infected_reply": {
+      "body": "“先别让我一个人待着。”他努力挤出一个笑，“我会留在这里。要是我开始不认识你了……你会看出来的。”",
+      "options": [
+        {
+          "id": "back",
+          "label": "返回",
+          "next": "infected"
+        }
+      ]
+    }
+  }
+}

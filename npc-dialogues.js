@@ -5,7 +5,7 @@
   const SCHEMA_VERSION = 1;
   const TEMPLATE_KEYS = new Set(["day", "dailyStockId", "dailyStockName", "sacrificedCount"]);
   const BODY_PARTS = ["leftHand", "rightHand", "body", "head", "eye", "heart", "brain"];
-  const ITEM_IDS = ["freshFlesh", "oldKey", "healingPotion", "ritualScrap", "rustySword", "longSword", "dagger", "greatSword", "shield", "heavyArmor", "gi", "ladyHat"];
+  const ITEM_IDS = ["freshFlesh", "baitMeat", "oldKey", "healingPotion", "ritualScrap", "rustySword", "longSword", "dagger", "greatSword", "shield", "heavyArmor", "gi", "ladyHat"];
   const ACTIONS = { fight_eddie: "与艾迪战斗", fight_bell: "与丧钟战斗" };
   const NUMERIC_SOURCES = new Set(["day", "sacrificedCount"]);
   const NUMERIC_OPERATORS = new Set(["eq", "ne", "gte", "lte"]);

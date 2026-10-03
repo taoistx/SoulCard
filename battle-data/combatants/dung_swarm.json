@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "dung_swarm",
+  "combatEnabled": true,
+  "displayName": "群体粪怪",
+  "role": "腐败兽群",
+  "intro": "六团污秽占住三层阵线：贴身 1 只、近距 2 只、远距 3 只。涌动会让它们逐层逼近。",
+  "stats": {
+    "maxHp": 72,
+    "poise": 3
+  },
+  "group": {
+    "unitCount": 6,
+    "unitHp": 12,
+    "damagePerUnit": 2
+  },
+  "skills": [
+    {
+      "id": "dung_swarm_bite",
+      "name": "扑咬",
+      "groupAction": "bite",
+      "description": "贴身前排最多 2 只扑咬，每只造成 2 点伤害",
+      "damage": 4,
+      "windup": 3
+    },
+    {
+      "id": "dung_swarm_surge",
+      "name": "涌动",
+      "groupAction": "surge",
+      "description": "所有存活粪怪向镜头前进一层",
+      "damage": 0,
+      "windup": 2
+    },
+    {
+      "id": "dung_swarm_encircle",
+      "name": "包围",
+      "groupAction": "encircle",
+      "description": "至少 4 只存活时，全群造成每只 2 点伤害",
+      "damage": 12,
+      "windup": 3
+    }
+  ]
+}

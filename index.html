@@ -9,6 +9,7 @@
   </head>
   <body>
     <main id="game" class="game" aria-label="余烬刻度战斗界面">
+      <div id="battleStage" class="battle-stage" aria-label="第一人称战斗舞台"></div>
       <div id="sceneBg" class="scene scene-bg" aria-hidden="true"></div>
       <div id="mistLayer" class="mist-layer" aria-hidden="true"></div>
       <div id="enemyTarget" class="enemy-stage" aria-label="丧钟守卫拖拽目标">
@@ -47,14 +48,18 @@
         <div class="hp-track enemy-hp-track">
           <div id="enemyHp" class="hp-fill enemy-hp"></div>
           <div id="enemyHpLag" class="hp-fill hp-lag"></div>
+          <div id="enemyHpSegments" class="enemy-hp-segments" aria-hidden="true"></div>
         </div>
         <div id="enemyStatuses" class="status-row"></div>
+        <div id="frontlineHud" class="frontline-hud" aria-label="敌群阵线"></div>
       </section>
+
+      <aside id="groupDebug" class="group-debug hidden" aria-label="群体战调试信息"></aside>
 
       <aside id="intentPanel" class="intent-panel" aria-live="polite">
         <div class="intent-seal" aria-hidden="true">
           <span id="intentDamage">12</span>
-          <small>伤害</small>
+          <small id="intentMetricLabel">伤害</small>
         </div>
         <div class="intent-copy">
           <p>敌方意图</p>
@@ -263,6 +268,10 @@
     <script src="npc-dialogues.js?v=json-dialogue-2"></script>
     <script src="npc-dialogue-loader.js?v=json-dialogue-2"></script>
     <script src="battle-data-loader.js"></script>
+    <script src="group-combat.js"></script>
+    <script src="card-instances.js"></script>
+    <script src="action-events.js"></script>
+    <script src="action-event-panel.js"></script>
     <script src="game.js?v=bell-pose-20260909-2"></script>
     <script>document.write(`<script src="world-events.js?v=${Date.now()}"><\/script><script src="world-map.js?v=${Date.now()}"><\/script>`);</script>
     <script src="world.js"></script>

@@ -8,7 +8,7 @@ const DIALOGUES = {
   start: "坠落处", siltWoods: "污泥林", drownedHuts: "腐叶原野", bellRoad: "碎钟坡", hut: "废弃小屋",
   gate: "封锁山道", church: "逆抽水器", quietClearing: "空地", node2: "腐叶原野深处", node3: "弦一螂",
 };
-const KIND_NAMES = { npc: "NPC 对话", dialogue: "世界对话", battle: "战斗" };
+const KIND_NAMES = { npc: "NPC 对话", dialogue: "世界对话", battle: "战斗", action: "行动事件" };
 const els = {
   app: $("#eventEditorApp"), setList: $("#eventSetList"), entryList: $("#eventEntryList"), setTitle: $("#setTitle"), inspector: $("#inspector"), inspectorKind: $("#inspectorKind"),
   selectionStatus: $("#selectionStatus"), feedback: $("#feedback"), dirty: $("#dirtyState"), create: $("#newSetButton"), duplicate: $("#duplicateSetButton"), remove: $("#deleteSetButton"),
@@ -91,6 +91,7 @@ function changeEntryKind(entry, kind) {
   if (kind === "npc") next.npcId = npcIds[0] || "eddie";
   if (kind === "dialogue") next.dialogueId = Object.keys(DIALOGUES)[0];
   if (kind === "battle") next.enemyId = enemyIds[0] || "dungling";
+  if (kind === "action") next.actionEventId = window.ActionEventData.list()[0]?.id || "";
   currentSet().entries[selectedEntryIndex] = next;
 }
 
@@ -102,6 +103,7 @@ function renderEntryInspector() {
   fields.appendChild(makeSelect("类型", entry.kind, Object.entries(KIND_NAMES), (value) => mutate(() => changeEntryKind(entry, value)), { wide: true }));
   if (entry.kind === "npc") fields.appendChild(makeSelect("NPC", entry.npcId, npcIds.map((id) => [id, id]), (value) => mutate(() => { entry.npcId = value; }), { wide: true }));
   if (entry.kind === "dialogue") fields.appendChild(makeSelect("世界对话", entry.dialogueId, Object.entries(DIALOGUES).map(([id, name]) => [id, `${name} · ${id}`]), (value) => mutate(() => { entry.dialogueId = value; }), { wide: true }));
+  if (entry.kind === "action") fields.appendChild(makeSelect("行动事件 JSON", entry.actionEventId, window.ActionEventData.list().map((event) => [event.id, `${event.name} · ${event.id}`]), (value) => mutate(() => { entry.actionEventId = value; }), { wide: true }));
   if (entry.kind === "battle") {
     fields.appendChild(makeSelect("敌人", entry.enemyId, enemyIds.map((id) => [id, id]), (value) => mutate(() => { entry.enemyId = value; })));
     fields.appendChild(makeInput("战斗来源 ID（可选）", entry.battleSourceId || "", (value) => mutate(() => { if (value) entry.battleSourceId = value; else delete entry.battleSourceId; })));
@@ -124,7 +126,7 @@ function renderAll() {
 function addSet() { const id = uniqueId("eventSet", Object.keys(bundle.eventSets)); mutate(() => { bundle.eventSets[id] = { name: "新事件集", entries: [{ id: "dialogue", kind: "dialogue", dialogueId: "start", weight: 1 }] }; currentSetId = id; selectedEntryIndex = null; }); }
 function duplicateSet() { if (!currentSet()) return; const id = uniqueId(`${currentSetId}Copy`, Object.keys(bundle.eventSets)); mutate(() => { bundle.eventSets[id] = clone(currentSet()); bundle.eventSets[id].name += " 副本"; currentSetId = id; selectedEntryIndex = null; }); }
 function deleteSet() { const references = mapReferences(currentSetId); if (references.length) return showFeedback(`无法删除；节点仍在引用：${references.join("、")}`, true); if (Object.keys(bundle.eventSets).length === 1) return showFeedback("至少保留一个事件集", true); mutate(() => { delete bundle.eventSets[currentSetId]; currentSetId = Object.keys(bundle.eventSets)[0]; selectedEntryIndex = null; }); }
-function addEntry(kind) { const entries = currentSet().entries; const id = uniqueId(kind, entries.map((entry) => entry.id)); mutate(() => { const entry = { id, kind, weight: 1 }; if (kind === "npc") entry.npcId = npcIds[0] || "eddie"; if (kind === "dialogue") entry.dialogueId = Object.keys(DIALOGUES)[0]; if (kind === "battle") entry.enemyId = enemyIds[0] || "dungling"; entries.push(entry); selectedEntryIndex = entries.length - 1; }); }
+function addEntry(kind) { const entries = currentSet().entries; const id = uniqueId(kind, entries.map((entry) => entry.id)); mutate(() => { const entry = { id, kind, weight: 1 }; if (kind === "npc") entry.npcId = npcIds[0] || "eddie"; if (kind === "dialogue") entry.dialogueId = Object.keys(DIALOGUES)[0]; if (kind === "battle") entry.enemyId = enemyIds[0] || "dungling"; if (kind === "action") entry.actionEventId = window.ActionEventData.list()[0]?.id || ""; entries.push(entry); selectedEntryIndex = entries.length - 1; }); }
 
 function validationResult() {
   const errors = [], warnings = [];
@@ -142,6 +144,7 @@ function validationResult() {
       if (entry.kind === "npc" && !npcIds.includes(entry.npcId)) errors.push(`${path} 引用了未知 NPC：${entry.npcId}`);
       if (entry.kind === "dialogue" && !DIALOGUES[entry.dialogueId]) errors.push(`${path} 引用了未知世界对话：${entry.dialogueId}`);
       if (entry.kind === "battle" && !enemyIds.includes(entry.enemyId)) errors.push(`${path} 引用了未知敌人：${entry.enemyId}`);
+      if (entry.kind === "action" && !window.ActionEventData.get(entry.actionEventId)) errors.push(`${path} 引用了未知行动事件`);
       if (entry.when && (!["all", "any"].includes(entry.when.mode) || !Array.isArray(entry.when.clauses))) errors.push(`${path}.when 格式无效`);
     });
     if (!mapReferences(setId).length) warnings.push(`事件集 ${setId} 尚未被地图引用`);
@@ -160,6 +163,7 @@ async function save() {
 
 async function initialize() {
   try {
+    await window.ActionEventData.ready;
     const [npc, battle] = await Promise.all([fetch("../npc-dialogues/manifest.json", { cache: "no-store" }).then((r) => r.json()), fetch("../battle-data/manifest.json", { cache: "no-store" }).then((r) => r.json())]);
     npcIds = Object.keys(npc.dialogues || {}); enemyIds = Object.keys(battle.combatants || {});
     const saved = sessionStorage.getItem("event-set-editor-draft"); let source = window.WORLD_EVENT_SET_BUNDLE;
@@ -168,6 +172,7 @@ async function initialize() {
   } catch (error) { els.dirty.textContent = "载入失败"; showFeedback(error.message, true); console.error(error); }
 }
 
+$("#addActionButton").addEventListener("click", () => addEntry("action"));
 els.create.addEventListener("click", addSet); els.duplicate.addEventListener("click", duplicateSet); els.remove.addEventListener("click", deleteSet);
 els.addNpc.addEventListener("click", () => addEntry("npc")); els.addDialogue.addEventListener("click", () => addEntry("dialogue")); els.addBattle.addEventListener("click", () => addEntry("battle"));
 els.undo.addEventListener("click", () => restoreHistory(historyIndex - 1)); els.redo.addEventListener("click", () => restoreHistory(historyIndex + 1)); els.validate.addEventListener("click", () => { renderAll(); showValidation(); }); els.save.addEventListener("click", save);

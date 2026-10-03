@@ -72,6 +72,16 @@
     if (!isObject(config.stats)) fail(`${expectedId}.stats 必须是对象`);
     requireInteger(config.stats.maxHp, `${expectedId}.stats.maxHp`, 1);
     requireInteger(config.stats.poise, `${expectedId}.stats.poise`, 1);
+    if (config.group !== undefined) {
+      if (!isObject(config.group)) fail(`${expectedId}.group 必须是对象`);
+      requireInteger(config.group.unitCount, `${expectedId}.group.unitCount`, 1);
+      requireInteger(config.group.unitHp, `${expectedId}.group.unitHp`, 1);
+      requireInteger(config.group.damagePerUnit, `${expectedId}.group.damagePerUnit`, 1);
+      if (config.group.unitCount !== 6) fail(`${expectedId}.group.unitCount 当前原型固定为 6`);
+      if (config.stats.maxHp !== config.group.unitCount * config.group.unitHp) {
+        fail(`${expectedId}.stats.maxHp 必须等于群体生命总和`);
+      }
+    }
     if (!config.skills.length) fail(`${expectedId}.skills 至少需要一个技能`);
     config.skills.forEach((skill, index) => validateSkill(skill, expectedId, index, knownSkillIds));
   }

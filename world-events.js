@@ -4,6 +4,7 @@
 window.WORLD_EVENT_SET_BUNDLE = {
   "schemaVersion": 1,
   "eventSets": {
+    "thomasEncounter": { "name": "托马斯与粪怪", "entries": [{ "id": "thomas", "kind": "action", "actionEventId": "thomasCrossroads", "weight": 1 }] },
     "startArrival": {
       "name": "坠落处",
       "entries": [
@@ -109,7 +110,7 @@ window.WORLD_EVENT_SET_BUNDLE = {
         {
           "id": "dungA",
           "kind": "battle",
-          "enemyId": "dungling",
+          "enemyId": "dung_swarm",
           "battleSourceId": "dungA",
           "weight": 1
         }

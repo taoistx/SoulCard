@@ -3,6 +3,7 @@
   "dialogues": {
     "eddie": "eddie.json",
     "chris": "chris.json",
-    "bell": "bell.json"
+    "bell": "bell.json",
+    "thomas": "thomas.json"
   }
 }

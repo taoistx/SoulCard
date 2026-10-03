@@ -4,7 +4,22 @@
   "name": "渔夫 艾迪",
   "start": {
     "default": "root",
-    "rules": []
+    "rules": [
+      {
+        "when": {
+          "mode": "all",
+          "clauses": [
+            {
+              "source": "flag",
+              "key": "eddieBaitGiven",
+              "operator": "ne",
+              "value": true
+            }
+          ]
+        },
+        "node": "first_gift"
+      }
+    ]
   },
   "nodes": {
     "root": {
@@ -127,6 +142,34 @@
         }
       ],
       "effects": []
+    },
+    "first_gift": {
+      "kicker": "艾迪 · 见面礼",
+      "body": "男人从渔篓里挑出一块气味刺鼻的肉，扔到你脚边。\n“拿着，别吃。这东西能让路上的怪物多看一眼——你最好趁那一眼做点什么。”\n获得诱饵肉 ×1。",
+      "effects": [
+        {
+          "type": "addItem",
+          "itemId": "baitMeat",
+          "amount": 1
+        },
+        {
+          "type": "setFlag",
+          "key": "eddieBaitGiven",
+          "value": true
+        },
+        {
+          "type": "setFlag",
+          "key": "eddieMet",
+          "value": true
+        }
+      ],
+      "options": [
+        {
+          "id": "continue",
+          "label": "收起诱饵，和他交谈",
+          "next": "root"
+        }
+      ]
     }
   },
   "editor": {

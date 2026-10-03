@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "thomas",
+  "combatEnabled": false,
+  "displayName": "幸存者 托马斯",
+  "role": "路口的幸存者",
+  "intro": "瘦弱的男人仍未从惊吓中缓过来。",
+  "stats": null,
+  "skills": []
+}

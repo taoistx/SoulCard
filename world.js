@@ -40,11 +40,12 @@ function validateWorldConfiguration(mapBundle, eventBundle) {
       if (typeof entry?.id !== "string" || !entry.id) errors.push(`${field} 缺少 id`);
       if (entryIds.has(entry?.id)) errors.push(`${field} id 重复：${entry.id}`);
       entryIds.add(entry?.id);
-      if (!["npc", "dialogue", "battle"].includes(entry?.kind)) errors.push(`${field} kind 无效`);
+      if (!["npc", "dialogue", "battle", "action"].includes(entry?.kind)) errors.push(`${field} kind 无效`);
       if (!Number.isFinite(entry?.weight) || entry.weight <= 0) errors.push(`${field} weight 必须大于 0`);
       if (entry?.kind === "npc" && typeof entry.npcId !== "string") errors.push(`${field} 缺少 npcId`);
       if (entry?.kind === "dialogue" && !WORLD_DIALOGUE_IDS.has(entry.dialogueId)) errors.push(`${field} 引用了未知世界对话`);
       if (entry?.kind === "battle" && typeof entry.enemyId !== "string") errors.push(`${field} 缺少 enemyId`);
+      if (entry?.kind === "action" && typeof entry.actionEventId !== "string") errors.push(`${field} 缺少 actionEventId`);
       validateConditionConfig(entry?.when, `${field}.when`, errors);
     });
   });
@@ -88,6 +89,7 @@ const NODE_BY_ID = new Map(WORLD_NODES.map((node) => [node.id, node]));
 const WORLD_EVENT_SETS = MAP_CONFIG_ERRORS.length ? {} : window.WORLD_EVENT_SET_BUNDLE.eventSets;
 
 const ITEM_LIBRARY = {
+  baitMeat: { name: "诱饵肉", description: "艾迪给的刺鼻肉块。仅作事件诱饵，使用消耗一份，不能食用或充当新鲜血肉。", stackable: true, eventTags: ["lure"] },
   freshFlesh: { name: "新鲜血肉", description: "仍有人血肉特征的部分。艾迪只认这个。", stackable: true },
   oldKey: { name: "老旧钥匙", description: "粪锈遮住了齿纹，也许能打开山道的锁。", keyItem: true },
   healingPotion: { name: "止血瓶", description: "使用后恢复 18 HP。不会推进天数。", usable: true },
@@ -228,12 +230,21 @@ configureMapFrame();
 let world = createInitialWorld();
 let currentTarget = null;
 let interactionLocked = false;
-const WORLD_DATA_READY = Promise.all([window.NpcDialogueData.ready, window.BattleData.ready]);
+let activeActionEvent = null;
+const WORLD_DATA_READY = Promise.all([window.NpcDialogueData.ready, window.BattleData.ready, window.ActionEventData.ready]).then(async () => {
+  for (const set of Object.values(WORLD_EVENT_SETS)) for (const entry of set.entries) {
+    if (entry.kind === "action" && !window.ActionEventData.get(entry.actionEventId)) throw new Error(`未知行动事件：${entry.actionEventId}`);
+  }
+  for (const event of window.ActionEventData.list()) {
+    if (event.lureNodeId && !NODE_BY_ID.has(event.lureNodeId)) throw new Error(`行动事件 ${event.id} 的迁移节点不存在`);
+    if (event.enemyId && !(await window.BattleData.getCombatant(event.enemyId)).combatEnabled) throw new Error(`行动事件 ${event.id} 的敌人未启用战斗`);
+  }
+});
 let worldDataError = null;
 WORLD_DATA_READY.catch((error) => { worldDataError = error; });
 
 function createInitialWorld() {
-  const deck = window.BattleBridge.getDefaultDeck();
+  const deck = window.BattleBridge.getDefaultDeck().map((cardId, index) => ({ instanceId: `card_${index + 1}`, cardId, fatigue: 0 }));
   return {
     day: 1,
     hp: 60,
@@ -245,6 +256,10 @@ function createInitialWorld() {
     equipment: { leftHand: null, rightHand: null, body: null, head: null, eye: null, heart: null, brain: null },
     sacrificed: {},
     deck,
+    nextCardInstance: deck.length + 1,
+    knowledge: {},
+    eventStates: {},
+    threats: {},
     innateCardId: null,
     stamina: MAX_STAMINA,
     maxStamina: MAX_STAMINA,
@@ -287,7 +302,7 @@ function removeItem(itemId, amount = 1) {
 
 function addCard(cardId) {
   if (!window.BattleBridge.getCardCatalog()[cardId]) return false;
-  world.deck.push(cardId);
+  world.deck.push({ instanceId: `card_${world.nextCardInstance++}`, cardId, fatigue: 0 });
   renderWorld();
   return true;
 }
@@ -308,7 +323,7 @@ function isWorldActive() {
 }
 
 function isOverlayOpen() {
-  return !elsWorld.modal.classList.contains("hidden") || !elsWorld.characterPanel.classList.contains("hidden");
+  return Boolean(activeActionEvent) || window.ActionEventPanel.isOpen() || !elsWorld.modal.classList.contains("hidden") || !elsWorld.characterPanel.classList.contains("hidden");
 }
 
 function canSpendStamina(amount = 1) {
@@ -356,6 +371,7 @@ function isNodeAvailable(node) {
 
 function isEventEntryResolved(entry, node = null) {
   if (!entry) return false;
+  if (entry.kind === "action") return Boolean(world.eventStates[entry.actionEventId]?.resolved);
   if (entry.kind === "battle") return Boolean(getFlag(`${entry.battleSourceId || `${node?.id || "node"}_${entry.id}`}Killed`));
   if (entry.kind === "npc") {
     if (entry.npcId === "eddie") return Boolean(getFlag("eddieKilled"));
@@ -389,9 +405,11 @@ function areNodesConnected(fromId, toId) {
 }
 
 function blocksAutoPath(node) {
-  if (!node || isNodeResolved(node)) return false;
+  if (!node) return false;
+  if (getNodeThreat(node.id)) return true;
+  if (isNodeResolved(node)) return false;
   const set = WORLD_EVENT_SETS[node.eventSetId];
-  return (set?.entries || []).some((entry) => entry.kind === "battle" || (entry.kind === "npc" && entry.npcId === "bell"));
+  return (set?.entries || []).some((entry) => entry.kind === "battle" || entry.kind === "action" || (entry.kind === "npc" && entry.npcId === "bell"));
 }
 
 function canPathThrough(nodeId, fromId, toId) {
@@ -513,8 +531,8 @@ function handleNodeClick(nodeId) {
   if (nodeId === world.currentNodeId) return;
   if (!findReachablePath(world.currentNodeId, nodeId)) return;
   const firstVisit = !world.exploredNodes.has(nodeId);
-  if (firstVisit && !canSpendStamina()) {
-    showWorldModal({ kicker: "体力不足", title: "无法探索新节点", body: "首次到达尚未探索的节点需要 1 点体力。你仍可在已探索节点间移动，或长休恢复体力。" });
+  if ((firstVisit || getNodeThreat(nodeId)) && !canSpendStamina()) {
+    showWorldModal({ kicker: "体力不足", title: "无法进入节点", body: "首次探索或面对节点中的怪物需要 1 点体力。你仍可在已探索的安全节点间移动，或长休恢复体力。" });
     return;
   }
   if (firstVisit) spendStamina();
@@ -522,7 +540,7 @@ function handleNodeClick(nodeId) {
   if (firstVisit) world.exploredNodes.add(nodeId);
   renderWorld();
   focusCameraOnNode(node);
-  if (firstVisit) triggerNodeEvent(node, { arrivalPaid: true });
+  if (firstVisit || getNodeThreat(node.id)) triggerNodeEvent(node, { arrivalPaid: firstVisit });
 }
 
 function closeWorldModal() {
@@ -557,7 +575,7 @@ function showWorldModal({ kicker = "交互", title, body = "", bodyText = null, 
 }
 
 function openCharacterPanel() {
-  if (!isWorldActive()) return;
+  if (!isWorldActive() || activeActionEvent) return;
   interactionLocked = true;
   renderCharacterPanel();
   elsWorld.characterPanel.classList.remove("hidden");
@@ -643,10 +661,12 @@ function renderCharacterPanel() {
 
   const catalog = window.BattleBridge.getCardCatalog();
   const counts = {};
-  world.deck.forEach((cardId) => { counts[cardId] = (counts[cardId] || 0) + 1; });
+  world.deck.forEach(({ cardId }) => { counts[cardId] = (counts[cardId] || 0) + 1; });
   const cards = Object.entries(counts).map(([cardId, count]) => `${catalog[cardId]?.name || cardId}×${count}`).join(" · ");
   const innate = world.innateCardId ? catalog[world.innateCardId]?.name : "无";
-  elsWorld.deckSummary.innerHTML = `<strong>牌组：</strong>${cards}<br><strong>固有技能：</strong>${innate}（0 时刻，5 节点 CD）`;
+  const fatigue = world.deck.map((card, index) => card.fatigue ? `${catalog[card.cardId].name}（副本 ${index + 1}）：${card.fatigue} 层` : "").filter(Boolean).join(" · ") || "无";
+  const knowledge = Object.keys(world.knowledge).filter((id) => world.knowledge[id]).map((id) => window.ActionEventRuntime.KNOWLEDGE[id]?.description || id).join("<br>") || "无";
+  elsWorld.deckSummary.innerHTML = `<strong>牌组：</strong>${cards}<br><strong>疲劳：</strong>${fatigue}<br><strong>固有技能：</strong>${innate}（0 时刻，5 节点 CD）<br><strong>知识：</strong>${knowledge}`;
 }
 
 function useItem(itemId) {
@@ -712,21 +732,20 @@ function sacrificeBodyPart(partId) {
 
 function chooseInnateCard(npcId) {
   const catalog = window.BattleBridge.getCardCatalog();
-  const choices = [...new Set(world.deck)]
-    .filter((cardId) => catalog[cardId] && (catalog[cardId].type === "attack" || catalog[cardId].type === "defense"));
+  const choices = world.deck.filter(({ cardId }) => ["attack", "defense"].includes(catalog[cardId]?.type));
   showWorldModal({
     kicker: "献祭左手 · 不可逆",
     title: "选择要写进身体的卡",
     body: "该卡会从牌组永久移除，成为 0 时刻、5 节点冷却的固有技能。左手装备槽永久消失。",
-    options: choices.map((cardId) => ({
-      label: catalog[cardId].name,
-      hint: canSpendStamina() ? `${catalog[cardId].text.replace(/<[^>]+>/g, "")} · 体力 -1` : "体力不足",
+    options: choices.map((instance, index) => ({
+      label: `${catalog[instance.cardId].name} · 副本 ${index + 1} · 疲劳 ${instance.fatigue}`,
+      hint: canSpendStamina() ? `${catalog[instance.cardId].text.replace(/<[^>]+>/g, "")} · 体力 -1` : "体力不足",
       enabled: canSpendStamina(),
       action: () => {
         if (!spendStamina()) return showSacrificeMenu(npcId);
-        const index = world.deck.indexOf(cardId);
+        const index = world.deck.findIndex((card) => card.instanceId === instance.instanceId);
         if (index >= 0) world.deck.splice(index, 1);
-        world.innateCardId = cardId;
+        world.innateCardId = instance.cardId;
         sacrificeBodyPart("leftHand");
         showSacrificeMenu(npcId);
       },
@@ -884,10 +903,14 @@ function runWorldDialogue(dialogueId, node) {
 }
 
 function triggerNodeEvent(node, { arrivalPaid = false } = {}) {
+  if (getNodeThreat(node.id)) return runNodeThreat(node, arrivalPaid);
+  if (getFlag("thomasStayed") && world.eventStates.thomasCrossroads?.nodeId === node.id) return showNpcDialogue("thomas");
   const entry = resolveNodeEventEntry(node);
   if (!entry) return showNoEvent(node);
   if (isEventEntryResolved(entry, node)) {
-    showWorldModal({ kicker: "节点 · 已解决", title: node.label, body: "这里的主要事件已经解决，节点仍可作为通路使用。" });
+    showWorldModal({ kicker: "节点 · 已解决", title: node.label, body: getFlag("thomasInfectedCorpse") && entry.actionEventId === "thomasCrossroads"
+      ? "托马斯感染孢子的尸体仍留在路口。粪怪已经不在这里，节点可以继续通行。"
+      : "这里的主要事件已经解决，节点仍可作为通路使用。" });
     return;
   }
   if (entry.kind === "npc") {
@@ -898,9 +921,140 @@ function triggerNodeEvent(node, { arrivalPaid = false } = {}) {
     });
     return showNpcDialogue(entry.npcId);
   }
+  if (entry.kind === "action") return openActionEvent(entry.actionEventId, node, arrivalPaid);
   if (entry.kind === "battle") return runBattle(entry.enemyId, entry.battleSourceId || `${node.id}_${entry.id}`, { prepaid: arrivalPaid });
   if (entry.kind === "dialogue") return runWorldDialogue(entry.dialogueId, node);
   return showNoEvent(node);
+}
+
+function getNodeThreat(nodeId) {
+  return Object.values(world.threats).find((threat) => threat.nodeId === nodeId && world.day >= (threat.releaseDay || 0));
+}
+
+async function runNodeThreat(node, prepaid) {
+  const threat = getNodeThreat(node.id);
+  if (!threat) return;
+  return runBattle(threat.enemyId, threat.id, {
+    prepaid,
+    onResult: (battle) => {
+      if (battle.result === "Win") delete world.threats[threat.id];
+    },
+  });
+}
+
+function eventResources() {
+  return window.ActionEventRuntime.resources(world, window.BattleBridge.getCardCatalog(), ITEM_LIBRARY);
+}
+
+function openActionEvent(eventId, node, prepaid = false) {
+  const event = window.ActionEventData.get(eventId);
+  if (!event) return;
+  let progress = world.eventStates[eventId];
+  if (!progress) progress = world.eventStates[eventId] = { nodeId: node.id, stage: event.start, resolved: false, prepaid };
+  if (progress.resolved) return;
+  activeActionEvent = { eventId, nodeId: node.id, submitting: false };
+  interactionLocked = true;
+  elsWorld.modal.classList.add("hidden");
+  window.ActionEventPanel.open({
+    event, stage: progress.stage, owned: eventResources(),
+    match: (placements) => window.ActionEventRuntime.match(event, progress.stage, placements, eventResources(), evaluateWorldCondition),
+    submit: (placements) => submitEventAction(eventId, placements),
+  });
+}
+
+function completeActionEvent(eventId) {
+  world.eventStates[eventId].resolved = true;
+  activeActionEvent = null;
+  interactionLocked = false;
+  window.ActionEventPanel.close();
+  renderWorld();
+}
+
+function leaveThomas() {
+  if (!getFlag("thomasKilled")) setFlag("thomasFled", true);
+  setFlag("thomasStayed", false);
+}
+
+function addEncounterThreat(event, nodeId, releaseDay = 0) {
+  const id = `${event.id}_monster`;
+  world.threats[id] = { id, enemyId: event.enemyId, nodeId, releaseDay };
+}
+
+async function submitEventAction(eventId, placements) {
+  if (!activeActionEvent || activeActionEvent.eventId !== eventId || activeActionEvent.submitting) return;
+  const event = window.ActionEventData.get(eventId);
+  const progress = world.eventStates[eventId];
+  const match = window.ActionEventRuntime.match(event, progress.stage, placements, eventResources(), evaluateWorldCondition);
+  if (!match.valid) throw new Error(match.ambiguous ? "组合结果存在歧义，请检查配置" : "资源或组合已失效");
+  const battleAction = ["kill_thomas", "kill_thomas_and_attack_dung", "attack_dung", "observe_infected", "protect_thomas"].includes(match.recipe.action);
+  if (battleAction && !progress.prepaid && !canSpendStamina()) throw new Error("战斗需要 1 点体力");
+  activeActionEvent.submitting = true;
+  // Rollback is scoped to this submission. Earlier observation and fatigue remain in the snapshot.
+  const snapshot = structuredClone({
+    deck: world.deck, inventory: world.inventory, flags: world.flags, knowledge: world.knowledge,
+    eventStates: world.eventStates, threats: world.threats, stamina: world.stamina,
+  });
+  for (const resource of match.chosen) {
+    if (resource.kind === "card") world.deck.find((card) => card.instanceId === resource.instanceId).fatigue++;
+    if (resource.kind === "item") removeItem(resource.id);
+  }
+  const recipe = match.recipe;
+  if (!applyDialogueEffects(recipe.effects || [])) {
+    Object.assign(world, snapshot);
+    activeActionEvent.submitting = false;
+    throw new Error("后果所需的物品不足，本次行动已撤销");
+  }
+  if (recipe.action === "observe_dung") {
+    setFlag("thomasInfected", true);
+    world.knowledge.dungLore = true;
+    setFlag("knowsDungLore", true);
+    progress.stage = recipe.next;
+  } else if (["kill_thomas", "kill_thomas_and_attack_dung", "observe_infected"].includes(recipe.action)) {
+    setFlag("thomasKilled", true);
+    if (recipe.action === "observe_infected") setFlag("thomasInfectedCorpse", true);
+  } else if (!recipe.action && recipe.next) {
+    progress.stage = recipe.next;
+  }
+  window.ActionEventPanel.close();
+  showWorldModal({
+    kicker: "行动结果", title: event.name, bodyText: recipe.result, allowClose: false,
+    options: [{ label: battleAction ? "面对粪怪" : "继续", close: false, action: async () => {
+      // The same result button cannot launch two battles or pay costs twice.
+      if (!activeActionEvent || activeActionEvent.continuing) return;
+      activeActionEvent.continuing = true;
+      elsWorld.modal.classList.add("hidden");
+      if (recipe.action === "observe_dung" || (!recipe.action && recipe.next)) {
+        openActionEvent(eventId, NODE_BY_ID.get(progress.nodeId));
+        return;
+      }
+      if (battleAction) {
+        const battle = await runBattle(event.enemyId, `${eventId}_monster`, {
+          prepaid: progress.prepaid, openingDelay: ["attack_dung", "kill_thomas_and_attack_dung"].includes(recipe.action) ? 4 : 0,
+          onResult: (result) => {
+            if (result.result === "Win" && recipe.action === "protect_thomas") {
+              setFlag("thomasStayed", true);
+              setFlag("thomasFled", false);
+            } else leaveThomas();
+            if (result.result === "Escape") addEncounterThreat(event, progress.nodeId);
+            completeActionEvent(eventId);
+          },
+        });
+        if (!battle) {
+          Object.assign(world, snapshot);
+          activeActionEvent = { eventId, nodeId: progress.nodeId, submitting: false };
+          showWorldModal({
+            kicker: "战斗未开始", title: "本次行动已撤销", bodyText: "本次疲劳、物品与剧情变化已恢复。此前完成的行动仍然保留。请检查战斗数据或图形加速后重试。", allowClose: false,
+            options: [{ label: "返回行动选择", action: () => openActionEvent(eventId, NODE_BY_ID.get(progress.nodeId)) }],
+          });
+        } else if (battle.result === "Win" && getFlag("thomasStayed")) showNpcDialogue("thomas");
+        return;
+      }
+      if (recipe.action === "lure_dung") addEncounterThreat(event, event.lureNodeId);
+      if (recipe.action === "trap_dung") addEncounterThreat(event, progress.nodeId, world.day + 1);
+      if (["lure_dung", "trap_dung"].includes(recipe.action)) leaveThomas();
+      completeActionEvent(eventId);
+    } }],
+  });
 }
 
 function sacrificeOption(partId, action) {
@@ -925,8 +1079,8 @@ function showSacrificeMenu(npcId) {
         enabled: available("heart"),
         action: sacrificeOption("heart", () => {
           sacrificeBodyPart("heart");
-          if (!world.deck.includes("bleed")) addCard("bleed");
-          if (!world.deck.includes("delay")) addCard("delay");
+          if (!world.deck.some((card) => card.cardId === "bleed")) addCard("bleed");
+          if (!world.deck.some((card) => card.cardId === "delay")) addCard("delay");
           showSacrificeMenu(npcId);
         }),
       },
@@ -985,10 +1139,11 @@ function showHut() {
 }
 
 function showLongRestPrompt() {
+  if (activeActionEvent || !isWorldActive()) return;
   showWorldModal({
     kicker: "固有操作 · 长休",
     title: "就地长休",
-    body: `当前 ${world.hp}/${world.maxHp} HP，体力 ${world.stamina}/${world.maxStamina}，第 ${world.day} 天。\n长休会完全恢复生命和体力，然后经过一天。移动和对话不会推进天数。`,
+    body: `当前 ${world.hp}/${world.maxHp} HP，体力 ${world.stamina}/${world.maxStamina}，第 ${world.day} 天。\n长休会完全恢复生命、体力并清空卡牌疲劳，然后经过一天。移动和对话不会推进天数。`,
     options: [{
       label: world.day < 5 ? "长休到次日" : "闭眼，让第五天结束",
       hint: world.day < 5 ? "HP / 体力完全恢复 · 天数 +1" : "你将化为粪怪",
@@ -998,6 +1153,7 @@ function showLongRestPrompt() {
 }
 
 function longRest() {
+  if (activeActionEvent) return;
   if (world.day >= 5) {
     setFlag("becameDung", true);
     showWorldModal({
@@ -1008,7 +1164,9 @@ function longRest() {
     });
     return;
   }
+  const releasedThreat = Object.values(world.threats).some((threat) => threat.releaseDay === world.day + 1);
   world.day++;
+  world.deck.forEach((card) => { card.fatigue = 0; });
   world.hp = world.maxHp;
   world.stamina = world.maxStamina;
   world.dailyEventRolls = {};
@@ -1017,7 +1175,7 @@ function longRest() {
   showWorldModal({
     kicker: "时间推进",
     title: `第 ${world.day} 天`,
-    body: "伤口完全闭合，体力恢复到 12 点。艾迪换了货，幸存者离极限更近了一天。世界中的死人和已经搜过的地方仍保持原样。",
+    body: `伤口完全闭合，体力恢复到 ${world.maxStamina} 点，卡牌疲劳清空。${releasedThreat ? "被困的怪物已挣脱。" : ""}艾迪换了货，幸存者离极限更近了一天。世界中的死人和已经搜过的地方仍保持原样。`,
   });
 }
 
@@ -1107,7 +1265,12 @@ async function runBattle(enemyId, sourceId, options = {}) {
   interactionLocked = true;
   let battle;
   try {
-    battle = await window.BattleBridge.startBattle(enemyId, { playerHp: world.hp, playerMaxHp: world.maxHp });
+    battle = await window.BattleBridge.startBattle(enemyId, {
+      playerHp: world.hp, playerMaxHp: world.maxHp,
+      cardInstances: world.deck.map((card) => ({ ...card })),
+      openingDelay: options.openingDelay || 0,
+      damageMultiplier: world.knowledge.dungLore && ["dungling", "dung_swarm"].includes(enemyId) ? 1.15 : 1,
+    });
   } catch (error) {
     console.error(`无法开始战斗：${enemyId}`, error);
     if (!prepaid) world.stamina = Math.min(world.maxStamina, world.stamina + 1);
@@ -1116,14 +1279,20 @@ async function runBattle(enemyId, sourceId, options = {}) {
     renderWorld();
     showWorldModal({
       kicker: "配置错误 · 战斗未开始",
-      title: "战斗数据无法加载",
-      body: window.location.protocol === "file:"
+      title: error.message.startsWith("3D 战斗舞台") ? "战斗舞台无法启动" : "战斗数据无法加载",
+      body: error.message.startsWith("3D 战斗舞台")
+        ? "3D 战斗舞台无法初始化。请使用支持 WebGL 的浏览器，并检查浏览器图形加速设置。"
+        : window.location.protocol === "file:"
         ? "独立 JSON 不能从本地文件页面读取。请通过本地静态服务器打开 <code>index.html</code>。"
         : "角色配置缺失或格式不正确。世界状态没有发生变化，请检查控制台中的具体错误。",
     });
     return false;
   }
   world.hp = battle.playerHp;
+  world.deck.forEach((card) => {
+    const fatigue = battle.cardFatigue?.[card.instanceId];
+    if (Number.isInteger(fatigue) && fatigue >= 0) card.fatigue = fatigue;
+  });
   elsWorld.mapScreen.classList.remove("hidden");
   interactionLocked = false;
 
@@ -1147,6 +1316,7 @@ async function runBattle(enemyId, sourceId, options = {}) {
     }
   }
 
+  options.onResult?.(battle);
   renderWorld();
   if (battle.result === "Lose") {
     showWorldModal({
@@ -1158,7 +1328,7 @@ async function runBattle(enemyId, sourceId, options = {}) {
   } else if (battle.result === "Escape") {
     showWorldModal({ kicker: "战斗结果 · Escape", title: "敌人还在", body: "你保住了命，但损失的 HP 和战斗消耗的体力不会恢复，地图对象也没有消失。" });
   }
-  return true;
+  return battle;
 }
 
 function getCombatModifiersForBattle() {
@@ -1189,6 +1359,8 @@ async function startNewRun() {
     return false;
   }
   world = createInitialWorld();
+  activeActionEvent = null;
+  window.ActionEventPanel.close();
   currentTarget = null;
   interactionLocked = false;
   elsWorld.modal.classList.add("hidden");
@@ -1215,10 +1387,14 @@ window.WorldGame = Object.freeze({
   setFlag,
   hasItem,
   addItem,
-  getBattleDeck: () => [...world.deck],
+  getBattleDeck: () => world.deck.map((card) => card.cardId),
   getCombatModifiers: getCombatModifiersForBattle,
   getState: () => ({
     day: world.day,
+    deck: world.deck.map((card) => ({ ...card })),
+    knowledge: { ...world.knowledge },
+    eventStates: structuredClone(world.eventStates),
+    threats: structuredClone(world.threats),
     hp: world.hp,
     maxHp: world.maxHp,
     flags: { ...world.flags },
@@ -1275,6 +1451,7 @@ elsWorld.mapSvg.addEventListener("pointercancel", finishMapDrag);
 
 document.addEventListener("keydown", (event) => {
   if (!isWorldActive()) return;
+  if (activeActionEvent) { if (event.key === "Escape") event.preventDefault(); return; }
   if (event.key === "Escape") {
     if (!elsWorld.characterPanel.classList.contains("hidden")) closeCharacterPanel();
     else if (!worldDataError && !elsWorld.modal.classList.contains("hidden")) closeWorldModal();

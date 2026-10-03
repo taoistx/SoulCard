@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "events": {
+    "thomasCrossroads": "thomas-crossroads.json"
+  }
+}

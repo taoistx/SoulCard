@@ -46,10 +46,20 @@ assert.equal(Runtime.resolveNode(dialogues.chris, "root", chrisState.context).op
 
 const eddieState = createState({ day: 2, flags: {}, inventory: { freshFlesh: 1 }, sacrificed: {} });
 const eddieNode = Runtime.resolveNode(dialogues.eddie, "root", eddieState.context);
-assert.match(eddieNode.options[1].label, /长剑/);
-assert.equal(Runtime.applyEffects(eddieNode.options[1].effects, eddieState.context), true);
-assert.deepEqual(eddieState.state.inventory, { longSword: 1 });
-assert.equal(eddieState.state.flags.eddieBoughtDay2, true);
+assert.equal(eddieNode.options.find((option) => option.id === "attack").action, "fight_eddie");
+assert.equal(Runtime.resolveStart(dialogues.eddie, eddieState.context), "first_gift");
+assert.equal(Runtime.applyEffects(Runtime.resolveNode(dialogues.eddie, "first_gift", eddieState.context).effects, eddieState.context), true);
+assert.deepEqual(eddieState.state.inventory, { freshFlesh: 1, baitMeat: 1 });
+assert.equal(Runtime.resolveStart(dialogues.eddie, eddieState.context), "root");
+assert.equal(Runtime.renderTemplate("{{dailyStockName}} · 第 {{day}} 天", eddieState.context), "长剑 · 第 2 天");
+assert.equal(Runtime.applyEffects([{ type: "setFlag", key: "visitedDay{{day}}", value: true }], eddieState.context), true);
+assert.equal(eddieState.state.flags.visitedDay2, true);
+
+const thomasState = createState();
+assert.equal(Runtime.resolveStart(dialogues.thomas, thomasState.context), "root");
+thomasState.state.flags.thomasInfected = true;
+assert.equal(Runtime.resolveStart(dialogues.thomas, thomasState.context), "infected");
+assert.match(Runtime.resolveNode(dialogues.thomas, "infected", thomasState.context).body, /孢子/);
 
 const atomicState = createState({ inventory: { freshFlesh: 1 } });
 assert.equal(Runtime.applyEffects([{ type: "removeItem", itemId: "freshFlesh", amount: 1 }, { type: "removeItem", itemId: "freshFlesh", amount: 1 }, { type: "setFlag", key: "bad", value: true }], atomicState.context), false);

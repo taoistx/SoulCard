@@ -38,7 +38,7 @@ let linkDrag = null;
 let sandboxState = null;
 let sandboxNodeId = null;
 
-const itemNames = { freshFlesh: "新鲜血肉", oldKey: "老旧钥匙", healingPotion: "止血瓶", ritualScrap: "秘仪残页", rustySword: "锈剑", longSword: "长剑", dagger: "剔骨匕首", greatSword: "排污双手剑", shield: "井盖盾", heavyArmor: "铸铁浴缸甲", gi: "污白道服", ladyHat: "克里斯的礼帽" };
+const itemNames = { baitMeat: "诱饵肉", freshFlesh: "新鲜血肉", oldKey: "老旧钥匙", healingPotion: "止血瓶", ritualScrap: "秘仪残页", rustySword: "锈剑", longSword: "长剑", dagger: "剔骨匕首", greatSword: "排污双手剑", shield: "井盖盾", heavyArmor: "铸铁浴缸甲", gi: "污白道服", ladyHat: "克里斯的礼帽" };
 const bodyNames = { leftHand: "左手", rightHand: "右手", body: "身体", head: "头", eye: "眼", heart: "心", brain: "脑" };
 
 function normalizeDialogue(dialogue) {
@@ -517,7 +517,12 @@ function validationResult() {
   const warnings = [...result.warnings];
   const manifest = window.NpcDialogueData.getManifest();
   if (!manifest?.dialogues?.[currentId]) warnings.push(`manifest.json 尚未登记 ${currentId}`);
-  if (!window.WORLD_MAP_BUNDLE?.map?.nodes?.some((node) => node.type === "npc" && node.npcId === currentId)) warnings.push(`world-map.js 尚未摆放 NPC 节点 ${currentId}`);
+  const placed = window.WORLD_MAP_BUNDLE?.map?.nodes?.some((node) =>
+    (node.type === "npc" && node.npcId === currentId) ||
+    (window.WORLD_EVENT_SET_BUNDLE?.eventSets?.[node.eventSetId]?.entries || []).some((entry) =>
+      (entry.kind === "npc" && entry.npcId === currentId) ||
+      (entry.kind === "action" && window.ActionEventData.get(entry.actionEventId)?.slots.some((slot) => slot.npcId === currentId))));
+  if (!placed) warnings.push(`world-map.js 尚未摆放 NPC 或行动事件角色 ${currentId}`);
   if (!battleManifest?.combatants?.[currentId]) warnings.push(`battle-data/manifest.json 没有角色 ${currentId}`);
   return { errors: result.errors, warnings: [...new Set(warnings)] };
 }
@@ -617,6 +622,7 @@ function startSandbox() {
 
 async function initialize() {
   try {
+    await window.ActionEventData.ready;
     const [registry, battle] = await Promise.all([window.NpcDialogueData.ready, fetch("../battle-data/manifest.json", { cache: "no-store" }).then((response) => response.json())]);
     battleManifest = battle;
     Object.entries(registry).forEach(([id, dialogue]) => { documents[id] = normalizeDialogue(clone(dialogue)); originalSnapshots[id] = JSON.stringify(documents[id]); });

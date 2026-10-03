@@ -28,7 +28,7 @@
           <section><p class="panel-kicker">说明</p><p class="help">地图节点只引用事件集 ID。单元素事件集必定命中；多元素按权重随机，结果按节点锁定到当天结束。</p></section>
         </aside>
         <section class="event-entry-column">
-          <header class="event-entry-header"><div><p class="panel-kicker">事件元素</p><h2 id="setTitle">—</h2></div><div class="row-actions"><button id="addNpcButton" type="button">＋ NPC</button><button id="addDialogueButton" type="button">＋ 世界对话</button><button id="addBattleButton" type="button">＋ 战斗</button></div></header>
+          <header class="event-entry-header"><div><p class="panel-kicker">事件元素</p><h2 id="setTitle">—</h2></div><div class="row-actions"><button id="addNpcButton" type="button">＋ NPC</button><button id="addDialogueButton" type="button">＋ 世界对话</button><button id="addActionButton" type="button">＋ 行动事件</button><button id="addBattleButton" type="button">＋ 战斗</button></div></header>
           <div id="eventEntryList" class="event-entry-list"></div>
           <footer class="graph-status"><span id="selectionStatus">事件集</span><span id="feedback" role="status"></span></footer>
         </section>
@@ -37,6 +37,7 @@
     </main>
     <script src="../world-events.js"></script>
     <script src="../world-map.js"></script>
+    <script src="../action-events.js"></script>
     <script src="event-editor.js"></script>
   </body>
 </html>

@@ -5,6 +5,8 @@
     "chris": "combatants/chris.json",
     "bell": "combatants/bell.json",
     "dungling": "combatants/dungling.json",
-    "guard": "combatants/guard.json"
+    "dung_swarm": "combatants/dung_swarm.json",
+    "guard": "combatants/guard.json",
+    "thomas": "combatants/thomas.json"
   }
 }

@@ -8,18 +8,19 @@ const CARD_LIBRARY = {
   thrust: { id: "thrust", name: "穿甲突刺", type: "attack", label: "攻击", cost: 2, icon: "ϟ", text: "造成 <strong>12</strong> 点伤害。", damage: 12, speed: "标准" },
   heavy: { id: "heavy", name: "葬仪重斩", type: "attack", label: "攻击", cost: 4, icon: "†", text: "造成 <strong>36</strong> 点伤害。", damage: 36, speed: "迟缓" },
   guard: { id: "guard", name: "灰钢架势", type: "defense", label: "防御", cost: 1, icon: "◇", text: "获得 <strong>12</strong> 点格挡值，抵消受到的伤害。选择补充手牌时，格挡值全部清零。", block: 12, speed: "架势" },
-  evade: { id: "evade", name: "鸦步", type: "defense", label: "身法 · 即时", cost: 1, icon: "⌁", text: "弃 <strong>1</strong> 张手牌，闪避下一次攻击。无牌可弃则失败。", evade: true, discardCost: 1, immediate: true, speed: "即时" },
-  parry: { id: "parry", name: "听钟辨刃", type: "technique", label: "技法 · 即时", cost: 2, icon: "⌖", text: "弃 <strong>1</strong> 张手牌，招架下一次攻击并反击 <strong>13</strong> 点。无牌可弃则失败。", parry: true, discardCost: 1, immediate: true, speed: "反制" },
+//   evade: { id: "evade", name: "鸦步", type: "defense", label: "身法 · 即时", cost: 1, icon: "⌁", text: "弃 <strong>1</strong> 张手牌，闪避下一次攻击。无牌可弃则失败。", evade: true, discardCost: 1, immediate: true, speed: "即时" },
+//   parry: { id: "parry", name: "听钟辨刃", type: "technique", label: "技法 · 即时", cost: 2, icon: "⌖", text: "弃 <strong>1</strong> 张手牌，招架下一次攻击并反击 <strong>13</strong> 点。无牌可弃则失败。", parry: true, discardCost: 1, immediate: true, speed: "反制" },
   delay: { id: "delay", name: "割裂时序", type: "ritual", label: "秘仪", cost: 1, icon: "◴", text: "结算时令敌方意图延后 <strong>2</strong> 节点。", delay: 2, speed: "操时" },
   bleed: { id: "bleed", name: "刻血", type: "ritual", label: "秘仪", cost: 3, icon: "♢", text: "造成 <strong>2</strong> 点伤害；随后 4 个节点各造成 6 点。", damage: 2, bleed: 4, speed: "持续" },
   focus: { id: "focus", name: "窥见罅隙", type: "technique", label: "技法 · 即时", cost: 1, icon: "⊙", text: "下一张攻击牌伤害提高 <strong>50%</strong>。", focus: .5, immediate: true, speed: "蓄势" },
-  mend: { id: "mend", name: "饮下残露", type: "restoration", label: "恢复", cost: 3, icon: "♜", text: "结算时恢复 <strong>13</strong> 点生命。", heal: 13, speed: "迟缓" },
+//   mend: { id: "mend", name: "饮下残露", type: "restoration", label: "恢复", cost: 3, icon: "♜", text: "结算时恢复 <strong>13</strong> 点生命。", heal: 13, speed: "迟缓" },
   adjust: { id: "adjust", name: "调整", type: "technique", label: "技法 · 即时", cost: 1, icon: "↺", text: "抽 <strong>2</strong> 张牌。", draw: 2, speed: "调息" },
   adjustStance: { id: "adjustStance", name: "快速换架", type: "technique", label: "技法 · 即时", cost: 0, icon: "↻", text: "弃 <strong>1</strong> 张手牌，抽 <strong>2</strong> 张牌。", discardCost: 1, draw: 2, immediate: true, speed: "调息" },
   feint: { id: "feint", name: "佯攻", type: "technique", label: "技法 · 即时", cost: 1, icon: "◌", text: "指定一张攻击牌，其消耗刻度 <strong>-2</strong>，打出后恢复。", feint: 2, immediate: true, speed: "诱敌" },
   recoverStance: { id: "recoverStance", name: "收势", type: "technique", label: "技法 · 即时", cost: 1, icon: "⌒", text: "如果上一张打出的牌是攻击牌，抽 <strong>1</strong> 张牌。", drawIfPreviousAttack: 1, immediate: true, speed: "回锋" },
   preRead: { id: "preRead", name: "预读", type: "technique", label: "技法 · 即时", cost: 1, icon: "☉", text: "查看牌堆顶 <strong>3</strong> 张，选择 <strong>1</strong> 张加入手牌，其余放回。", scry: 3, immediate: true, speed: "观测" },
   chase: { id: "chase", name: "追击", type: "attack", label: "攻击", cost: 1, icon: "⌁", text: "造成 <strong>10</strong> 点伤害。若拼刀胜出，该卡自动抽回手牌。", damage: 10, returnOnClashWin: true, speed: "追击" },
+  sweep: { id: "sweep", name: "横扫", type: "attack", label: "攻击", cost: 1, icon: "≋", text: "最近的 <strong>3</strong> 只粪怪各受 <strong>3</strong> 点伤害；不溢出。", spreadDamage: 3, spreadTargets: 3, speed: "群攻" },
 };
 
 // World 层只传入 enemyId；战斗模块通过 BattleData 读取并解释对应 JSON。
@@ -37,7 +38,40 @@ function getCombatModifiers() {
 }
 
 function getBattleDeckRecipe() {
-  return window.WorldGame?.getBattleDeck?.() || PLAYER_DECK_RECIPE;
+  const recipe = activeBattle.cardInstances || window.WorldGame?.getBattleDeck?.() || PLAYER_DECK_RECIPE;
+  const instances = window.CardInstances.copyDeck(recipe, CARD_LIBRARY);
+  if (isGroupBattle()) instances.push({ instanceId: "temporary_sweep", cardId: "sweep", fatigue: 0, temporary: true });
+  activeBattle.cardInstances = instances;
+  return instances;
+}
+
+function getBattleCard(reference) {
+  return window.CardInstances.describe(reference, CARD_LIBRARY);
+}
+
+function knowledgeDamage(amount) {
+  return window.CardInstances.damageWithKnowledge(amount, activeBattle?.damageMultiplier ?? 1);
+}
+
+function isGroupBattle() {
+  return Boolean(activeBattle?.config?.group);
+}
+
+function getIntentDamage(intent, futureEntry = null) {
+  if (!isGroupBattle()) return intent.damage;
+  if (intent.groupAction === "bite" && futureEntry) {
+    const bands = window.GroupCombat.getBandCounts(state.enemy.group);
+    for (const entry of state.enemy.intents) {
+      if (entry === futureEntry) break;
+      if (getBattleIntents()[entry.intentIndex].groupAction === "surge") {
+        bands[0] += bands[1];
+        bands[1] = bands[2];
+        bands[2] = 0;
+      }
+    }
+    return Math.min(2, bands[0]) * state.enemy.group.damagePerUnit;
+  }
+  return window.GroupCombat.getGroupEventDamage(state.enemy.group, intent.groupAction);
 }
 
 function isRitualCardLocked(card) {
@@ -113,7 +147,7 @@ function buildDeckRecipe(deckConfig) {
     const cardId = entry?.cardId ?? entry?.id;
     const count = Number(entry?.count ?? 1);
 
-    if (!CARD_LIBRARY[cardId]) {
+    if (!getBattleCard(cardId)) {
       console.warn(`玩家卡组配置忽略未知卡牌：${cardId}`);
       return;
     }
@@ -136,9 +170,10 @@ function buildDeckRecipe(deckConfig) {
 const els = {
   game: $("#game"), hand: $("#hand"), timeline: $("#timeline"), currentNode: $("#currentNode"),
   enemyHp: $("#enemyHp"), enemyHpLag: $("#enemyHpLag"), enemyHpText: $("#enemyHpText"),
+  enemyHpSegments: $("#enemyHpSegments"), frontlineHud: $("#frontlineHud"), groupDebug: $("#groupDebug"), battleStage: $("#battleStage"),
   playerHp: $("#playerHp"), playerHpText: $("#playerHpText"), playerHpTrack: $("#playerHpTrack"), enemyStatuses: $("#enemyStatuses"),
   playerStatuses: $("#playerStatuses"), intentPanel: $("#intentPanel"), intentName: $("#intentName"),
-  intentDamage: $("#intentDamage"), intentDesc: $("#intentDesc"), intentCountdown: $("#intentCountdown"),
+  intentDamage: $("#intentDamage"), intentMetricLabel: $("#intentMetricLabel"), intentDesc: $("#intentDesc"), intentCountdown: $("#intentCountdown"),
   interruptMeter: $("#interruptMeter"), interruptLabel: $("#interruptLabel"),
   interruptProgress: $("#interruptProgress"), interruptThreshold: $("#interruptThreshold"), interruptFill: $("#interruptFill"),
   timelineHint: $("#timelineHint"), combatLog: $("#combatLog"), deckCount: $("#deckCount"),
@@ -160,6 +195,8 @@ let state = { active: false, choice: null };
 let audioContext;
 let dragState = null;
 let enemyPoseTimer = null;
+let battleStage = null;
+let lastRenderedThreat = null;
 
 const ENEMY_POSE_SOURCES = Object.freeze({
   idle: "assets/bell_idle.png",
@@ -201,7 +238,8 @@ function resetEnemyPose() {
   drawEnemyPose("idle");
 }
 
-function showEnemyAttackPose() {
+function showEnemyAttackPose(action) {
+  if (battleStage) { battleStage.strike(action); return; }
   if (enemyPoseTimer) clearTimeout(enemyPoseTimer);
   drawEnemyPose("attack");
   els.enemyTarget.classList.remove("enemy-attacking");
@@ -238,6 +276,13 @@ function rollEnemyIntents() {
 function appendEnemyIntents(intents) {
   let countdown = intents.at(-1)?.countdown ?? 0;
   const battleIntents = getBattleIntents();
+  if (isGroupBattle()) {
+    const sequence = (intents.at(-1)?.sequence ?? -1) + 1;
+    const intentIndex = sequence % battleIntents.length;
+    countdown += battleIntents[intentIndex].windup;
+    intents.push({ intentIndex, countdown, sequence, interruptDamage: 0 });
+    return;
+  }
   for (const intentIndex of rollEnemyIntents()) {
     countdown += battleIntents[intentIndex].windup;
     intents.push({ intentIndex, countdown, interruptDamage: 0 });
@@ -246,7 +291,11 @@ function appendEnemyIntents(intents) {
 
 function buildEnemyIntentQueue() {
   const intents = [];
-  appendEnemyIntents(intents);
+  if (isGroupBattle()) {
+    for (let i = 0; i < ENEMY_INTENT_QUEUE_SIZE; i++) appendEnemyIntents(intents);
+  } else {
+    appendEnemyIntents(intents);
+  }
   return { intents };
 }
 
@@ -271,7 +320,7 @@ function getEnemyEntryAt(countdown) {
 }
 
 function isEnemyBroken() {
-  return Boolean(state?.enemy?.breakRemaining > 0);
+  return !isGroupBattle() && Boolean(state?.enemy?.breakRemaining > 0);
 }
 
 function getEnemyMaxPoise() {
@@ -279,6 +328,7 @@ function getEnemyMaxPoise() {
 }
 
 function getEffectiveCardCost(card, costDelta = 0) {
+  if (card.fatigued) return 1;
   const baseCost = isEnemyBroken() ? 1 : card.cost;
   const weaponCost = isAttackCard(card) ? (getCombatModifiers().attackCost ?? 0) : 0;
   return Math.max(0, baseCost + costDelta + weaponCost);
@@ -289,7 +339,7 @@ function getHandCardCostDelta(handIndex) {
 }
 
 function getEffectiveHandCardCost(handIndex) {
-  const card = CARD_LIBRARY[state.hand[handIndex]];
+  const card = getBattleCard(state.hand[handIndex]);
   return card ? getEffectiveCardCost(card, getHandCardCostDelta(handIndex)) : 0;
 }
 
@@ -302,6 +352,7 @@ function shouldDiscardHandBeforeRefill() {
 }
 
 function resetEnemyPoise(reason = "") {
+  if (isGroupBattle()) return;
   const maxPoise = getEnemyMaxPoise();
   if (state.enemy.poise >= maxPoise) return;
   state.enemy.poise = maxPoise;
@@ -329,11 +380,14 @@ function resetState() {
   resetEnemyPose();
   actionQueue.length = 0;
   const enemyPlan = buildEnemyIntentQueue();
+  enemyPlan.intents.forEach((entry) => { entry.countdown += activeBattle.openingDelay || 0; });
   const maxHp = activeBattle.playerMaxHp || PLAYER_MAX_HP;
+  const groupConfig = activeBattle.config.group;
+  const group = groupConfig ? window.GroupCombat.createEnemyGroup(groupConfig.unitCount, groupConfig.unitHp, groupConfig.damagePerUnit) : null;
   state = {
     active: false, node: 0, cardsPlayed: 0,
     player: { hp: Math.min(activeBattle.playerHp ?? runState.playerHp, maxHp), maxHp, block: 0, evade: false, parry: false, focus: 0, refillCooldown: 0 },
-    enemy: { hp: activeBattle.config.stats.maxHp, maxHp: activeBattle.config.stats.maxHp, intents: enemyPlan.intents, bleedTicks: 0, poise: getEnemyMaxPoise(), breakRemaining: 0 },
+    enemy: { hp: activeBattle.config.stats.maxHp, maxHp: activeBattle.config.stats.maxHp, group, intents: enemyPlan.intents, bleedTicks: 0, poise: getEnemyMaxPoise(), breakRemaining: 0 },
     deck: shuffled(getBattleDeckRecipe()), discard: [], hand: [], handCostDeltas: [],
     hoveredCard: null, hoveredHandIndex: null, logs: [], choice: null, lastPlayedCardId: null,
     innateCardId: getCombatModifiers().innateCardId || null, innateCooldown: 0,
@@ -341,6 +395,16 @@ function resetState() {
   };
   ensureInsightWindowsThrough(16);
   drawCards(REFILL_TARGET_HAND_SIZE);
+  if (group && !state.hand.some((card) => card.cardId === "sweep")) {
+    const sweepIndex = state.deck.findIndex((card) => card.cardId === "sweep");
+    if (sweepIndex >= 0) {
+      const sweep = state.deck.splice(sweepIndex, 1)[0];
+      state.deck.push(state.hand[state.hand.length - 1]);
+      state.hand[state.hand.length - 1] = sweep;
+    }
+  }
+  lastRenderedThreat = null;
+  els.game.classList.toggle("group-battle", Boolean(group));
   els.game.classList.remove("enemy-dead", "shake");
   els.endOverlay.classList.remove("visible");
   els.enemyName.textContent = activeBattle.config.displayName;
@@ -372,11 +436,28 @@ function renderAll() {
 }
 
 function renderVitals() {
+  if (isGroupBattle()) state.enemy.hp = window.GroupCombat.getGroupCurrentHP(state.enemy.group);
   const enemyPct = Math.max(0, state.enemy.hp / state.enemy.maxHp * 100);
   const playerPct = Math.max(0, state.player.hp / state.player.maxHp * 100);
   els.enemyHp.style.width = `${enemyPct}%`;
   els.enemyHpLag.style.width = `${enemyPct}%`;
   els.enemyHpText.textContent = `${Math.max(0, state.enemy.hp)} / ${state.enemy.maxHp}`;
+  if (isGroupBattle()) {
+    els.enemyHpSegments.innerHTML = state.enemy.group.units.map((unit) =>
+      `<span class="enemy-hp-segment${unit.alive ? "" : " dead"}" title="粪怪 ${unit.id + 1}：${unit.hp}/${unit.maxHp}"><i style="width:${unit.hp / unit.maxHp * 100}%"></i></span>`
+    ).join("");
+    const group = state.enemy.group;
+    els.groupDebug.classList.remove("hidden");
+    const bands = window.GroupCombat.getBandCounts(group);
+    els.frontlineHud.innerHTML = ["贴身", "近距", "远距"].map((label, index) =>
+      `<span class="frontline-band band-${index}">${label} <b>${bands[index]}</b></span>`
+    ).join('<i aria-hidden="true">←</i>');
+    els.groupDebug.textContent = `时刻 ${state.node} · 下次 ${getLeadEnemyEntry()?.countdown ?? "—"} · 存活 ${window.GroupCombat.getAliveCount(group)} · 阵线 ${bands.join("/")} · HP [${group.units.map((unit) => unit.hp).join(",")}] · 连杀 ${group.recentKillCount}`;
+  } else {
+    els.enemyHpSegments.innerHTML = "";
+    els.frontlineHud.innerHTML = "";
+    els.groupDebug.classList.add("hidden");
+  }
   els.playerHp.style.width = `${playerPct}%`;
   els.playerHpText.textContent = `${Math.max(0, state.player.hp)} / ${state.player.maxHp}`;
   els.currentNode.textContent = String(state.node).padStart(2, "0");
@@ -392,13 +473,42 @@ function renderVitals() {
   els.playerStatuses.innerHTML = playerStatuses.join("");
 
   const enemyStatuses = [];
+  if (isGroupBattle()) enemyStatuses.push(`<span class="status-chip">存活 <b>${window.GroupCombat.getAliveCount(state.enemy.group)} / ${state.enemy.group.units.length}</b></span>`);
   if (state.enemy.bleedTicks) enemyStatuses.push(`<span class="status-chip">刻血 <b>${state.enemy.bleedTicks}</b></span>`);
-  enemyStatuses.push(`<span class="status-chip stagger-chip">韧性 <b>${state.enemy.poise}/${getEnemyMaxPoise()}</b></span>`);
+  if (!isGroupBattle()) enemyStatuses.push(`<span class="status-chip stagger-chip">韧性 <b>${state.enemy.poise}/${getEnemyMaxPoise()}</b></span>`);
   if (isEnemyBroken()) enemyStatuses.push(`<span class="status-chip break-chip">BREAK <b>${state.enemy.breakRemaining}</b></span>`);
   els.enemyStatuses.innerHTML = enemyStatuses.join("");
 }
 
 function renderIntent() {
+  if (isGroupBattle()) {
+    const leadEntry = getLeadEnemyEntry();
+    const intent = getBattleIntents()[leadEntry.intentIndex];
+    const damage = getIntentDamage(intent);
+    const action = intent.groupAction;
+    const bands = window.GroupCombat.getBandCounts(state.enemy.group);
+    els.intentName.textContent = intent.name;
+    els.intentDamage.textContent = action === "surge" ? "→" : damage;
+    els.intentMetricLabel.textContent = action === "surge" ? "推进" : "伤害";
+    if (lastRenderedThreat !== null && damage !== lastRenderedThreat) {
+      els.intentDamage.classList.remove("threat-pop");
+      void els.intentDamage.offsetWidth;
+      els.intentDamage.classList.add("threat-pop");
+    }
+    lastRenderedThreat = damage;
+    els.intentDesc.textContent = action === "bite"
+      ? `贴身 ${bands[0]} 只 · 最前 2 只各造成 2 点伤害`
+      : action === "surge"
+        ? `全群向前推进一层 · 当前阵线 ${bands.join(" / ")}`
+        : `${window.GroupCombat.getAliveCount(state.enemy.group)} 只存活 · ${damage ? "全群扑袭" : "不足 4 只，包围落空"}`;
+    els.intentCountdown.textContent = leadEntry.countdown;
+    els.interruptMeter.style.display = "none";
+    els.intentPanel.classList.toggle("danger", leadEntry.countdown <= 2);
+    els.intentPanel.classList.remove("break");
+    return;
+  }
+  els.interruptMeter.style.display = "";
+  els.intentMetricLabel.textContent = "伤害";
   if (isEnemyBroken()) {
     els.intentName.textContent = "BREAK";
     els.intentDamage.textContent = "0";
@@ -421,7 +531,7 @@ function renderIntent() {
   const leadEntry = getLeadEnemyEntry();
   const intent = getBattleIntents()[leadEntry.intentIndex];
   els.intentName.textContent = intent.name;
-  els.intentDamage.textContent = intent.damage;
+  els.intentDamage.textContent = getIntentDamage(intent);
   els.intentDamage.classList.remove("threat-pop");
   void els.intentDamage.offsetWidth;
   els.intentDamage.classList.add("threat-pop");
@@ -439,7 +549,7 @@ function renderIntent() {
 }
 
 function renderTimeline() {
-  const hover = state.hoveredCard ? CARD_LIBRARY[state.hoveredCard] : null;
+  const hover = state.hoveredCard ? getBattleCard(state.hoveredCard) : null;
   const hoverCost = hover ? getEffectiveCardCost(hover, getHandCardCostDelta(state.hoveredHandIndex)) : null;
   const leadCountdown = getLeadEnemyCountdown();
   const hoverClashEntry = hover ? getEnemyEntryAt(hoverCost) : null;
@@ -449,20 +559,27 @@ function renderTimeline() {
     const insightHere = state.insightWindows.has(state.node + i);
     const enemyEntry = getEnemyEntryAt(i);
     const enemyHere = Boolean(enemyEntry);
+    const enemyIntent = enemyEntry ? getBattleIntents()[enemyEntry.intentIndex] : null;
+    const enemyDamage = enemyIntent ? getIntentDamage(enemyIntent, enemyEntry) : 0;
+    const damageEvent = enemyHere && enemyDamage > 0;
     const enemyOrder = enemyEntry ? state.enemy.intents.indexOf(enemyEntry) : -1;
     const playerHere = hover && i === hoverCost;
-    node.className = `time-node${isEnemyBroken() ? " break-window" : ""}${enemyHere ? " enemy-node" : ""}${enemyOrder > 0 ? " queued-enemy-node" : ""}${playerHere ? " player-node" : ""}${enemyHere && playerHere ? " clash" : ""}${insightHere ? " insight-node" : ""}`;
+    node.className = `time-node${isEnemyBroken() ? " break-window" : ""}${enemyHere ? " enemy-node" : ""}${enemyOrder > 0 ? " queued-enemy-node" : ""}${playerHere ? " player-node" : ""}${damageEvent && playerHere && isAttackCard(hover) ? " clash" : ""}${insightHere ? " insight-node" : ""}`;
     let marker = "";
-    if (enemyHere && playerHere) marker = "⚔";
+    if (damageEvent && playerHere && isAttackCard(hover)) marker = "⚔";
     else if (enemyHere) marker = enemyOrder === 0 ? "◆" : "◇";
     else if (playerHere) marker = "○";
-    node.innerHTML = `${marker ? `<span class="marker">${marker}</span>` : ""}${insightHere ? '<span class="insight-mark">眼</span>' : ""}<small>${state.node + i}</small>`;
+    node.innerHTML = `${marker ? `<span class="marker">${marker}</span>` : ""}${enemyHere && isGroupBattle() ? `<b class="enemy-damage-preview" title="${enemyIntent.name}">${enemyIntent.groupAction === "surge" ? "→" : enemyDamage || "×"}</b>` : ""}${insightHere ? '<span class="insight-mark">眼</span>' : ""}<small>${state.node + i}</small>`;
     els.timeline.appendChild(node);
   }
   if (!hover) {
     els.timelineHint.textContent = isEnemyBroken() ? `BREAK 窗口剩余 ${state.enemy.breakRemaining} 节点` : "悬停卡牌以预演结算位置";
+  } else if (hover.fatigued) {
+    els.timelineHint.textContent = "疲劳：消耗 1 刻，消除一层疲劳；没有原卡效果。";
   } else if (isEnemyBroken()) {
     els.timelineHint.textContent = `${hover.name} 在 BREAK 中仅消耗 ${hoverCost} 节点`;
+  } else if (isGroupBattle() && hoverCost < leadCountdown) {
+    els.timelineHint.textContent = `${hover.name} 将抢先结算 · 击杀前排可减轻扑咬，击杀总数可削弱包围`;
   } else if (hoverCost < leadCountdown) {
     const intent = getBattleIntents()[getLeadEnemyEntry().intentIndex];
     const remainingInterruptDamage = Math.max(0, intent.damage - (getLeadEnemyEntry().interruptDamage ?? 0));
@@ -470,9 +587,9 @@ function renderTimeline() {
     els.timelineHint.textContent = previewContribution >= remainingInterruptDamage
       ? `${hover.name} 将抢先打断「${intent.name}」`
       : `${hover.name} 将抢先结算 · 还差 ${remainingInterruptDamage - previewContribution} 打断值`;
-  } else if (!hover.immediate && isAttackCard(hover) && hoverClashEntry) {
+  } else if (!hover.immediate && isAttackCard(hover) && !hover.spreadDamage && hoverClashEntry && getIntentDamage(getBattleIntents()[hoverClashEntry.intentIndex], hoverClashEntry) > 0) {
     els.timelineHint.textContent = `${hover.name} 将与敌方攻击拼刀`;
-  } else if (!hover.immediate && hover.block && hoverClashEntry) {
+  } else if (!hover.immediate && hover.block && hoverClashEntry && getIntentDamage(getBattleIntents()[hoverClashEntry.intentIndex], hoverClashEntry) > 0) {
     els.timelineHint.textContent = `${hover.name} 将在敌方攻击时生效`;
   } else if (hover.immediate) {
     els.timelineHint.textContent = `${hover.name} 即时生效，可接住攻击`;
@@ -490,15 +607,20 @@ function renderHand() {
   }
   const handChoice = state.choice?.kind === "hand" ? state.choice : null;
   state.hand.forEach((cardId, index) => {
-    const card = CARD_LIBRARY[cardId];
+    const card = getBattleCard(cardId);
     const effectiveCost = getEffectiveHandCardCost(index);
     const ritualLocked = isRitualCardLocked(card);
     const enemyTargeted = targetsEnemy(card);
     const button = document.createElement("button");
-    const clashReady = !card.immediate && isAttackCard(card) && Boolean(getEnemyEntryAt(effectiveCost));
-    const guardReady = !card.immediate && card.block && Boolean(getEnemyEntryAt(effectiveCost));
+    const matchingEntry = getEnemyEntryAt(effectiveCost);
+    const damageAtCard = matchingEntry ? getIntentDamage(getBattleIntents()[matchingEntry.intentIndex], matchingEntry) : 0;
+    const clashReady = !card.immediate && isAttackCard(card) && !card.spreadDamage && damageAtCard > 0;
+    const guardReady = !card.immediate && card.block && damageAtCard > 0;
     const interruptReady = canCardInterruptLeadIntent(card, effectiveCost);
-    const risky = !card.immediate && effectiveCost >= getLeadEnemyCountdown() && !clashReady && !guardReady;
+    const incomingBeforeCard = isGroupBattle()
+      ? state.enemy.intents.some((entry) => entry.countdown <= effectiveCost && getIntentDamage(getBattleIntents()[entry.intentIndex], entry) > 0)
+      : effectiveCost >= getLeadEnemyCountdown();
+    const risky = !card.immediate && incomingBeforeCard && !clashReady && !guardReady;
     const selectable = !handChoice || handChoice.filter(card, index);
     button.className = `card ${card.type}${risky ? " risky" : ""}${clashReady ? " clash-ready" : ""}${interruptReady ? " interrupt-ready" : ""}${ritualLocked ? " ritual-locked" : ""}${handChoice && selectable ? " choice-selectable" : ""}${handChoice && !selectable ? " choice-blocked" : ""}`;
     button.disabled = !state.active || ritualLocked || (handChoice && !selectable);
@@ -511,8 +633,8 @@ function renderHand() {
       <p>${card.text}</p>
       <span class="card-key">${index + 1}</span>
       <span class="card-speed">${ritualLocked ? "心脏仍在 · 无法使用" : interruptReady ? "可打断" : clashReady ? "拼刀" : guardReady ? "格挡" : risky ? "危险" : card.speed} · ${enemyTargeted ? "敌方" : "自身"}</span>`;
-    button.addEventListener("mouseenter", () => previewCard(card.id, index));
-    button.addEventListener("focus", () => previewCard(card.id, index));
+    button.addEventListener("mouseenter", () => previewCard(cardId, index));
+    button.addEventListener("focus", () => previewCard(cardId, index));
     button.addEventListener("mouseleave", clearPreview);
     button.addEventListener("blur", clearPreview);
     if (handChoice) {
@@ -531,7 +653,7 @@ function renderHand() {
 
 function renderDeckChoiceCards() {
   state.choice.cards.forEach((cardId, index) => {
-    const card = CARD_LIBRARY[cardId];
+    const card = getBattleCard(cardId);
     const button = document.createElement("button");
     button.className = `card ${card.type} choice-selectable`;
     button.setAttribute("aria-label", `选择 ${card.name}`);
@@ -543,8 +665,8 @@ function renderDeckChoiceCards() {
       <p>${card.text}</p>
       <span class="card-key">${index + 1}</span>
       <span class="card-speed">预读 · 入手</span>`;
-    button.addEventListener("mouseenter", () => previewCard(card.id, null));
-    button.addEventListener("focus", () => previewCard(card.id, null));
+    button.addEventListener("mouseenter", () => previewCard(cardId, null));
+    button.addEventListener("focus", () => previewCard(cardId, null));
     button.addEventListener("mouseleave", clearPreview);
     button.addEventListener("blur", clearPreview);
     button.addEventListener("click", (event) => {
@@ -584,7 +706,7 @@ function beginDeckChoice(prompt, cards) {
 function completeHandChoice(index) {
   const choice = state.choice;
   if (choice?.kind !== "hand") return;
-  const card = CARD_LIBRARY[state.hand[index]];
+  const card = getBattleCard(state.hand[index]);
   if (!card || !choice.filter(card, index)) return;
   state.choice = null;
   els.game.classList.remove("choosing");
@@ -656,16 +778,16 @@ function targetsEnemy(card) {
 }
 
 function isAttackCard(card) {
-  return card?.type === "attack" && Boolean(card.damage);
+  return card?.type === "attack" && Boolean(card.damage || card.spreadDamage);
 }
 
 function getPreviewCardDamage(card, targetNode = state.node) {
-  if (!card?.damage) return 0;
-  let damage = card.damage;
-  if (isAttackCard(card)) damage += getCombatModifiers().attackBonus ?? 0;
+  if (!card?.damage && !card?.spreadDamage) return 0;
+  let damage = card.damage || card.spreadDamage;
+  if (isAttackCard(card) && !card.spreadDamage) damage += getCombatModifiers().attackBonus ?? 0;
   if (isAttackCard(card) && state.player.focus) damage = Math.ceil(damage * (1 + state.player.focus));
   if (isAttackCard(card) && state.insightWindows.has(targetNode)) damage *= 2;
-  return damage;
+  return knowledgeDamage(damage) * (card.spreadDamage && isGroupBattle() ? Math.min(card.spreadTargets, window.GroupCombat.getAliveCount(state.enemy.group)) : 1);
 }
 
 function getInterruptContribution(amount) {
@@ -673,6 +795,7 @@ function getInterruptContribution(amount) {
 }
 
 function canCardInterruptLeadIntent(card, effectiveCost) {
+  if (isGroupBattle()) return false;
   if (isEnemyBroken() || !card?.damage || effectiveCost >= getLeadEnemyCountdown()) return false;
   const entry = getLeadEnemyEntry();
   const intent = getBattleIntents()[entry.intentIndex];
@@ -686,7 +809,7 @@ function formatPercent(value) {
 
 function beginCardDrag(event, handIndex, source) {
   if (!state.active || state.choice || dragState || (event.button !== undefined && event.button !== 0)) return;
-  const card = CARD_LIBRARY[state.hand[handIndex]];
+  const card = getBattleCard(state.hand[handIndex]);
   if (!card) return;
   event.preventDefault();
 
@@ -716,7 +839,7 @@ function beginCardDrag(event, handIndex, source) {
 
   els.game.classList.add("dragging");
   els.dragHint.textContent = "拖至释放区松手";
-  state.hoveredCard = card.id;
+  state.hoveredCard = card.instance || card.id;
   state.hoveredHandIndex = handIndex;
   renderTimeline();
   updateDrag(event);
@@ -728,8 +851,8 @@ function beginCardDrag(event, handIndex, source) {
 function updateDrag(event) {
   if (!dragState || (event.pointerId !== undefined && event.pointerId !== dragState.pointerId)) return;
   event.preventDefault?.();
-  if (state.hoveredCard !== dragState.card.id) {
-    state.hoveredCard = dragState.card.id;
+  if (state.hoveredCard !== (dragState.card.instance || dragState.card.id)) {
+    state.hoveredCard = dragState.card.instance || dragState.card.id;
     state.hoveredHandIndex = dragState.handIndex;
     renderTimeline();
   }
@@ -827,7 +950,7 @@ function previewCard(cardId, handIndex = null) {
 
 function clearPreview() {
   if (dragState) {
-    state.hoveredCard = dragState.card.id;
+    state.hoveredCard = dragState.card.instance || dragState.card.id;
     return;
   }
   state.hoveredCard = null;
@@ -867,10 +990,12 @@ function getVfxPoint(element, x = .5, y = .5) {
 }
 
 function getEnemyImpactPoint() {
+  if (battleStage) return battleStage.getEnemyScreenPoint();
   return getVfxPoint(els.enemyTarget, .5, .28);
 }
 
 function getPlayerImpactPoint() {
+  if (battleStage) return { x: els.game.clientWidth / 2, y: els.game.clientHeight * .76 };
   return getVfxPoint(els.playerDropZone, .5, .48);
 }
 
@@ -879,6 +1004,7 @@ function getPlayerDamageNumberPoint() {
 }
 
 function getEnemyDamageNumberPoint() {
+  if (battleStage) return battleStage.getEnemyScreenPoint();
   return getVfxPoint(els.enemyTarget, .5, .31);
 }
 
@@ -944,7 +1070,7 @@ function playPlayerAttackVfx(card) {
 function playEnemyAttackVfx(intent) {
   const enemy = getEnemyImpactPoint();
   const player = getPlayerImpactPoint();
-  const size = Math.min(220, 94 + intent.damage * 2);
+  const size = Math.min(220, 94 + getIntentDamage(intent) * 2);
   spawnVfx("vfx-enemy-tell", enemy, { size, tone: "#b63d42", duration: 680 });
   spawnTrail(enemy, { x: player.x, y: player.y + 4 }, "#cb4044");
 }
@@ -995,7 +1121,7 @@ function playCard(handIndex) {
     return;
   }
   if (!state.active || handIndex < 0 || handIndex >= state.hand.length) return;
-  const selectedCard = CARD_LIBRARY[state.hand[handIndex]];
+  const selectedCard = getBattleCard(state.hand[handIndex]);
   if (isRitualCardLocked(selectedCard)) {
     addLog(`你的心脏仍在跳动，秘仪拒绝回应「${selectedCard.name}」。`, "damage");
     renderLogs();
@@ -1031,10 +1157,15 @@ async function processActionQueue() {
 async function performCardPlay(cardId, costDelta = 0) {
   let cardClashed = false;
   let cardBlockPreResolved = false;
-  const card = CARD_LIBRARY[cardId];
+  const card = getBattleCard(cardId);
   const effectiveCost = getEffectiveCardCost(card, costDelta);
   const previousCardId = state.lastPlayedCardId;
+  if (isGroupBattle()) state.cardKillCount = 0;
   state.cardsPlayed++;
+  if (card.fatigued) {
+    cardId.fatigue--;
+    state.lastPlayedCardId = null;
+  }
   state.discard.push(cardId);
   showBanner(card.name);
   playCardCastVfx(card);
@@ -1060,7 +1191,12 @@ async function performCardPlay(cardId, costDelta = 0) {
     await wait(RESOLVE_GAP_MS);
   }
 
-  state.lastPlayedCardId = cardId;
+  state.lastPlayedCardId = card.fatigued ? null : card.id;
+  if (isGroupBattle() && state.active && window.GroupCombat.recordCardKills(state.enemy.group, state.cardKillCount)) {
+    triggerGroupCollapse();
+  }
+  if (isGroupBattle()) state.cardKillCount = null;
+  renderAll();
   checkBattleEnd();
 }
 
@@ -1158,7 +1294,7 @@ async function applyImmediate(card, context = {}) {
 }
 
 async function applyFeint(card) {
-  const hasTarget = state.hand.some((cardId, index) => isAttackCard(CARD_LIBRARY[cardId]) && getEffectiveHandCardCost(index) > 0);
+  const hasTarget = state.hand.some((cardId, index) => isAttackCard(getBattleCard(cardId)) && getEffectiveHandCardCost(index) > 0);
   if (!hasTarget) {
     addLog("没有可被佯攻牵动的攻击牌。", "damage");
     return false;
@@ -1171,7 +1307,7 @@ async function applyFeint(card) {
 
   state.handCostDeltas[index] = getHandCardCostDelta(index) - card.feint;
   playStatusVfx("focus");
-  addLog(`你以佯攻牵动节奏，「${CARD_LIBRARY[state.hand[index]].name}」消耗刻度 -${card.feint}。`, "good");
+  addLog(`你以佯攻牵动节奏，「${getBattleCard(state.hand[index]).name}」消耗刻度 -${card.feint}。`, "good");
   return true;
 }
 
@@ -1188,7 +1324,7 @@ async function discardHandForCardCost(card) {
     const discardedId = state.hand.splice(index, 1)[0];
     state.handCostDeltas.splice(index, 1);
     state.discard.push(discardedId);
-    addLog(`你弃掉「${CARD_LIBRARY[discardedId].name}」作为代价。`, "good");
+    addLog(`你弃掉「${getBattleCard(discardedId).name}」作为代价。`, "good");
   }
   return true;
 }
@@ -1232,7 +1368,7 @@ async function resolveScry(card) {
   state.hand.push(chosenId);
   state.handCostDeltas.push(0);
   playStatusVfx("draw");
-  addLog(`你预读命运，取走「${CARD_LIBRARY[chosenId].name}」。`, "good");
+  addLog(`你预读命运，取走「${getBattleCard(chosenId).name}」。`, "good");
   return true;
 }
 
@@ -1252,7 +1388,7 @@ function consumeCardDamage(card, options = {}) {
     damage *= 2;
     addLog("双手剑吃住碰撞，拼刀伤害翻倍。", "good");
   }
-  return damage;
+  return knowledgeDamage(damage);
 }
 
 function applyCardBlock(card) {
@@ -1269,7 +1405,18 @@ function resolveCard(card, options = {}) {
   if (card.damage && !options.skipDamage) {
     const damage = consumeCardDamage(card);
     playPlayerAttackVfx(card);
-    damageEnemy(damage);
+    damageEnemy(damage, true, { fromCard: true, knowledgeApplied: true });
+  }
+  if (card.spreadDamage && isGroupBattle()) {
+    let damagePerTarget = card.spreadDamage;
+    if (state.player.focus) {
+      damagePerTarget = Math.ceil(damagePerTarget * (1 + state.player.focus));
+      state.player.focus = 0;
+      addLog("罅隙被命中，横扫伤害提高。", "good");
+    }
+    if (state.insightWindows.has(state.node)) damagePerTarget *= 2;
+    playPlayerAttackVfx(card);
+    damageEnemySpread(card.spreadTargets, damagePerTarget);
   }
   if (isAttackCard(card) && options.effectiveCost === 1 && getCombatModifiers().bleedOnFastAttack && state.enemy.hp > 0) {
     state.enemy.bleedTicks += 1;
@@ -1316,7 +1463,7 @@ async function advanceNode(resolvingCard = null) {
     state.enemy.bleedTicks--;
     playStatusVfx("bleed");
     damageEnemy(6, false);
-    addLog("刻血随时间撕裂伤口：3 点伤害。", "damage");
+    addLog(`刻血随时间撕裂伤口：${knowledgeDamage(6)} 点伤害。`, "damage");
     if (checkBattleEnd()) return result;
   }
 
@@ -1339,9 +1486,13 @@ async function advanceNode(resolvingCard = null) {
     return result;
   }
 
+  const leadIntent = getBattleIntents()[getLeadEnemyEntry().intentIndex];
+  const damagingLead = getIntentDamage(leadIntent) > 0;
+  if (getLeadEnemyCountdown() === 1 && damagingLead) battleStage?.telegraph(leadIntent.groupAction);
   if (getLeadEnemyCountdown() <= 0) {
+    if (damagingLead) battleStage?.telegraph(leadIntent.groupAction);
     await wait(ENEMY_TELL_MS);
-    if (resolvingCard?.block) {
+    if (resolvingCard?.block && damagingLead) {
       applyCardBlock(resolvingCard);
       result.preResolvedBlock = true;
       renderAll();
@@ -1350,6 +1501,7 @@ async function advanceNode(resolvingCard = null) {
     result.clashed = clashed;
     if (checkBattleEnd()) return result;
     await wait(ENEMY_STRIKE_MS);
+    battleStage?.settle();
   }
   return result;
 }
@@ -1357,13 +1509,32 @@ async function advanceNode(resolvingCard = null) {
 function resolveEnemyAttack(resolvingCard = null) {
   const entry = getLeadEnemyEntry();
   const intent = getBattleIntents()[entry.intentIndex];
-  showEnemyAttackPose();
+  if (isGroupBattle() && intent.groupAction === "surge") {
+    const bands = window.GroupCombat.advanceFrontline(state.enemy.group);
+    battleStage?.updateFormation();
+    showBanner("涌动 · 阵线前压");
+    playStatusVfx("delay");
+    addLog(`粪怪群整体前进一步：贴身 ${bands[0]} / 近距 ${bands[1]} / 远距 ${bands[2]}。`, "damage");
+    state.enemy.intents.shift();
+    ensureEnemyIntentQueue();
+    renderAll();
+    return false;
+  }
+  if (isGroupBattle() && getIntentDamage(intent) === 0) {
+    showBanner(`${intent.name}落空`);
+    addLog(intent.groupAction === "encircle" ? "存活粪怪不足 4 只，包围落空。" : "贴身阵线无人，扑咬落空。", "good");
+    state.enemy.intents.shift();
+    ensureEnemyIntentQueue();
+    renderAll();
+    return false;
+  }
+  showEnemyAttackPose(intent.groupAction);
   showBanner(intent.name);
   playEnemyAttackVfx(intent);
   pulseTone(55, .26, .075);
 
   let clashed = false;
-  if (resolvingCard && isAttackCard(resolvingCard)) {
+  if (resolvingCard && isAttackCard(resolvingCard) && !resolvingCard.spreadDamage) {
     clashed = true;
     resolveClash(intent, resolvingCard);
   } else if (state.player.evade) {
@@ -1379,7 +1550,7 @@ function resolveEnemyAttack(resolvingCard = null) {
     damageEnemy(13);
   } else {
     if (resolvingCard?.block) resetEnemyPoise("格挡打断了连续拼刀节奏，敌人韧性恢复。");
-    damagePlayer(intent.damage, intent.name);
+    damagePlayer(getIntentDamage(intent), intent.name);
   }
 
   state.enemy.intents.shift();
@@ -1390,7 +1561,7 @@ function resolveEnemyAttack(resolvingCard = null) {
 
 function resolveClash(intent, card) {
   const playerDamage = consumeCardDamage(card, { clash: true });
-  const enemyDamage = intent.damage;
+  const enemyDamage = getIntentDamage(intent);
   const remainder = playerDamage - enemyDamage;
   showBanner("拼刀", "clash");
   playStatusVfx("clash");
@@ -1400,7 +1571,7 @@ function resolveClash(intent, card) {
 
   if (remainder > 0) {
     addLog(`拼刀！「${card.name}」压过${intent.name}，余势 ${remainder} 点。`, "good");
-    damageEnemy(remainder);
+    damageEnemy(remainder, true, { fromCard: true, knowledgeApplied: true });
     if (card.returnOnClashWin) returnPlayedCardToHand(card);
   } else if (remainder < 0) {
     const incoming = Math.abs(remainder);
@@ -1413,22 +1584,24 @@ function resolveClash(intent, card) {
 }
 
 function returnPlayedCardToHand(card) {
-  const discardIndex = state.discard.lastIndexOf(card.id);
-  if (discardIndex >= 0) state.discard.splice(discardIndex, 1);
-  state.hand.push(card.id);
+  const discardIndex = state.discard.indexOf(card.instance);
+  if (discardIndex < 0) return;
+  const instance = state.discard.splice(discardIndex, 1)[0];
+  state.hand.push(instance);
   state.handCostDeltas.push(0);
   playStatusVfx("draw");
   addLog(`「${card.name}」乘胜追回手牌。`, "good");
 }
 
 function registerClashStagger() {
-  if (isEnemyBroken()) return;
+  if (isEnemyBroken() || isGroupBattle()) return;
   state.enemy.poise = Math.max(0, state.enemy.poise - 1);
   addLog(`拼刀撼动守卫：韧性降至 ${state.enemy.poise}/${getEnemyMaxPoise()}。`, "good");
   if (state.enemy.poise <= 0) enterEnemyBreak();
 }
 
 function registerPreemptiveDamage(amount) {
+  if (isGroupBattle()) return false;
   const entry = getLeadEnemyEntry();
   if (!entry || isEnemyBroken() || entry.countdown <= 0 || state.enemy.hp <= 0) return false;
   const intent = getBattleIntents()[entry.intentIndex];
@@ -1451,8 +1624,40 @@ function registerPreemptiveDamage(amount) {
   return true;
 }
 
-function damageEnemy(amount, dramatic = true) {
+function commitGroupDamage(result, dramatic = true, fromCard = false) {
+  state.enemy.hp = window.GroupCombat.getGroupCurrentHP(state.enemy.group);
+  if (result.dealt > 0) spawnDamageNumber("enemy", result.dealt);
+  battleStage?.hit(result.hit);
+  battleStage?.kill(result.killed);
+  if (fromCard && Number.isInteger(state.cardKillCount)) state.cardKillCount += result.killed.length;
+  if (dramatic && result.dealt > 0) {
+    addLog(`${activeBattle.config.displayName}受到 ${result.dealt} 点伤害。`, "damage");
+    hitEffect("enemy");
+    pulseTone(95, .1, .04);
+  }
+  if (result.killed.length) {
+    showBanner(`击杀 ${result.killed.length} 只 · 存活 ${window.GroupCombat.getAliveCount(state.enemy.group)}`);
+    addLog(`${result.killed.length} 只粪怪倒下，包围威胁现为 ${window.GroupCombat.getGroupEventDamage(state.enemy.group, "encircle")} 点；贴身扑咬 ${window.GroupCombat.getGroupEventDamage(state.enemy.group, "bite")} 点。`, "good");
+  }
+  renderVitals();
+  renderIntent();
+  renderTimeline();
+  return result;
+}
+
+function damageEnemySpread(targetCount, damagePerTarget) {
+  const result = window.GroupCombat.applySpreadDamage(state.enemy.group, targetCount, knowledgeDamage(damagePerTarget));
+  return commitGroupDamage(result, true, true);
+}
+
+function damageEnemy(amount, dramatic = true, options = {}) {
+  if (!options.knowledgeApplied) amount = knowledgeDamage(amount);
+  if (isGroupBattle()) {
+    const result = window.GroupCombat.applySequentialDamage(state.enemy.group, amount);
+    return commitGroupDamage(result, dramatic, Boolean(options.fromCard));
+  }
   state.enemy.hp -= amount;
+  battleStage?.hit([0]);
   spawnDamageNumber("enemy", amount);
   if (dramatic) {
     addLog(`${activeBattle.config.displayName}受到 ${amount} 点伤害。`, "damage");
@@ -1461,6 +1666,18 @@ function damageEnemy(amount, dramatic = true) {
   }
   registerPreemptiveDamage(amount);
   renderVitals();
+}
+
+function triggerGroupCollapse() {
+  state.enemy.intents.forEach((entry) => { entry.countdown += 3; });
+  state.player.refillCooldown = 0;
+  window.GroupCombat.retreatFrontline(state.enemy.group);
+  battleStage?.updateFormation();
+  battleStage?.collapse();
+  showBanner("群体崩溃", "break");
+  playStatusVfx("break");
+  addLog("三只粪怪接连倒下：阵线后退，敌方事件延后 3 时刻，补牌冷却刷新。", "good");
+  renderAll();
 }
 
 function damagePlayer(amount, sourceName, options = {}) {
@@ -1522,7 +1739,7 @@ function finishBattle(outcome) {
   cancelChoice();
   actionQueue.length = 0;
   lastBattleWon = won;
-  pendingBattleResult = { result, playerHp: Math.max(0, state.player.hp) };
+  pendingBattleResult = { result, playerHp: Math.max(0, state.player.hp), cardFatigue: Object.fromEntries(activeBattle.cardInstances.filter((card) => !card.temporary).map((card) => [card.instanceId, card.fatigue])) };
   els.game.classList.toggle("enemy-dead", won);
   if (won) {
     runState.battlesWon++;
@@ -1564,28 +1781,45 @@ async function startGame() {
 async function beginWorldBattle(enemyId, options = {}) {
   if (pendingBattleResolve || battleStartPending) throw new Error("A battle is already active.");
   battleStartPending = true;
-  let config;
   try {
-    config = await window.BattleData.getCombatant(enemyId);
+    const config = await window.BattleData.getCombatant(enemyId);
     if (!config.combatEnabled) throw new Error(`战斗角色 ${enemyId} 当前未启用战斗。`);
+    activeBattle = {
+      enemyId, config,
+      playerHp: options.playerHp ?? PLAYER_MAX_HP,
+      playerMaxHp: options.playerMaxHp ?? PLAYER_MAX_HP,
+      cardInstances: options.cardInstances ? window.CardInstances.copyDeck(options.cardInstances, CARD_LIBRARY) : null,
+      openingDelay: Math.max(0, Math.floor(options.openingDelay || 0)),
+      damageMultiplier: Number.isFinite(options.damageMultiplier) && options.damageMultiplier >= 1 ? options.damageMultiplier : 1,
+    };
+    pendingBattleResult = null;
+    els.mapScreen.classList.add("hidden");
+    els.game.classList.remove("hidden");
+    els.game.classList.add("three-stage-active");
+    els.game.scrollTop = 0;
+    resetState();
+    try {
+      const { createBattleStage } = await import("./battle-stage.js");
+      battleStage = createBattleStage(els.battleStage, config, state.enemy.group);
+    } catch (error) {
+      throw new Error("3D 战斗舞台无法初始化，请确认浏览器支持 WebGL。", { cause: error });
+    }
+    state.active = true;
+    renderAll();
+    pulseTone(90, .18, .04);
+    return new Promise((resolve) => { pendingBattleResolve = resolve; });
+  } catch (error) {
+    if (state) state.active = false;
+    battleStage?.dispose();
+    battleStage = null;
+    els.game.classList.add("hidden");
+    els.game.classList.remove("three-stage-active", "group-battle");
+    els.mapScreen.classList.remove("hidden");
+    activeBattle = null;
+    throw error;
   } finally {
     battleStartPending = false;
   }
-  activeBattle = {
-    enemyId,
-    config,
-    playerHp: options.playerHp ?? PLAYER_MAX_HP,
-    playerMaxHp: options.playerMaxHp ?? PLAYER_MAX_HP,
-  };
-  pendingBattleResult = null;
-  els.mapScreen.classList.add("hidden");
-  els.game.classList.remove("hidden");
-  els.game.scrollTop = 0;
-  resetState();
-  state.active = true;
-  renderAll();
-  pulseTone(90, .18, .04);
-  return new Promise((resolve) => { pendingBattleResolve = resolve; });
 }
 
 function returnBattleResult() {
@@ -1596,6 +1830,9 @@ function returnBattleResult() {
   pendingBattleResult = null;
   els.endOverlay.classList.remove("visible");
   els.game.classList.add("hidden");
+  els.game.classList.remove("three-stage-active", "group-battle");
+  battleStage?.dispose();
+  battleStage = null;
   resolve(result);
 }
 
@@ -1604,7 +1841,6 @@ window.BattleBridge = Object.freeze({
   getCardCatalog: () => CARD_LIBRARY,
   getDefaultDeck: () => [...PLAYER_DECK_RECIPE],
 });
-
 els.startButton.addEventListener("click", startGame);
 els.refillButton.addEventListener("click", replenishHand);
 els.innateButton.addEventListener("click", useInnateSkill);
@@ -1631,5 +1867,3 @@ document.addEventListener("keydown", (event) => {
     els.restartButton.click();
   }
 });
-
-loadEnemyLayer();

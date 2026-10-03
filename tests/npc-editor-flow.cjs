@@ -12,11 +12,13 @@ const base = process.env.DUNGEON_URL || "http://127.0.0.1:8765";
   try {
     await page.goto(`${base}/npc-editor/index.html`);
     await page.waitForSelector("#editorApp:not(.is-loading)");
-    assert.equal(await page.locator("#nodeList button").count(), 5);
+    await page.selectOption("#npcSelect", "eddie");
+    const initialNodeCount = Object.keys(JSON.parse(readFileSync(require.resolve("../npc-dialogues/eddie.json"), "utf8")).nodes).length;
+    assert.equal(await page.locator("#nodeList button").count(), initialNodeCount);
     await page.click("#addNodeButton");
-    assert.equal(await page.locator("#nodeList button").count(), 6);
+    assert.equal(await page.locator("#nodeList button").count(), initialNodeCount + 1);
     await page.click("#undoButton");
-    assert.equal(await page.locator("#nodeList button").count(), 5);
+    assert.equal(await page.locator("#nodeList button").count(), initialNodeCount);
 
     await page.selectOption("#npcSelect", "chris");
     await page.click("#sandboxButton");
@@ -38,6 +40,9 @@ const base = process.env.DUNGEON_URL || "http://127.0.0.1:8765";
     const exported = JSON.parse(readFileSync(await download.path(), "utf8"));
     assert.equal(exported.id, "chris");
     assert.equal(exported.nodes.root.options[0].effects[1].key, "helpedChris");
+    await page.selectOption("#npcSelect", "thomas");
+    await page.click("#validateButton");
+    assert.match(await page.locator("#inspector").innerText(), /检查：0 错误，0 警告/);
     assert.deepEqual(errors, []);
     console.log("PASS: NPC editor graph history, sandbox, validation and JSON export");
   } finally { await browser.close(); }
