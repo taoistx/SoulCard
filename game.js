@@ -4,23 +4,23 @@ const $ = (selector) => document.querySelector(selector);
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const CARD_LIBRARY = {
-  quick: { id: "quick", name: "短促刺击", type: "attack", label: "攻击", cost: 1, icon: "╱", text: "造成 <strong>6</strong> 点伤害。", damage: 6, speed: "迅捷" },
-  thrust: { id: "thrust", name: "穿甲突刺", type: "attack", label: "攻击", cost: 2, icon: "ϟ", text: "造成 <strong>12</strong> 点伤害。", damage: 12, speed: "标准" },
-  heavy: { id: "heavy", name: "葬仪重斩", type: "attack", label: "攻击", cost: 4, icon: "†", text: "造成 <strong>36</strong> 点伤害。", damage: 36, speed: "迟缓" },
-  guard: { id: "guard", name: "灰钢架势", type: "defense", label: "防御", cost: 1, icon: "◇", text: "获得 <strong>12</strong> 点格挡值，抵消受到的伤害。选择补充手牌时，格挡值全部清零。", block: 12, speed: "架势" },
+  quick: { id: "quick", name: "短促刺击", type: "attack", label: "暴力", cost: 1, icon: "╱", text: "造成 <strong>6</strong> 点伤害。", damage: 6, speed: "迅捷" },
+  thrust: { id: "thrust", name: "穿甲突刺", type: "attack", label: "暴力", cost: 2, icon: "ϟ", text: "造成 <strong>12</strong> 点伤害。", damage: 12, speed: "标准" },
+  heavy: { id: "heavy", name: "葬仪重斩", type: "attack", label: "暴力", cost: 4, icon: "†", text: "造成 <strong>36</strong> 点伤害。", damage: 36, speed: "迟缓" },
+  guard: { id: "guard", name: "灰钢架势", type: "defense", label: "执念", cost: 1, icon: "◇", text: "获得 <strong>12</strong> 点格挡值，抵消受到的伤害。选择补充手牌时，格挡值全部清零。", block: 12, speed: "架势" },
 //   evade: { id: "evade", name: "鸦步", type: "defense", label: "身法 · 即时", cost: 1, icon: "⌁", text: "弃 <strong>1</strong> 张手牌，闪避下一次攻击。无牌可弃则失败。", evade: true, discardCost: 1, immediate: true, speed: "即时" },
-//   parry: { id: "parry", name: "听钟辨刃", type: "technique", label: "技法 · 即时", cost: 2, icon: "⌖", text: "弃 <strong>1</strong> 张手牌，招架下一次攻击并反击 <strong>13</strong> 点。无牌可弃则失败。", parry: true, discardCost: 1, immediate: true, speed: "反制" },
+//   parry: { id: "parry", name: "听钟辨刃", type: "technique", label: "伎俩 · 即时", cost: 2, icon: "⌖", text: "弃 <strong>1</strong> 张手牌，招架下一次攻击并反击 <strong>13</strong> 点。无牌可弃则失败。", parry: true, discardCost: 1, immediate: true, speed: "反制" },
   delay: { id: "delay", name: "割裂时序", type: "ritual", label: "秘仪", cost: 1, icon: "◴", text: "结算时令敌方意图延后 <strong>2</strong> 节点。", delay: 2, speed: "操时" },
   bleed: { id: "bleed", name: "刻血", type: "ritual", label: "秘仪", cost: 3, icon: "♢", text: "造成 <strong>2</strong> 点伤害；随后 4 个节点各造成 6 点。", damage: 2, bleed: 4, speed: "持续" },
-  focus: { id: "focus", name: "窥见罅隙", type: "technique", label: "技法 · 即时", cost: 1, icon: "⊙", text: "下一张攻击牌伤害提高 <strong>50%</strong>。", focus: .5, immediate: true, speed: "蓄势" },
+  focus: { id: "focus", name: "观察", type: "technique", label: "伎俩 · 即时", cost: 1, icon: "⊙", text: "下一张暴力牌伤害提高 <strong>50%</strong>。", focus: .5, immediate: true, speed: "蓄势" },
 //   mend: { id: "mend", name: "饮下残露", type: "restoration", label: "恢复", cost: 3, icon: "♜", text: "结算时恢复 <strong>13</strong> 点生命。", heal: 13, speed: "迟缓" },
-  adjust: { id: "adjust", name: "调整", type: "technique", label: "技法 · 即时", cost: 1, icon: "↺", text: "抽 <strong>2</strong> 张牌。", draw: 2, speed: "调息" },
-  adjustStance: { id: "adjustStance", name: "快速换架", type: "technique", label: "技法 · 即时", cost: 0, icon: "↻", text: "弃 <strong>1</strong> 张手牌，抽 <strong>2</strong> 张牌。", discardCost: 1, draw: 2, immediate: true, speed: "调息" },
-  feint: { id: "feint", name: "佯攻", type: "technique", label: "技法 · 即时", cost: 1, icon: "◌", text: "指定一张攻击牌，其消耗刻度 <strong>-2</strong>，打出后恢复。", feint: 2, immediate: true, speed: "诱敌" },
-  recoverStance: { id: "recoverStance", name: "收势", type: "technique", label: "技法 · 即时", cost: 1, icon: "⌒", text: "如果上一张打出的牌是攻击牌，抽 <strong>1</strong> 张牌。", drawIfPreviousAttack: 1, immediate: true, speed: "回锋" },
-  preRead: { id: "preRead", name: "预读", type: "technique", label: "技法 · 即时", cost: 1, icon: "☉", text: "查看牌堆顶 <strong>3</strong> 张，选择 <strong>1</strong> 张加入手牌，其余放回。", scry: 3, immediate: true, speed: "观测" },
-  chase: { id: "chase", name: "追击", type: "attack", label: "攻击", cost: 1, icon: "⌁", text: "造成 <strong>10</strong> 点伤害。若拼刀胜出，该卡自动抽回手牌。", damage: 10, returnOnClashWin: true, speed: "追击" },
-  sweep: { id: "sweep", name: "横扫", type: "attack", label: "攻击", cost: 1, icon: "≋", text: "最近的 <strong>3</strong> 只粪怪各受 <strong>3</strong> 点伤害；不溢出。", spreadDamage: 3, spreadTargets: 3, speed: "群攻" },
+  adjust: { id: "adjust", name: "调整", type: "technique", label: "伎俩 · 即时", cost: 1, icon: "↺", text: "抽 <strong>2</strong> 张牌。", draw: 2, speed: "调息" },
+  adjustStance: { id: "adjustStance", name: "快速换架", type: "technique", label: "伎俩 · 即时", cost: 0, icon: "↻", text: "弃 <strong>1</strong> 张手牌，抽 <strong>2</strong> 张牌。", discardCost: 1, draw: 2, immediate: true, speed: "调息" },
+  feint: { id: "feint", name: "佯攻", type: "technique", label: "伎俩 · 即时", cost: 1, icon: "◌", text: "指定一张暴力牌，其消耗刻度 <strong>-2</strong>，打出后恢复。", feint: 2, immediate: true, speed: "诱敌" },
+  recoverStance: { id: "recoverStance", name: "收势", type: "technique", label: "伎俩 · 即时", cost: 1, icon: "⌒", text: "如果上一张打出的牌是暴力牌，抽 <strong>1</strong> 张牌。", drawIfPreviousAttack: 1, immediate: true, speed: "回锋" },
+  preRead: { id: "preRead", name: "预读", type: "technique", label: "伎俩 · 即时", cost: 1, icon: "☉", text: "查看牌堆顶 <strong>3</strong> 张，选择 <strong>1</strong> 张加入手牌，其余放回。", scry: 3, immediate: true, speed: "观测" },
+  chase: { id: "chase", name: "追击", type: "attack", label: "暴力", cost: 1, icon: "⌁", text: "造成 <strong>10</strong> 点伤害。若拼刀胜出，该卡自动抽回手牌。", damage: 10, returnOnClashWin: true, speed: "追击" },
+  sweep: { id: "sweep", name: "横扫", type: "attack", label: "暴力", cost: 1, icon: "≋", text: "最近的 <strong>3</strong> 只粪怪各受 <strong>3</strong> 点伤害；不溢出。", spreadDamage: 3, spreadTargets: 3, speed: "群攻" },
 };
 
 // World 层只传入 enemyId；战斗模块通过 BattleData 读取并解释对应 JSON。
@@ -387,7 +387,7 @@ function resetState() {
   state = {
     active: false, node: 0, cardsPlayed: 0,
     player: { hp: Math.min(activeBattle.playerHp ?? runState.playerHp, maxHp), maxHp, block: 0, evade: false, parry: false, focus: 0, refillCooldown: 0 },
-    enemy: { hp: activeBattle.config.stats.maxHp, maxHp: activeBattle.config.stats.maxHp, group, intents: enemyPlan.intents, bleedTicks: 0, poise: getEnemyMaxPoise(), breakRemaining: 0 },
+    enemy: { hp: group ? activeBattle.config.stats.maxHp : Math.max(1, activeBattle.config.stats.maxHp - (activeBattle.openingDamage || 0)), maxHp: activeBattle.config.stats.maxHp, group, intents: enemyPlan.intents, bleedTicks: 0, poise: getEnemyMaxPoise(), breakRemaining: 0 },
     deck: shuffled(getBattleDeckRecipe()), discard: [], hand: [], handCostDeltas: [],
     hoveredCard: null, hoveredHandIndex: null, logs: [], choice: null, lastPlayedCardId: null,
     innateCardId: getCombatModifiers().innateCardId || null, innateCooldown: 0,
@@ -411,6 +411,7 @@ function resetState() {
   els.enemyRole.textContent = activeBattle.config.role;
   renderAll();
   addLog(activeBattle.config.intro, "");
+  if (!group && activeBattle.openingDamage) addLog(`你抢先刺中敌人，造成 ${activeBattle.config.stats.maxHp - state.enemy.hp} 点先制伤害。`, "good");
 }
 
 function drawCards(amount) {
@@ -1267,7 +1268,7 @@ async function applyImmediate(card, context = {}) {
   if (card.focus) {
     state.player.focus += card.focus;
     playStatusVfx("focus");
-    addLog(`你窥见甲胄罅隙：下次攻击 +${formatPercent(card.focus)}。`, "good");
+    addLog(`你仔细观察甲胄罅隙：下次攻击 +${formatPercent(card.focus)}。`, "good");
   }
   if (card.feint) {
     await applyFeint(card);
@@ -1279,7 +1280,7 @@ async function applyImmediate(card, context = {}) {
       playStatusVfx("draw");
       addLog(`你顺着上一击收势，抽取 ${card.drawIfPreviousAttack} 张牌。`, "good");
     } else {
-      addLog("上一张并非攻击牌，收势没有抽牌。", "damage");
+      addLog("上一张并非暴力牌，收势没有抽牌。", "damage");
     }
   }
   if (card.scry) {
@@ -1296,11 +1297,11 @@ async function applyImmediate(card, context = {}) {
 async function applyFeint(card) {
   const hasTarget = state.hand.some((cardId, index) => isAttackCard(getBattleCard(cardId)) && getEffectiveHandCardCost(index) > 0);
   if (!hasTarget) {
-    addLog("没有可被佯攻牵动的攻击牌。", "damage");
+    addLog("没有可被佯攻牵动的暴力牌。", "damage");
     return false;
   }
 
-  const index = await beginHandChoice("选择一张攻击牌：消耗刻度 -1", (candidate, handIndex) =>
+  const index = await beginHandChoice("选择一张暴力牌：消耗刻度 -1", (candidate, handIndex) =>
     isAttackCard(candidate) && getEffectiveHandCardCost(handIndex) > 0
   );
   if (index === null) return false;
@@ -1790,6 +1791,7 @@ async function beginWorldBattle(enemyId, options = {}) {
       playerMaxHp: options.playerMaxHp ?? PLAYER_MAX_HP,
       cardInstances: options.cardInstances ? window.CardInstances.copyDeck(options.cardInstances, CARD_LIBRARY) : null,
       openingDelay: Math.max(0, Math.floor(options.openingDelay || 0)),
+      openingDamage: Number.isFinite(options.openingDamage) ? Math.max(0, Math.floor(options.openingDamage)) : 0,
       damageMultiplier: Number.isFinite(options.damageMultiplier) && options.damageMultiplier >= 1 ? options.damageMultiplier : 1,
     };
     pendingBattleResult = null;

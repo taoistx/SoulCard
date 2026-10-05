@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "metalInMist",
+  "name": "菌雾里的金属声",
+  "allowLeave": true,
+  "actionSlot": "subject",
+  "start": "opening",
+  "slots": [
+    {
+      "id": "subject",
+      "name": "菌雾",
+      "icon": "◇"
+    },
+    {
+      "id": "field",
+      "name": "周围环境",
+      "icon": "⌖"
+    },
+    {
+      "id": "bait",
+      "name": "诱饵",
+      "icon": "♢"
+    }
+  ],
+  "stages": {
+    "opening": {
+      "body": "前方浓密菌林中不断传来：\n\n铛——\n铛——\n铛——\n\n间隔非常规律。你以为，那里还有人。\n\n将行动卡放入「菌雾」：观察判断节奏；执念直接穿过（额外体力 -1、HP -6）；伎俩制造远处声响；暴力砍开菌丛。每次行动卡疲劳 +1。",
+      "recipes": [
+        {
+          "id": "metal_observe",
+          "slots": {
+            "subject": {
+              "kind": "card",
+              "category": "technique",
+              "cardId": "focus"
+            }
+          },
+          "action": "metal_observe",
+          "result": "声音每隔固定时间响一次。你看清风吹菌盖、孢子雾散开的规律，可以循着节奏安全穿越。\n\n获得知识「菌雾节奏」，解锁「金属声源」。本次遭遇结束。",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "knowsMistRhythm",
+              "value": true
+            },
+            {
+              "type": "setFlag",
+              "key": "revealedMetalSource",
+              "value": true
+            }
+          ]
+        },
+        {
+          "id": "metal_endure",
+          "slots": {
+            "subject": {
+              "kind": "card",
+              "category": "defense"
+            }
+          },
+          "action": "metal_endure",
+          "result": "你蒙住口鼻，直接穿过孢子雾。额外体力 -1、HP -6（最低保留 1），抵达「金属声源」。污染后续：测试版尚未接入。",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "revealedMetalSource",
+              "value": true
+            },
+            {
+              "type": "setFlag",
+              "key": "enduredSporeMist",
+              "value": true
+            }
+          ],
+          "staminaCost": 1,
+          "hpCost": 6
+        },
+        {
+          "id": "metal_distract",
+          "slots": {
+            "subject": {
+              "kind": "card",
+              "category": "technique",
+              "excludeCardId": "focus"
+            }
+          },
+          "action": "metal_distract",
+          "result": "你朝另一个方向制造巨响，菌雾深处的东西被引了过去。\n\n解锁「金属声源」。在下一次长休前，穿越这里暂时安全。",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "revealedMetalSource",
+              "value": true
+            },
+            {
+              "type": "setFlag",
+              "key": "distractedMistCreature",
+              "value": true
+            }
+          ]
+        },
+        {
+          "id": "metal_cut",
+          "slots": {
+            "subject": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "action": "metal_cut",
+          "result": "你一路砍开菌丛。金属声仍在继续，声源旁却传来了别的动静。\n\n解锁「金属声源」，已记录惊动附近生物。惊动生物的后续：测试版尚未接入。",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "revealedMetalSource",
+              "value": true
+            },
+            {
+              "type": "setFlag",
+              "key": "alarmedMetalSource",
+              "value": true
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,6 +1,11 @@
 {
   "schemaVersion": 1,
   "events": {
-    "thomasCrossroads": "thomas-crossroads.json"
+    "thomasCrossroads": "thomas-crossroads.json",
+    "fallenSurvivor": "fallen-survivor.json",
+    "breathingCorpses": "breathing-corpses.json",
+    "metalInMist": "metal-in-mist.json",
+    "corpseDispute": "corpse-dispute.json",
+    "livingHand": "living-hand.json"
   }
 }

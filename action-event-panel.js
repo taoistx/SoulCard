@@ -42,13 +42,15 @@ window.ActionEventPanel = (() => {
     const title = element("h2", "", model.event.name);
     title.id = "actionEventTitle";
     panel.append(eyebrow, title, element("p", "action-event-story", model.event.stages[model.stage].body));
-    panel.append(element("p", "action-event-help", "在槽位放入卡牌、物品或知识。攻击与防御行动优先于技巧；未参与结算的资源不会消耗。拖动资源，或先选资源再点槽位。"));
+    panel.append(element("p", "action-event-help", "在槽位放入卡牌、物品或知识。只要放入观察以外的行动卡，就优先处理其他行动；条件未满足时不能结算观察。未参与结算的资源不会消耗。拖动资源，或先选资源再点槽位。"));
+    if (model.event.actionSlot) panel.append(element("p", "action-event-help", "本事件的行动卡可放入任意槽位；需要的物品仍须放入配方指定槽位。"));
     const slots = element("div", "action-event-slots");
+    slots.style.gridTemplateColumns = `repeat(${model.event.slots.length}, minmax(0, 1fr))`;
     for (const slot of model.event.slots) {
       const area = element("div", "action-event-target");
       const resource = model.owned.find((r) => r.key === model.placements[slot.id]);
       area.append(element("span", "action-target-icon", slot.icon || "◇"), element("h3", "", slot.name));
-      const drop = button(resource ? resource.name : "放入卡牌", () => {
+      const drop = button(resource ? resource.name : "放入卡牌或物品", () => {
         if (model.selected) place(slot.id, model.selected);
         else { delete model.placements[slot.id]; render(); }
       }, `action-event-slot${resource ? " filled" : ""}`);
@@ -76,7 +78,7 @@ window.ActionEventPanel = (() => {
     }
     panel.append(tabs);
     const resources = element("div", "action-resource-list");
-    const categoryNames = { attack: "攻击", defense: "防御", technique: "技法", ritual: "秘仪", restoration: "恢复" };
+    const categoryNames = { attack: "暴力", defense: "执念", technique: "伎俩", ritual: "秘仪", restoration: "恢复" };
     for (const resource of model.owned.filter((r) => r.kind === model.tab)) {
       const used = Object.values(model.placements).filter((key) => key === resource.key).length;
       const btn = button("", () => { model.selected = model.selected === resource.key ? null : resource.key; render(); }, `action-resource ${resource.category || resource.kind}${model.selected === resource.key ? " selected" : ""}`);
@@ -93,9 +95,12 @@ window.ActionEventPanel = (() => {
     if (!resources.children.length) resources.append(element("p", "", "尚无可用资源。"));
     panel.append(resources);
     const match = model.match(model.placements);
-    const status = element("p", "action-event-status", match.ambiguous ? "配置错误：组合存在多个结果。" : match.valid ? `可以提交 · ${match.chosen.filter((r) => r.kind === "card").length} 张战斗卡各疲劳 +1` : "尚不能提交此组合");
+    const cardCount = match.valid ? match.chosen.filter((r) => r.kind === "card").length : 0;
+    const status = element("p", "action-event-status", match.ambiguous ? "多个行动同时满足，请撤回多余卡牌。" : match.valid ? cardCount ? `可以提交 · ${cardCount} 张战斗卡各疲劳 +1` : "可以提交 · 不增加卡牌疲劳" : match.reason || "尚不能提交此组合");
     status.setAttribute("role", "status");
     if (match.valid) for (const r of match.chosen.filter((r) => r.kind === "item")) status.textContent += ` · ${r.name} -1`;
+    if (match.valid && match.recipe.staminaCost) status.textContent += ` · 额外体力 -${match.recipe.staminaCost}`;
+    if (match.valid && match.recipe.hpCost) status.textContent += ` · HP -${match.recipe.hpCost}（最低保留 1）`;
     panel.append(status);
     const submit = button(model.busy ? "处理中…" : "确认行动", async () => {
       if (model.busy) return;
@@ -106,6 +111,11 @@ window.ActionEventPanel = (() => {
     }, "action-event-submit");
     submit.disabled = model.busy || !match.valid;
     panel.append(submit);
+    if (model.leave) {
+      const leave = button("离开", model.leave, "action-event-leave");
+      leave.disabled = model.busy;
+      panel.append(leave);
+    }
     root.append(panel);
     if (focused) {
       const replacement = [...root.querySelectorAll("button:not(:disabled)")].find((el) => Object.keys(focusData).length && Object.entries(focusData).every(([key, value]) => el.dataset[key] === value));

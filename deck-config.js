@@ -11,7 +11,7 @@ window.PLAYER_DECK_CONFIG = [
 //   { cardId: "parry", count: 1 }, // 听钟辨刃
 //   { cardId: "delay", count: 1 }, // 割裂时序
 //   { cardId: "bleed", count: 1 }, // 刻血
-  { cardId: "focus", count: 1 }, // 窥见罅隙
+  { cardId: "focus", count: 1 }, // 观察
 //   { cardId: "mend", count: 1 }, // 饮下残露
   { cardId: "adjust", count: 1 }, // 调整
   { cardId: "adjustStance", count: 1 }, // 调整架势

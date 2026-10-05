@@ -57,6 +57,14 @@ const base = process.env.DUNGEON_URL || "http://127.0.0.1:8765";
   }
   try {
     await fresh();
+    await place("card:card_8", "field");
+    await place("card:card_9", "thomas");
+    assert.equal(await page.locator(".action-event-submit").isEnabled(), false);
+    assert.match(await page.locator(".action-event-status").innerText(), /其他行动/);
+    assert.equal((await snapshot()).deck[7].fatigue, 0);
+    assert.equal((await snapshot()).deck[8].fatigue, 0);
+    await page.locator('[data-retract="thomas"]').click();
+    assert.equal(await page.locator(".action-event-submit").isEnabled(), true);
     await page.keyboard.press("Escape"); await page.keyboard.press("l"); await page.keyboard.press("i");
     assert.equal(await page.locator("#actionEventPanel").isVisible(), true);
     assert.equal((await snapshot()).day, 1);

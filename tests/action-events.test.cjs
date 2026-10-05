@@ -7,7 +7,7 @@ const event = JSON.parse(fs.readFileSync(require.resolve("../action-events/thoma
 const catalog = {
   quick: { id: "quick", type: "attack", name: "短促刺击", damage: 6, cost: 1, bleed: 1 },
   heavy: { id: "heavy", type: "attack", name: "葬仪重斩", damage: 36, cost: 4 },
-  focus: { id: "focus", type: "technique", name: "窥见罅隙", immediate: true, focus: .5, cost: 1 },
+  focus: { id: "focus", type: "technique", name: "观察", immediate: true, focus: .5, cost: 1 },
   adjust: { id: "adjust", type: "technique", name: "调整", draw: 2, cost: 1 },
   guard: { id: "guard", type: "defense", name: "灰钢架势", block: 12, cost: 1 },
 };
@@ -86,6 +86,21 @@ test("ambiguous recipes are an error; conditions can reject a recipe", () => {
   assert.equal(fixture().match({ monster: "card:battle_0" }, "opening", config).ambiguous, true);
   assert.equal(Runtime.match(event, "opening", { monster: "card:battle_0" }, fixture().resources, () => false).valid, false);
 });
+test("Thomas shares the common rule while keeping named target slots", () => {
+  const { resources } = fixture();
+  const config = structuredClone(event);
+  config.stages.opening.recipes.push({
+    id: "test_trick", slots: { thomas: { kind: "card", category: "technique", excludeCardId: "focus" } },
+    result: "test action",
+  });
+  const result = Runtime.match(config, "opening", { thomas: "card:battle_5", monster: "card:battle_3" }, resources);
+  assert.equal(result.recipe.id, "test_trick");
+  assert.deepEqual(result.chosen.map((resource) => resource.cardId), ["adjust"]);
+  assert.equal(Runtime.match(event, "opening", { monster: "card:battle_3", thomas: "card:battle_5" }, resources).valid, false);
+  assert.equal(Runtime.match(event, "opening", { thomas: "card:battle_0", monster: "card:battle_3" }, resources).recipe.action, "kill_thomas");
+  assert.equal(Runtime.match(event, "opening", { monster: "card:battle_0", field: "card:battle_3" }, resources).recipe.action, "attack_dung");
+});
+
 test("fatigue removes all original effects and retains physical identity", () => {
   for (const cardId of Object.keys(catalog)) {
     const instance = { instanceId: "a", cardId, fatigue: 2 };

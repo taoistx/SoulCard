@@ -8,7 +8,8 @@ const DEFAULT_MAP_VIEW_HEIGHT = 680;
 const MAP_MARGIN = 70;
 const CAMERA_SAFE_MARGIN = 120;
 const MAX_STAMINA = 6;
-const WORLD_DIALOGUE_IDS = new Set(["start", "siltWoods", "drownedHuts", "bellRoad", "hut", "gate", "church", "quietClearing", "node2", "node3"]);
+const WORLD_DIALOGUE_IDS = new Set(["start", "siltWoods", "drownedHuts", "bellRoad", "hut", "gate", "church", "quietClearing", "node2", "node3", "fallenDragTrail", "corpseHiddenPath", "metalSoundSource"]);
+const SLICE_EVENT_IDS = new Set(["fallenSurvivor", "breathingCorpses", "metalInMist", "corpseDispute", "livingHand"]);
 
 function validateConditionConfig(group, field, errors) {
   if (!group) return;
@@ -90,15 +91,16 @@ const WORLD_EVENT_SETS = MAP_CONFIG_ERRORS.length ? {} : window.WORLD_EVENT_SET_
 
 const ITEM_LIBRARY = {
   baitMeat: { name: "诱饵肉", description: "艾迪给的刺鼻肉块。仅作事件诱饵，使用消耗一份，不能食用或充当新鲜血肉。", stackable: true, eventTags: ["lure"] },
-  freshFlesh: { name: "新鲜血肉", description: "仍有人血肉特征的部分。艾迪只认这个。", stackable: true },
+  freshFlesh: { name: "新鲜血肉", description: "仍有人血肉特征的部分。艾迪只认这个。也可用于指定遭遇的喂食与诱导，使用消耗一份。", stackable: true, eventTags: ["freshFlesh"] },
+  rottenFlesh: { name: "腐败血肉", description: "已经腐败或菌化的尸体部分，不能安全食用。不能交易给艾迪，也不能作为新鲜血肉诱饵。", stackable: true },
   oldKey: { name: "老旧钥匙", description: "粪锈遮住了齿纹，也许能打开山道的锁。", keyItem: true },
   healingPotion: { name: "止血瓶", description: "使用后恢复 18 HP。不会推进天数。", usable: true },
   ritualScrap: { name: "秘仪残页", description: "记载卡牌「割裂时序」。心脏仍在时无法使用。", keyItem: true },
-  rustySword: { name: "锈剑", description: "单手武器：攻击卡伤害 +1，可选择左手或右手。", slot: "hand", modifiers: { attackBonus: 1 } },
-  longSword: { name: "长剑", description: "单手武器：攻击卡伤害 +3。", slot: "hand", modifiers: { attackBonus: 3 } },
+  rustySword: { name: "锈剑", description: "单手武器：暴力卡伤害 +1，可选择左手或右手。", slot: "hand", modifiers: { attackBonus: 1 } },
+  longSword: { name: "长剑", description: "单手武器：暴力卡伤害 +3。", slot: "hand", modifiers: { attackBonus: 3 } },
   dagger: { name: "剔骨匕首", description: "单手武器：1 时刻攻击额外施加 1 层流血。", slot: "hand", modifiers: { bleedOnFastAttack: true } },
   greatSword: { name: "排污双手剑", description: "占据双手；攻击耗时 +1，拼刀伤害翻倍。", slot: "bothHands", modifiers: { attackCost: 1, doubleClashDamage: true } },
-  shield: { name: "井盖盾", description: "单手装备：防御卡格挡 +4。", slot: "hand", modifiers: { blockBonus: 4 } },
+  shield: { name: "井盖盾", description: "单手装备：执念卡格挡 +4。", slot: "hand", modifiers: { blockBonus: 4 } },
   heavyArmor: { name: "铸铁浴缸甲", description: "身体：补牌保留格挡，但补牌 CD +1。", slot: "body", modifiers: { retainBlockOnRefill: true, refillCooldown: 1 } },
   gi: { name: "污白道服", description: "身体：保留当前手牌，只补足手牌差值。", slot: "body", modifiers: { preserveHandOnRefill: true } },
   ladyHat: { name: "克里斯的礼帽", description: "头部：一件仍坚持体面的维多利亚礼帽。", slot: "head", modifiers: {} },
@@ -231,6 +233,7 @@ let world = createInitialWorld();
 let currentTarget = null;
 let interactionLocked = false;
 let activeActionEvent = null;
+let worldModalDismissible = true;
 const WORLD_DATA_READY = Promise.all([window.NpcDialogueData.ready, window.BattleData.ready, window.ActionEventData.ready]).then(async () => {
   for (const set of Object.values(WORLD_EVENT_SETS)) for (const entry of set.entries) {
     if (entry.kind === "action" && !window.ActionEventData.get(entry.actionEventId)) throw new Error(`未知行动事件：${entry.actionEventId}`);
@@ -536,6 +539,13 @@ function handleNodeClick(nodeId) {
     return;
   }
   if (firstVisit) spendStamina();
+  const dispute = world.eventStates.corpseDispute;
+  if (dispute?.awaitingDeparture && world.currentNodeId === dispute.nodeId) {
+    dispute.awaitingDeparture = false;
+    dispute.threeCorpses = true;
+    dispute.resolved = true;
+    setFlag("corpseClaimantsDied", true);
+  }
   world.currentNodeId = nodeId;
   if (firstVisit) world.exploredNodes.add(nodeId);
   renderWorld();
@@ -551,6 +561,7 @@ function closeWorldModal() {
 
 function showWorldModal({ kicker = "交互", title, body = "", bodyText = null, options = [], allowClose = true }) {
   interactionLocked = true;
+  worldModalDismissible = allowClose;
   elsWorld.modalKicker.textContent = kicker;
   elsWorld.modalTitle.textContent = title;
   if (bodyText === null) elsWorld.modalBody.innerHTML = body;
@@ -898,6 +909,7 @@ function runWorldDialogue(dialogueId, node) {
     node3: () => showWorldModal({ kicker: "地点", title: node.label, body: node.description || "弦鸣一样的虫声贴着泥水滑过。" }),
   };
   const handler = handlers[dialogueId];
+  if (["fallenDragTrail", "corpseHiddenPath", "metalSoundSource"].includes(dialogueId)) return showSliceFollowup(dialogueId, node);
   if (handler) return handler();
   showWorldModal({ kicker: "配置错误", title: node.label, body: `未登记世界对话：${dialogueId}` });
 }
@@ -907,6 +919,7 @@ function triggerNodeEvent(node, { arrivalPaid = false } = {}) {
   if (getFlag("thomasStayed") && world.eventStates.thomasCrossroads?.nodeId === node.id) return showNpcDialogue("thomas");
   const entry = resolveNodeEventEntry(node);
   if (!entry) return showNoEvent(node);
+  if (entry.kind === "action" && SLICE_EVENT_IDS.has(entry.actionEventId) && showSliceRevisit(entry.actionEventId)) return;
   if (isEventEntryResolved(entry, node)) {
     showWorldModal({ kicker: "节点 · 已解决", title: node.label, body: getFlag("thomasInfectedCorpse") && entry.actionEventId === "thomasCrossroads"
       ? "托马斯感染孢子的尸体仍留在路口。粪怪已经不在这里，节点可以继续通行。"
@@ -952,13 +965,19 @@ function openActionEvent(eventId, node, prepaid = false) {
   let progress = world.eventStates[eventId];
   if (!progress) progress = world.eventStates[eventId] = { nodeId: node.id, stage: event.start, resolved: false, prepaid };
   if (progress.resolved) return;
+  if (SLICE_EVENT_IDS.has(eventId)) {
+    progress.prepaid = prepaid;
+    if (eventId === "corpseDispute") progress.awaitingDeparture = false;
+    if (progress.stage === "grounded") return showGroundedSurvivor();
+  }
   activeActionEvent = { eventId, nodeId: node.id, submitting: false };
   interactionLocked = true;
   elsWorld.modal.classList.add("hidden");
   window.ActionEventPanel.open({
     event, stage: progress.stage, owned: eventResources(),
-    match: (placements) => window.ActionEventRuntime.match(event, progress.stage, placements, eventResources(), evaluateWorldCondition),
+    match: (placements) => matchEventPlacements(event, progress, placements),
     submit: (placements) => submitEventAction(eventId, placements),
+    leave: event.allowLeave && !(eventId === "livingHand" && progress.stage === "trapped") ? () => leaveSliceEvent(eventId) : null,
   });
 }
 
@@ -968,6 +987,203 @@ function completeActionEvent(eventId) {
   interactionLocked = false;
   window.ActionEventPanel.close();
   renderWorld();
+}
+
+
+function matchEventPlacements(event, progress, placements) {
+  const match = window.ActionEventRuntime.match(event, progress.stage, placements, eventResources(), evaluateWorldCondition);
+  if (!match.valid || !SLICE_EVENT_IDS.has(event.id)) return match;
+  const cost = match.recipe.staminaCost || 0;
+  return canSpendStamina(cost) ? match : { valid: false, reason: `体力不足，本次行动需要 ${cost} 点额外体力。` };
+}
+
+function leaveSliceEvent(eventId) {
+  if (!activeActionEvent || activeActionEvent.eventId !== eventId || activeActionEvent.submitting) return;
+  const progress = world.eventStates[eventId];
+  if (eventId === "livingHand" && progress.stage === "trapped") return;
+  progress.prepaid = false;
+  if (eventId === "corpseDispute") progress.awaitingDeparture = true;
+  activeActionEvent = null;
+  interactionLocked = false;
+  window.ActionEventPanel.close();
+  renderWorld();
+}
+
+function showGroundedSurvivor() {
+  const eventId = "fallenSurvivor", progress = world.eventStates[eventId];
+  activeActionEvent = { eventId, nodeId: progress.nodeId, submitting: false };
+  window.ActionEventPanel.close();
+  const finish = (kill) => {
+    if (world.eventStates[eventId].resolved) return;
+    progress.outcome = kill ? "fallen_kill" : "fallen_abandon";
+    setFlag(kill ? "fallenKilled" : "fallenAbandoned", true);
+    progress.resultText = kill ? "你结束了他的挣扎。先前取得的血肉没有增加。" : "你留下仍在挣扎的半截坠落者，走回菌林。后续命运：测试版尚未接入。";
+    completeActionEvent(eventId);
+    showWorldModal({ kicker: "行动结果", title: "半截坠落者", bodyText: progress.resultText });
+  };
+  showWorldModal({
+    kicker: "半截坠落者 · 再次选择", title: "他还活着", allowClose: false,
+    bodyText: "砍断的菌柄躺在泥地里。他痛苦地挣扎着。你已取得新鲜血肉 ×1，现在必须选择杀死或离开。",
+    options: [{ label: "杀死", hint: "结束挣扎；不再次消耗卡牌，不重复奖励", action: () => finish(true) },
+      { label: "离开", hint: "留下他；返回地图", action: () => finish(false) }],
+  });
+}
+
+function handleFallenSurvivor(recipe, progress) {
+  if (recipe.action === "fallen_cut") progress.stage = "grounded";
+}
+
+function handleBreathingCorpses(recipe, progress) {
+  if (recipe.action === "corpse_observe_first") progress.corpseObservations = 1;
+  if (recipe.action === "corpse_observe_worms") {
+    progress.corpseObservations = 2;
+    world.knowledge.wormFarming = true;
+  }
+}
+
+function handleMetalInMist(recipe) {
+  if (recipe.action === "metal_observe") world.knowledge.mistRhythm = true;
+  if (recipe.action === "metal_distract") setFlag("mistSafeDay", world.day);
+}
+
+function handleCorpseDispute(recipe) {
+  if (recipe.action === "dispute_observe") world.knowledge.corpseCorruption = true;
+  if (recipe.action === "dispute_ritual") world.knowledge.corpseAnomaly = true;
+}
+
+function handleLivingHand(recipe, progress, chosen) {
+  if (recipe.action === "hand_grab") progress.failedStrikes = 0;
+  if (recipe.action === "hand_drown") progress.dead = true;
+  progress.retry = false;
+  if (recipe.action !== "hand_strike" || chosen.some((resource) => resource.kind === "card" && resource.cardId === "heavy")) return;
+  progress.failedStrikes = (progress.failedStrikes || 0) + 1;
+  if (progress.failedStrikes >= 2) {
+    progress.dead = true;
+    progress.outcome = "hand_drown";
+    progress.resultText = "你被不知名的东西拖入了泥水中，很快就被看不清的巨大压力包裹…………";
+  } else {
+    progress.resultText = "泥水下东西感动了痛疼，但这似乎并不足以威胁到它，它反而更激烈地把你往泥水里拖";
+    progress.stage = "trapped";
+    progress.retry = true;
+  }
+}
+
+async function submitSliceEventAction(eventId, placements) {
+  if (!activeActionEvent || activeActionEvent.eventId !== eventId || activeActionEvent.submitting) return;
+  const event = window.ActionEventData.get(eventId), progress = world.eventStates[eventId];
+  const match = matchEventPlacements(event, progress, placements);
+  if (!match.valid) throw new Error(match.reason || "资源或组合已失效");
+  const recipe = match.recipe, snapshot = structuredClone(world);
+  activeActionEvent.submitting = true;
+  try {
+    for (const resource of match.chosen) {
+      if (resource.kind === "card") world.deck.find((card) => card.instanceId === resource.instanceId).fatigue++;
+      if (resource.kind === "item" && !removeItem(resource.id)) throw new Error("物品不足");
+    }
+    if (!applyDialogueEffects(recipe.effects || [])) throw new Error("后果所需的物品不足");
+    if (recipe.staminaCost) spendStamina(recipe.staminaCost);
+    if (recipe.hpCost) world.hp = Math.max(1, world.hp - recipe.hpCost);
+    progress.outcome = recipe.action;
+    progress.resultText = recipe.result;
+    if (recipe.next) progress.stage = recipe.next;
+    const handlers = {
+      fallenSurvivor: handleFallenSurvivor, breathingCorpses: handleBreathingCorpses,
+      metalInMist: handleMetalInMist, corpseDispute: handleCorpseDispute, livingHand: handleLivingHand,
+    };
+    handlers[eventId](recipe, progress, match.chosen);
+    if (progress.dead) world.hp = 0;
+  } catch (error) {
+    Object.assign(world, snapshot);
+    activeActionEvent.submitting = false;
+    renderWorld();
+    throw error;
+  }
+  window.ActionEventPanel.close();
+  if (progress.dead) {
+    completeActionEvent(eventId);
+    showWorldModal({
+      kicker: "结局 · 死亡", title: event.name, bodyText: progress.resultText, allowClose: false,
+      options: [{ label: "重新开始 Vertical Slice", hint: "重置世界", close: false, action: startNewRun }],
+    });
+    return;
+  }
+  showWorldModal({
+    kicker: "行动结果", title: event.name, bodyText: progress.resultText, allowClose: false,
+    options: [{ label: "继续", close: false, action: async () => {
+      if (!activeActionEvent || activeActionEvent.continuing) return;
+      activeActionEvent.continuing = true;
+      elsWorld.modal.classList.add("hidden");
+      if (progress.stage === "grounded") return showGroundedSurvivor();
+      if (recipe.next || (eventId === "livingHand" && progress.retry)) {
+        return openActionEvent(eventId, NODE_BY_ID.get(progress.nodeId), progress.prepaid);
+      }
+      completeActionEvent(eventId);
+      if (recipe.action === "metal_endure") {
+        const source = NODE_BY_ID.get("metalSoundSource");
+        world.currentNodeId = source.id;
+        world.exploredNodes.add(source.id);
+        renderWorld();
+        focusCameraOnNode(source);
+        showSliceFollowup("metalSoundSource", source, true);
+      }
+    } }],
+  });
+}
+
+function showSliceRevisit(eventId) {
+  const progress = world.eventStates[eventId];
+  if (!progress) return false;
+  if (eventId === "corpseDispute" && progress.threeCorpses) {
+    showWorldModal({
+      kicker: "再次到访", title: "三具尸体",
+      bodyText: progress.rewardClaimed ? "三具尸体还在这里，可以取得的部分已经被你收走。"
+        : "你回来时，已经没有人争夺。地上只剩三具尸体。原本的一份资源，如今成了三份。它们都不能安全食用。",
+      options: progress.rewardClaimed ? [] : [{
+        label: "取得腐败血肉 ×3", hint: "一次性领取；不消耗卡牌",
+        action: () => {
+          if (progress.rewardClaimed) return;
+          progress.rewardClaimed = true;
+          progress.outcome = "dispute_three_corpses";
+          progress.resultText = "你从三具尸体中取得腐败血肉 ×3。";
+          addItem("rottenFlesh", 3);
+          progress.resolved = true;
+          renderWorld();
+          showWorldModal({ kicker: "取得资源", title: "三具尸体", bodyText: progress.resultText });
+        },
+      }],
+    });
+    return true;
+  }
+  if (!progress.resolved) return false;
+  let body = eventId === "fallenSurvivor" && progress.outcome === "fallen_rescue"
+    ? "他还躺在你把他拖出来的位置，无法移动。再次到访后的死亡／被 NPC 找到：测试版尚未接入。"
+    : progress.resultText ? `此前的行动结果：\n\n${progress.resultText}` : "遭遇已经结束，这里仍可作为通路。";
+  if (progress.outcome === "metal_distract") body += getFlag("mistSafeDay") === world.day
+    ? "\n\n当前诱导仍然有效，下一次长休后失效。"
+    : "\n\n已经长休，临时诱导已失效。";
+  showWorldModal({ kicker: "节点 · 遭遇后果", title: window.ActionEventData.get(eventId).name, bodyText: body });
+  return true;
+}
+
+function showSliceFollowup(dialogueId, node, alreadyPaidMistDamage = false) {
+  const bodies = {
+    fallenDragTrail: "拖行沟延伸进菌盖背后的黑暗。泥地中留下啃食者的痕迹。\n\n追踪啃食者的后续：测试版尚未接入。",
+    corpseHiddenPath: "类似人类的脚印延伸进一条隐蔽的小径。继续追查搭建蠕虫养殖堆的人：测试版尚未接入。",
+  };
+  if (dialogueId === "metalSoundSource") {
+    let damageText = "";
+    if (!getFlag("visitedMetalSource")) {
+      const safe = getFlag("knowsMistRhythm") || getFlag("mistSafeDay") === world.day || alreadyPaidMistDamage;
+      if (!safe) {
+        const lost = Math.min(6, Math.max(0, world.hp - 1));
+        world.hp -= lost;
+        damageText = `穿过孢子雾，HP -${lost}（最低保留 1）。污染后续：测试版尚未接入。\n\n`;
+      }
+      setFlag("visitedMetalSource", true);
+    }
+    bodies.metalSoundSource = damageText + "声源不是人在敲东西。\n\n一具死了很久的尸体，手腕被藤状菌丝吊着。风吹动菌盖时，它的手便一次次撞在腰间的金属杯上。\n\n铛。\n\n你之前一直以为那里有人。";
+  }
+  showWorldModal({ kicker: "探索后续", title: node.label, bodyText: bodies[dialogueId] });
 }
 
 function leaveThomas() {
@@ -981,6 +1197,7 @@ function addEncounterThreat(event, nodeId, releaseDay = 0) {
 }
 
 async function submitEventAction(eventId, placements) {
+  if (SLICE_EVENT_IDS.has(eventId)) return submitSliceEventAction(eventId, placements);
   if (!activeActionEvent || activeActionEvent.eventId !== eventId || activeActionEvent.submitting) return;
   const event = window.ActionEventData.get(eventId);
   const progress = world.eventStates[eventId];
@@ -992,7 +1209,7 @@ async function submitEventAction(eventId, placements) {
   // Rollback is scoped to this submission. Earlier observation and fatigue remain in the snapshot.
   const snapshot = structuredClone({
     deck: world.deck, inventory: world.inventory, flags: world.flags, knowledge: world.knowledge,
-    eventStates: world.eventStates, threats: world.threats, stamina: world.stamina,
+    eventStates: world.eventStates, threats: world.threats, stamina: world.stamina, hp: world.hp,
   });
   for (const resource of match.chosen) {
     if (resource.kind === "card") world.deck.find((card) => card.instanceId === resource.instanceId).fatigue++;
@@ -1269,6 +1486,7 @@ async function runBattle(enemyId, sourceId, options = {}) {
       playerHp: world.hp, playerMaxHp: world.maxHp,
       cardInstances: world.deck.map((card) => ({ ...card })),
       openingDelay: options.openingDelay || 0,
+      openingDamage: options.openingDamage || 0,
       damageMultiplier: world.knowledge.dungLore && ["dungling", "dung_swarm"].includes(enemyId) ? 1.15 : 1,
     });
   } catch (error) {
@@ -1363,6 +1581,7 @@ async function startNewRun() {
   window.ActionEventPanel.close();
   currentTarget = null;
   interactionLocked = false;
+  worldModalDismissible = true;
   elsWorld.modal.classList.add("hidden");
   elsWorld.characterPanel.classList.add("hidden");
   $w("#introOverlay").classList.remove("visible");
@@ -1454,7 +1673,7 @@ document.addEventListener("keydown", (event) => {
   if (activeActionEvent) { if (event.key === "Escape") event.preventDefault(); return; }
   if (event.key === "Escape") {
     if (!elsWorld.characterPanel.classList.contains("hidden")) closeCharacterPanel();
-    else if (!worldDataError && !elsWorld.modal.classList.contains("hidden")) closeWorldModal();
+    else if (!worldDataError && worldModalDismissible && !elsWorld.modal.classList.contains("hidden")) closeWorldModal();
     return;
   }
   if (isOverlayOpen()) return;

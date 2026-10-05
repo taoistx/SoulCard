@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "id": "breathingCorpses",
+  "name": "会呼吸的尸堆",
+  "allowLeave": true,
+  "start": "opening",
+  "slots": [
+    { "id": "subject", "name": "尸堆", "icon": "◇" },
+    { "id": "field", "name": "周围环境", "icon": "⌖" }
+  ],
+  "stages": {
+    "opening": {
+      "body": "路边对着三具高度腐烂的尸体，尸体正在整齐缓慢上下起伏",
+      "recipes": [
+        {
+          "id": "corpse_observe_first",
+          "slots": { "subject": { "kind": "card", "category": "technique", "cardId": "focus" } },
+          "action": "corpse_observe_first",
+          "result": "你发现，三个人死亡时间不同，却被人为叠在一起。",
+          "next": "examined"
+        },
+        {
+          "id": "corpse_observe_environment",
+          "slots": { "field": { "kind": "card", "category": "technique", "cardId": "focus" } },
+          "action": "corpse_observe_environment",
+          "result": "四周有很多杂乱的脚步，来往路过的东西应该已经对尸体习以为常",
+          "next": "opening"
+        },
+        {
+          "id": "corpse_attack_stack",
+          "slots": { "subject": { "kind": "card", "category": "attack" } },
+          "action": "corpse_attack_stack",
+          "result": "你对着这奇怪的尸堆进行了攻击，很快尸堆的起伏停止了，你又解除了一次未发生的危机"
+        },
+        {
+          "id": "corpse_attack_environment",
+          "slots": { "field": { "kind": "card", "category": "attack" } },
+          "action": "corpse_attack_environment",
+          "result": "你拿起武器对着四周疯狂挥舞，但什么也没有发生"
+        },
+        {
+          "id": "corpse_defend_stack",
+          "slots": { "subject": { "kind": "card", "category": "defense" } },
+          "action": "corpse_defend_stack",
+          "result": "虽然很不幸，但尸体已经腐烂了，执念也救不回来",
+          "next": "opening"
+        },
+        {
+          "id": "corpse_defend_environment",
+          "slots": { "field": { "kind": "card", "category": "defense" } },
+          "action": "corpse_defend_environment",
+          "result": "四周并没有生命迹象，无法爱，也无法恨",
+          "next": "opening"
+        }
+      ]
+    },
+    "examined": {
+      "body": "路边对着三具高度腐烂的尸体，尸体正在整齐缓慢上下起伏",
+      "recipes": [
+        {
+          "id": "corpse_reveal_path",
+          "slots": {
+            "subject": { "kind": "rhetoric", "tag": "wormFarming" },
+            "field": { "kind": "card", "category": "technique", "cardId": "focus" }
+          },
+          "priority": 10,
+          "action": "corpse_reveal_path",
+          "result": "你意识到，这各个养殖堆应该有人专门搭建的，那么到底会是什么人呢？你一边想一边观察着周围的环境，突然发现一排类似人类脚印的痕迹延伸到了一条隐蔽的小径",
+          "effects": [{ "type": "setFlag", "key": "revealedCorpseHiddenPath", "value": true }]
+        },
+        {
+          "id": "corpse_observe_worms",
+          "slots": { "subject": { "kind": "card", "category": "technique", "cardId": "focus" } },
+          "action": "corpse_observe_worms",
+          "result": "尸体下藏着一窝巨大的蠕虫，这个尸堆更像是人为搭建的饲养堆",
+          "next": "examined"
+        },
+        {
+          "id": "corpse_observe_environment",
+          "slots": { "field": { "kind": "card", "category": "technique", "cardId": "focus" } },
+          "action": "corpse_observe_environment",
+          "result": "四周有很多杂乱的脚步，来往路过的东西应该已经对尸体习以为常",
+          "next": "examined"
+        },
+        {
+          "id": "corpse_attack_stack",
+          "slots": { "subject": { "kind": "card", "category": "attack" } },
+          "action": "corpse_attack_stack",
+          "result": "你对着这奇怪的尸堆进行了攻击，很快尸堆的起伏停止了，你又解除了一次未发生的危机"
+        },
+        {
+          "id": "corpse_attack_environment",
+          "slots": { "field": { "kind": "card", "category": "attack" } },
+          "action": "corpse_attack_environment",
+          "result": "你拿起武器对着四周疯狂挥舞，但什么也没有发生"
+        },
+        {
+          "id": "corpse_defend_stack",
+          "slots": { "subject": { "kind": "card", "category": "defense" } },
+          "action": "corpse_defend_stack",
+          "result": "虽然很不幸，但尸体已经腐烂了，执念也救不回来",
+          "next": "examined"
+        },
+        {
+          "id": "corpse_defend_environment",
+          "slots": { "field": { "kind": "card", "category": "defense" } },
+          "action": "corpse_defend_environment",
+          "result": "四周并没有生命迹象，无法爱，也无法恨",
+          "next": "examined"
+        }
+      ]
+    }
+  }
+}

@@ -1129,6 +1129,8 @@ button { font: inherit; }
 .action-event-status { color: #b9ad90; min-height: 24px; }
 .action-event-submit { width: 100%; background: #c5ac76; border: 0; border-radius: 7px; padding: 14px; font-weight: 700; color: #1c211e; cursor: pointer; }
 .action-event-submit:disabled { opacity: .4; cursor: not-allowed; }
+.action-event-leave { width: 100%; margin-top: 10px; border: 1px solid #6b6759; border-radius: 7px; padding: 12px; background: transparent; color: #d0c2a7; cursor: pointer; }
+.action-event-leave:disabled { opacity: .4; cursor: not-allowed; }
 .action-event-card button:focus-visible { outline: 2px solid #ead8a9; outline-offset: 3px; }
 .card.fatigue { filter: saturate(.2); border-color: #858179; }
 @media (max-width: 600px) {

@@ -4,7 +4,17 @@
 window.WORLD_EVENT_SET_BUNDLE = {
   "schemaVersion": 1,
   "eventSets": {
-    "thomasEncounter": { "name": "托马斯与粪怪", "entries": [{ "id": "thomas", "kind": "action", "actionEventId": "thomasCrossroads", "weight": 1 }] },
+    "thomasEncounter": {
+      "name": "托马斯与粪怪",
+      "entries": [
+        {
+          "id": "thomas",
+          "kind": "action",
+          "actionEventId": "thomasCrossroads",
+          "weight": 1
+        }
+      ]
+    },
     "startArrival": {
       "name": "坠落处",
       "entries": [
@@ -186,6 +196,94 @@ window.WORLD_EVENT_SET_BUNDLE = {
           "kind": "battle",
           "weight": 1,
           "enemyId": "eddie"
+        }
+      ]
+    },
+    "fallenSurvivorEncounter": {
+      "name": "半截坠落者",
+      "entries": [
+        {
+          "id": "fallenSurvivor",
+          "kind": "action",
+          "actionEventId": "fallenSurvivor",
+          "weight": 1
+        }
+      ]
+    },
+    "breathingCorpsesEncounter": {
+      "name": "会呼吸的尸堆",
+      "entries": [
+        {
+          "id": "breathingCorpses",
+          "kind": "action",
+          "actionEventId": "breathingCorpses",
+          "weight": 1
+        }
+      ]
+    },
+    "metalInMistEncounter": {
+      "name": "菌雾里的金属声",
+      "entries": [
+        {
+          "id": "metalInMist",
+          "kind": "action",
+          "actionEventId": "metalInMist",
+          "weight": 1
+        }
+      ]
+    },
+    "corpseDisputeEncounter": {
+      "name": "争夺尸体",
+      "entries": [
+        {
+          "id": "corpseDispute",
+          "kind": "action",
+          "actionEventId": "corpseDispute",
+          "weight": 1
+        }
+      ]
+    },
+    "livingHandEncounter": {
+      "name": "一截还活着的手",
+      "entries": [
+        {
+          "id": "livingHand",
+          "kind": "action",
+          "actionEventId": "livingHand",
+          "weight": 1
+        }
+      ]
+    },
+    "fallenDragTrailDiscovery": {
+      "name": "拖行痕迹",
+      "entries": [
+        {
+          "id": "fallenDragTrail",
+          "kind": "dialogue",
+          "dialogueId": "fallenDragTrail",
+          "weight": 1
+        }
+      ]
+    },
+    "corpseHiddenPathDiscovery": {
+      "name": "隐蔽小径",
+      "entries": [
+        {
+          "id": "corpseHiddenPath",
+          "kind": "dialogue",
+          "dialogueId": "corpseHiddenPath",
+          "weight": 1
+        }
+      ]
+    },
+    "metalSoundSourceDiscovery": {
+      "name": "金属声源",
+      "entries": [
+        {
+          "id": "metalSoundSource",
+          "kind": "dialogue",
+          "dialogueId": "metalSoundSource",
+          "weight": 1
         }
       ]
     }

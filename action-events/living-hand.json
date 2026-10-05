@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "id": "livingHand",
+  "name": "一截还活着的手",
+  "allowLeave": true,
+  "actionSlot": "hand",
+  "start": "opening",
+  "slots": [
+    { "id": "hand", "name": "手", "icon": "◇" },
+    { "id": "mud", "name": "泥水", "icon": "⌖" }
+  ],
+  "stages": {
+    "opening": {
+      "body": "泥水中露出一只人的手，手指还偶尔动一下，似乎尚有生机",
+      "recipes": [
+        {
+          "id": "hand_opening_attack_pair",
+          "slots": {
+            "hand": { "kind": "card", "category": "attack" },
+            "mud": { "kind": "card", "category": "attack" }
+          },
+          "priority": 10,
+          "action": "hand_attack",
+          "result": "你听到了一声不属于人类奇怪尖啸，泥水里翻起泡沫，感觉有什么东西在下面剧烈蠕动，过了好一会，才回归平静"
+        },
+        {
+          "id": "hand_opening_attack",
+          "slots": { "hand": { "kind": "card", "category": "attack" } },
+          "action": "hand_attack",
+          "result": "你听到了一声不属于人类奇怪尖啸，泥水里翻起泡沫，感觉有什么东西在下面剧烈蠕动，过了好一会，才回归平静"
+        },
+        {
+          "id": "hand_opening_observe",
+          "slots": { "hand": { "kind": "card", "category": "technique", "cardId": "focus" } },
+          "action": "hand_observe",
+          "result": "你仔细的观察，发现这手总感觉非常 不自然，认真数了一下发现有6根手指",
+          "next": "opening"
+        },
+        {
+          "id": "hand_opening_grab",
+          "slots": { "hand": { "kind": "card", "category": "defense" } },
+          "action": "hand_grab",
+          "result": "就在你握住这只手准备拉起来的瞬间，泥水下涌出了无数有着各种数目手指的“手”捉住了你……",
+          "next": "trapped"
+        }
+      ]
+    },
+    "trapped": {
+      "body": "就在你握住这只手准备拉起来的瞬间，泥水下涌出了无数有着各种数目手指的“手”捉住了你……",
+      "recipes": [
+        {
+          "id": "hand_trapped_attack_pair",
+          "slots": {
+            "hand": { "kind": "card", "category": "attack" },
+            "mud": { "kind": "card", "category": "attack" }
+          },
+          "priority": 10,
+          "action": "hand_strike",
+          "result": "你听到了一声不属于人类奇怪尖啸，因为吃痛所有手都松开，泥水里翻起泡沫，感觉有什么东西在下面剧烈蠕动，过了好一会，才回归平静"
+        },
+        {
+          "id": "hand_trapped_attack",
+          "slots": { "hand": { "kind": "card", "category": "attack" } },
+          "action": "hand_strike",
+          "result": "你听到了一声不属于人类奇怪尖啸，因为吃痛所有手都松开，泥水里翻起泡沫，感觉有什么东西在下面剧烈蠕动，过了好一会，才回归平静"
+        },
+        {
+          "id": "hand_trapped_observe",
+          "slots": { "hand": { "kind": "card", "category": "technique", "cardId": "focus" } },
+          "action": "hand_drown",
+          "result": "你被不知名的东西拖入了泥水中，很快就被看不清的巨大压力包裹…………"
+        },
+        {
+          "id": "hand_trapped_grab",
+          "slots": { "hand": { "kind": "card", "category": "defense" } },
+          "action": "hand_drown",
+          "result": "你被不知名的东西拖入了泥水中，很快就被看不清的巨大压力包裹…………"
+        },
+        {
+          "id": "hand_trapped_throw_flesh",
+          "itemOnly": true,
+          "slots": { "mud": { "kind": "rhetoric", "tag": "freshFlesh" } },
+          "action": "hand_throw_flesh",
+          "result": "你往远处的泥水投下一块血肉，血肉的腥味吸引了下面东西的注意，很快，手们松开了你， 你看到泥水翻涌起伏着朝血肉的落地蠕动过去。脱险了，还是赶紧离开"
+        }
+      ]
+    }
+  }
+}

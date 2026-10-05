@@ -7,6 +7,7 @@ const ID_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
 const DIALOGUES = {
   start: "坠落处", siltWoods: "污泥林", drownedHuts: "腐叶原野", bellRoad: "碎钟坡", hut: "废弃小屋",
   gate: "封锁山道", church: "逆抽水器", quietClearing: "空地", node2: "腐叶原野深处", node3: "弦一螂",
+  fallenDragTrail: "拖行痕迹", corpseHiddenPath: "隐蔽小径", metalSoundSource: "金属声源",
 };
 const KIND_NAMES = { npc: "NPC 对话", dialogue: "世界对话", battle: "战斗", action: "行动事件" };
 const els = {

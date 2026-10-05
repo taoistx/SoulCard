@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "id": "corpseDispute",
+  "name": "争夺尸体",
+  "allowLeave": true,
+  "actionSlot": "subject",
+  "start": "opening",
+  "slots": [
+    {
+      "id": "subject",
+      "name": "争夺者",
+      "icon": "◇"
+    },
+    {
+      "id": "field",
+      "name": "周围环境",
+      "icon": "⌖"
+    },
+    {
+      "id": "bait",
+      "name": "诱饵",
+      "icon": "♢"
+    }
+  ],
+  "stages": {
+    "opening": {
+      "body": "两个坠落者正在拖同一具新鲜尸体。双方精疲力竭，却谁也不肯松手。\n\n看到你，两人同时停下。一个说：“帮我杀了他。分你一半。”另一个立刻说：“我给你三分之二。”\n\n将行动卡放入「争夺者」：暴力赶走两人；执念逼他们冷静（额外体力 -1）；伎俩谎称粪怪群将至；观察检查尸体；秘仪感知异常。你也可以什么都不做，直接离开。每次行动卡疲劳 +1，观察会结束本次遭遇。",
+      "recipes": [
+        {
+          "id": "dispute_drive",
+          "slots": {
+            "subject": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "action": "dispute_drive",
+          "result": "“都滚。”两个人退开，尸体留在原地。你取走腐败血肉 ×1。没有人替你评价这个决定。",
+          "effects": [
+            {
+              "type": "addItem",
+              "itemId": "rottenFlesh",
+              "amount": 1
+            },
+            {
+              "type": "setFlag",
+              "key": "droveOffCorpseClaimants",
+              "value": true
+            }
+          ]
+        },
+        {
+          "id": "dispute_endure",
+          "slots": {
+            "subject": {
+              "kind": "card",
+              "category": "defense"
+            }
+          },
+          "action": "dispute_endure",
+          "result": "你强行站在二人之间，逼他们暂时冷静。额外体力 -1。\n\n后续分配与二人去向：测试版尚未接入。",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "calmedCorpseClaimants",
+              "value": true
+            }
+          ],
+          "staminaCost": 1
+        },
+        {
+          "id": "dispute_lie",
+          "slots": {
+            "subject": {
+              "kind": "card",
+              "category": "technique",
+              "excludeCardId": "focus"
+            }
+          },
+          "action": "dispute_lie",
+          "result": "你告诉他们，一群粪怪正朝这里赶来。两人终于松手，慌忙离开。你取走腐败血肉 ×1。",
+          "effects": [
+            {
+              "type": "addItem",
+              "itemId": "rottenFlesh",
+              "amount": 1
+            },
+            {
+              "type": "setFlag",
+              "key": "deceivedCorpseClaimants",
+              "value": true
+            }
+          ]
+        },
+        {
+          "id": "dispute_observe",
+          "slots": {
+            "subject": {
+              "kind": "card",
+              "category": "technique",
+              "cardId": "focus"
+            }
+          },
+          "action": "dispute_observe",
+          "result": "尸体外表还很新鲜，内部却已经严重菌化。它根本不能安全食用。\n\n获得知识「菌化尸体」。本次遭遇结束。",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "knowsDisputedCorpseCorruption",
+              "value": true
+            }
+          ]
+        },
+        {
+          "id": "dispute_ritual",
+          "slots": {
+            "subject": {
+              "kind": "card",
+              "category": "ritual"
+            }
+          },
+          "action": "dispute_ritual",
+          "result": "权柄的共鸣穿过尸体，你看见某种异常在它内部缓慢收缩。\n\n获得异常线索；异常的具体用途：测试版尚未接入。",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "sensedDisputedCorpseAnomaly",
+              "value": true
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

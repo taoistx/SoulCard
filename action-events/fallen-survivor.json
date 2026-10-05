@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "id": "fallenSurvivor",
+  "name": "半截坠落者",
+  "allowLeave": true,
+  "actionSlot": "subject",
+  "start": "opening",
+  "slots": [
+    {
+      "id": "subject",
+      "name": "坠落者",
+      "icon": "◇"
+    },
+    {
+      "id": "field",
+      "name": "周围环境",
+      "icon": "⌖"
+    },
+    {
+      "id": "bait",
+      "name": "诱饵",
+      "icon": "♢"
+    }
+  ],
+  "stages": {
+    "opening": {
+      "body": "菌林里传来断断续续的呻吟。一个刚从天空坠下来的人挂在巨大的菌盖之间。下半身已经不见了，但他还活着。\n\n他看见你以后，只反复说一句：“拉我下来……求你。”\n\n将行动卡放入「坠落者」：暴力砍断菌柄；执念徒手拖出（HP -6）；伎俩说去找人；观察检查伤势。每次行动卡疲劳 +1，观察会结束本次遭遇。",
+      "recipes": [
+        {
+          "id": "fallen_cut",
+          "slots": {
+            "subject": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "action": "fallen_cut",
+          "result": "菌柄被砍断，他摔进泥地，却没有立刻死去。你收起断口处尚且新鲜的血肉 ×1。他仍在地上痛苦挣扎。",
+          "effects": [
+            {
+              "type": "addItem",
+              "itemId": "freshFlesh",
+              "amount": 1
+            },
+            {
+              "type": "setFlag",
+              "key": "fallenDropped",
+              "value": true
+            }
+          ]
+        },
+        {
+          "id": "fallen_rescue",
+          "slots": {
+            "subject": {
+              "kind": "card",
+              "category": "defense"
+            }
+          },
+          "action": "fallen_rescue",
+          "result": "菌丝灼伤你的手臂，HP -6（最低保留 1）。你把他拖到地上。他得救了，却已经无法移动。\n\n是否会被其他 NPC 找到：测试版尚未接入。",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "fallenRescued",
+              "value": true
+            }
+          ],
+          "hpCost": 6
+        },
+        {
+          "id": "fallen_lie",
+          "slots": {
+            "subject": {
+              "kind": "card",
+              "category": "technique",
+              "excludeCardId": "focus"
+            }
+          },
+          "action": "fallen_lie",
+          "result": "“别乱动，我去找人。”你留下这句话，转身离开。没有额外消耗，参与行动的伎俩卡仍疲劳 +1。\n\n已记录你骗过一个濒死者；人格／NPC 反应：测试版尚未接入。",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "liedToDyingSurvivor",
+              "value": true
+            }
+          ]
+        },
+        {
+          "id": "fallen_observe",
+          "slots": {
+            "subject": {
+              "kind": "card",
+              "category": "technique",
+              "cardId": "focus"
+            }
+          },
+          "action": "fallen_observe",
+          "result": "他的下半身不是摔没的。断口处残留清楚的啃食痕迹，菌盖背后还有一道拖行留下的沟。\n\n解锁附近隐藏节点「拖行痕迹」。本次遭遇结束。",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "knowsFallenBiteMarks",
+              "value": true
+            },
+            {
+              "type": "setFlag",
+              "key": "revealedDragTrail",
+              "value": true
+            }
+          ]
+        }
+      ]
+    },
+    "grounded": {
+      "body": "他仍在泥地里痛苦挣扎。",
+      "recipes": []
+    }
+  }
+}

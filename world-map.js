@@ -101,19 +101,19 @@ window.WORLD_MAP_BUNDLE = {
       },
       {
         "id": "node4",
-        "label": "泥滩",
+        "label": "一截还活着的手",
         "icon": "?",
         "x": 306,
         "y": 75,
-        "eventSetId": "quietClearing"
+        "eventSetId": "livingHandEncounter"
       },
       {
         "id": "node4Copy",
-        "label": "泥滩",
+        "label": "会呼吸的尸堆",
         "icon": "?",
         "x": 522,
         "y": 75,
-        "eventSetId": "quietClearing"
+        "eventSetId": "breathingCorpsesEncounter"
       },
       {
         "id": "node4CopyCopy",
@@ -149,11 +149,11 @@ window.WORLD_MAP_BUNDLE = {
       },
       {
         "id": "node6",
-        "label": "静默岗哨",
+        "label": "争夺尸体",
         "icon": "?",
         "x": 252,
         "y": 465,
-        "eventSetId": "quietClearing"
+        "eventSetId": "corpseDisputeEncounter"
       },
       {
         "id": "node7",
@@ -189,11 +189,11 @@ window.WORLD_MAP_BUNDLE = {
       },
       {
         "id": "node8",
-        "label": "杂物屏障",
+        "label": "半截坠落者",
         "icon": "?",
         "x": 242,
         "y": 856,
-        "eventSetId": "quietClearing"
+        "eventSetId": "fallenSurvivorEncounter"
       },
       {
         "id": "node8Copy",
@@ -325,11 +325,38 @@ window.WORLD_MAP_BUNDLE = {
       },
       {
         "id": "node12",
-        "label": "荒野",
+        "label": "菌雾里的金属声",
         "icon": "?",
         "x": 1054,
         "y": 433,
-        "eventSetId": "quietClearing"
+        "eventSetId": "metalInMistEncounter"
+      },
+      {
+        "id": "fallenDragTrail",
+        "label": "拖行痕迹",
+        "x": 306,
+        "y": 980,
+        "revealFlag": "revealedDragTrail",
+        "icon": "?",
+        "eventSetId": "fallenDragTrailDiscovery"
+      },
+      {
+        "id": "corpseHiddenPath",
+        "label": "隐蔽小径",
+        "x": 640,
+        "y": 145,
+        "revealFlag": "revealedCorpseHiddenPath",
+        "icon": "?",
+        "eventSetId": "corpseHiddenPathDiscovery"
+      },
+      {
+        "id": "metalSoundSource",
+        "label": "金属声源",
+        "x": 1210,
+        "y": 465,
+        "revealFlag": "revealedMetalSource",
+        "icon": "?",
+        "eventSetId": "metalSoundSourceDiscovery"
       }
     ],
     "edges": [
@@ -528,6 +555,18 @@ window.WORLD_MAP_BUNDLE = {
       {
         "from": "node12",
         "to": "node3"
+      },
+      {
+        "from": "node8",
+        "to": "fallenDragTrail"
+      },
+      {
+        "from": "node4Copy",
+        "to": "corpseHiddenPath"
+      },
+      {
+        "from": "node12",
+        "to": "metalSoundSource"
       }
     ]
   }
