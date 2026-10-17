@@ -1,0 +1,243 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "event_fallenSurvivor",
+  "name": "半截坠落者",
+  "start": {
+    "default": "result_opening_fallen_cut",
+    "rules": []
+  },
+  "nodes": {
+    "result_opening_fallen_cut": {
+      "body": "菌柄被砍断，他摔进泥地，却没有立刻死去。你收起断口处尚且新鲜的血肉 ×1。他仍在地上痛苦挣扎。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_fallen_rescue": {
+      "body": "菌丝灼伤你的手臂，HP -6（最低保留 1）。你把他拖到地上。他得救了，却已经无法移动。\n\n是否会被其他 NPC 找到：测试版尚未接入。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_fallen_lie": {
+      "body": "“别乱动，我去找人。”你留下这句话，转身离开。没有额外消耗，参与行动的伎俩卡仍疲劳 +1。\n\n已记录你骗过一个濒死者；人格／NPC 反应：测试版尚未接入。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_fallen_observe": {
+      "body": "他的下半身不是摔没的。断口处残留清楚的啃食痕迹，菌盖背后还有一道拖行留下的沟。\n\n解锁附近隐藏节点「拖行痕迹」。本次遭遇结束。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "revisit": {
+      "body": {
+        "default": "此前的行动结果：\n\n{{resultText}}",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "dialogueHasResult",
+                  "operator": "eq",
+                  "value": false
+                }
+              ]
+            },
+            "text": "遭遇已经结束，这里仍可作为通路。"
+          }
+        ]
+      },
+      "options": [],
+      "kicker": "节点 · 遭遇后果"
+    },
+    "grounded": {
+      "body": "砍断的菌柄躺在泥地里。他痛苦地挣扎着。你已取得新鲜血肉 ×1，现在必须选择杀死或离开。",
+      "options": [
+        {
+          "id": "kill",
+          "label": "杀死",
+          "action": "fallen_kill",
+          "hint": "结束挣扎；不再次消耗卡牌，不重复奖励"
+        },
+        {
+          "id": "leave",
+          "label": "离开",
+          "action": "fallen_abandon",
+          "hint": "留下他；返回地图"
+        }
+      ],
+      "kicker": "半截坠落者 · 再次选择",
+      "title": "他还活着",
+      "allowClose": false
+    },
+    "killed": {
+      "body": "你结束了他的挣扎。先前取得的血肉没有增加。",
+      "options": []
+    },
+    "abandoned": {
+      "body": "你留下仍在挣扎的半截坠落者，走回菌林。后续命运：测试版尚未接入。",
+      "options": []
+    },
+    "rescuedRevisit": {
+      "body": "他还躺在你把他拖出来的位置，无法移动。再次到访后的死亡／被 NPC 找到：测试版尚未接入。",
+      "options": [],
+      "kicker": "节点 · 遭遇后果"
+    }
+  },
+  "entryNodes": [
+    "result_opening_fallen_cut",
+    "result_opening_fallen_rescue",
+    "result_opening_fallen_lie",
+    "result_opening_fallen_observe",
+    "revisit",
+    "grounded",
+    "killed",
+    "abandoned",
+    "rescuedRevisit"
+  ]
+}

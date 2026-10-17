@@ -1,0 +1,248 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "event_sliceGallery",
+  "name": "收网回廊",
+  "start": {
+    "default": "result_trapped_observe",
+    "rules": []
+  },
+  "nodes": {
+    "result_trapped_observe": {
+      "body": "你认出副绳与主绳：松回时能套固定环，不必切承重绳。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_trapped_ring": {
+      "body": "余绳套住固定环。你与另一侧缓缓降到踏台。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_trapped_hold": {
+      "body": "你顶住网，让另一侧先落到踏台，吊架卡在可踏的位置。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_trapped_subnet": {
+      "body": "你切掉已辨认的副网。吊架落到低台，网具再不能使用。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_trapped_mainrope": {
+      "body": "承重主绳断开。你脱身了，另一侧坠落，残架仍可通向下层。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "revisit": {
+      "body": {
+        "default": "此前的行动结果：\n\n{{resultText}}",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "dialogueHasResult",
+                  "operator": "eq",
+                  "value": false
+                }
+              ]
+            },
+            "text": "遭遇已经结束，这里仍可作为通路。"
+          }
+        ]
+      },
+      "options": [],
+      "kicker": "节点 · 遭遇后果"
+    }
+  },
+  "entryNodes": [
+    "result_trapped_observe",
+    "result_trapped_ring",
+    "result_trapped_hold",
+    "result_trapped_subnet",
+    "result_trapped_mainrope",
+    "revisit"
+  ]
+}

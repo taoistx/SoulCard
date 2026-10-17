@@ -8,7 +8,6 @@ const DEFAULT_MAP_VIEW_HEIGHT = 680;
 const MAP_MARGIN = 70;
 const CAMERA_SAFE_MARGIN = 120;
 const MAX_STAMINA = 6;
-const WORLD_DIALOGUE_IDS = new Set(["start", "siltWoods", "drownedHuts", "bellRoad", "hut", "gate", "church", "quietClearing", "node2", "node3", "fallenDragTrail", "corpseHiddenPath", "metalSoundSource"]);
 const SLICE_EVENT_IDS = new Set(["fallenSurvivor", "breathingCorpses", "metalInMist", "corpseDispute", "livingHand"]);
 
 function validateConditionConfig(group, field, errors) {
@@ -44,7 +43,7 @@ function validateWorldConfiguration(mapBundle, eventBundle) {
       if (!["npc", "dialogue", "battle", "action"].includes(entry?.kind)) errors.push(`${field} kind 无效`);
       if (!Number.isFinite(entry?.weight) || entry.weight <= 0) errors.push(`${field} weight 必须大于 0`);
       if (entry?.kind === "npc" && typeof entry.npcId !== "string") errors.push(`${field} 缺少 npcId`);
-      if (entry?.kind === "dialogue" && !WORLD_DIALOGUE_IDS.has(entry.dialogueId)) errors.push(`${field} 引用了未知世界对话`);
+      if (entry?.kind === "dialogue" && (typeof entry.dialogueId !== "string" || !entry.dialogueId)) errors.push(`${field} 引用了未知世界对话`);
       if (entry?.kind === "battle" && typeof entry.enemyId !== "string") errors.push(`${field} 缺少 enemyId`);
       if (entry?.kind === "action" && typeof entry.actionEventId !== "string") errors.push(`${field} 缺少 actionEventId`);
       validateConditionConfig(entry?.when, `${field}.when`, errors);
@@ -90,11 +89,13 @@ const NODE_BY_ID = new Map(WORLD_NODES.map((node) => [node.id, node]));
 const WORLD_EVENT_SETS = MAP_CONFIG_ERRORS.length ? {} : window.WORLD_EVENT_SET_BUNDLE.eventSets;
 
 const ITEM_LIBRARY = {
-  baitMeat: { name: "诱饵肉", description: "艾迪给的刺鼻肉块。仅作事件诱饵，使用消耗一份，不能食用或充当新鲜血肉。", stackable: true, eventTags: ["lure"] },
-  freshFlesh: { name: "新鲜血肉", description: "仍有人血肉特征的部分。艾迪只认这个。也可用于指定遭遇的喂食与诱导，使用消耗一份。", stackable: true, eventTags: ["freshFlesh"] },
+  freshFlesh: { name: "新鲜血肉", description: "食用恢复10 HP，不改变五日期限；也可交易、供食或直接用作诱饵，每次消耗一份。", usable: true, stackable: true, eventTags: ["freshFlesh", "lure"] },
   rottenFlesh: { name: "腐败血肉", description: "已经腐败或菌化的尸体部分，不能安全食用。不能交易给艾迪，也不能作为新鲜血肉诱饵。", stackable: true },
   oldKey: { name: "老旧钥匙", description: "粪锈遮住了齿纹，也许能打开山道的锁。", keyItem: true },
-  healingPotion: { name: "止血瓶", description: "使用后恢复 18 HP。不会推进天数。", usable: true },
+  mistWrapMaterial: { name: "韧膜", description: "用于包扎、试制防护或保护作业位，每次消耗一份。", stackable: true, eventTags: ["wrapMaterial"] },
+  eddieMistWrap: { name: "粗糙鸟嘴防护", description: "整套防护，装备在头槽后抵消普通孢雾侵蚀；不抵消擦伤、扬尘与战损。", slot: "head", modifiers: {}, eventTags: ["mistProtection"] },
+  oldMistWrap: { name: "旧鸟嘴防护", description: "玄一螂的整套罩具，实际装备在头槽后才抵消普通孢雾侵蚀。", slot: "head", modifiers: {}, eventTags: ["mistProtection"] },
+  maintenanceHook: { name: "检修钩", description: "从下方磨亮的钩，证明你已经实际放架并摸到下行路。", keyItem: true },
   ritualScrap: { name: "秘仪残页", description: "记载卡牌「割裂时序」。心脏仍在时无法使用。", keyItem: true },
   rustySword: { name: "锈剑", description: "单手武器：暴力卡伤害 +1，可选择左手或右手。", slot: "hand", modifiers: { attackBonus: 1 } },
   longSword: { name: "长剑", description: "单手武器：暴力卡伤害 +3。", slot: "hand", modifiers: { attackBonus: 3 } },
@@ -152,9 +153,10 @@ const elsWorld = {
   focusPlayerButton: $w("#focusPlayerButton"),
 };
 
+const connectedMapNodes = WORLD_NODES.filter((node) => node.id === WORLD_MAP.startNodeId || WORLD_EDGES.some((e) => e.from === node.id || e.to === node.id));
 const mapExtent = {
-  width: Math.max(DEFAULT_MAP_VIEW_WIDTH, ...WORLD_NODES.map((node) => node.x + MAP_MARGIN * 2)),
-  height: Math.max(DEFAULT_MAP_VIEW_HEIGHT, ...WORLD_NODES.map((node) => node.y + MAP_MARGIN * 2)),
+  width: Math.max(DEFAULT_MAP_VIEW_WIDTH, ...connectedMapNodes.map((node) => node.x + MAP_MARGIN * 2)),
+  height: Math.max(DEFAULT_MAP_VIEW_HEIGHT, ...connectedMapNodes.map((node) => node.y + MAP_MARGIN * 2)),
 };
 const camera = { x: 0, y: 0, width: DEFAULT_MAP_VIEW_WIDTH, height: DEFAULT_MAP_VIEW_HEIGHT };
 let mapDrag = null;
@@ -199,6 +201,10 @@ function animateCameraTo(x, y) {
 
 function focusCameraOnNode(node, forceCenter = false) {
   if (!node) return;
+  if (forceCenter) {
+    camera.width = DEFAULT_MAP_VIEW_WIDTH;
+    camera.height = DEFAULT_MAP_VIEW_HEIGHT;
+  }
   const point = mapPoint(node);
   const left = camera.x + CAMERA_SAFE_MARGIN;
   const right = camera.x + camera.width - CAMERA_SAFE_MARGIN;
@@ -234,11 +240,15 @@ let currentTarget = null;
 let interactionLocked = false;
 let activeActionEvent = null;
 let worldModalDismissible = true;
-const WORLD_DATA_READY = Promise.all([window.NpcDialogueData.ready, window.BattleData.ready, window.ActionEventData.ready]).then(async () => {
+const WORLD_DATA_READY = Promise.all([window.NpcDialogueData.ready, window.WorldDialogueData.ready, window.BattleData.ready, window.ActionEventData.ready]).then(async () => {
   for (const set of Object.values(WORLD_EVENT_SETS)) for (const entry of set.entries) {
+    if (entry.kind === "dialogue" && !window.WorldDialogueData.get(entry.dialogueId)) throw new Error(`未知世界对话：${entry.dialogueId}`);
     if (entry.kind === "action" && !window.ActionEventData.get(entry.actionEventId)) throw new Error(`未知行动事件：${entry.actionEventId}`);
   }
   for (const event of window.ActionEventData.list()) {
+    for (const [stageId, stage] of Object.entries(event.stages)) for (const recipe of stage.recipes) {
+      if (recipe.resultDialogueId && !window.WorldDialogueData.get(recipe.resultDialogueId)?.nodes[recipe.resultNodeId]) throw new Error(`行动事件 ${event.id}.${stageId}.${recipe.id} 引用了未知结果 ${recipe.resultDialogueId}.${recipe.resultNodeId}`);
+    }
     if (event.lureNodeId && !NODE_BY_ID.has(event.lureNodeId)) throw new Error(`行动事件 ${event.id} 的迁移节点不存在`);
     if (event.enemyId && !(await window.BattleData.getCombatant(event.enemyId)).combatEnabled) throw new Error(`行动事件 ${event.id} 的敌人未启用战斗`);
   }
@@ -254,8 +264,8 @@ function createInitialWorld() {
     maxHp: 60,
     currentNodeId: WORLD_MAP.startNodeId,
     exploredNodes: new Set([WORLD_MAP.startNodeId]),
-    flags: {},
-    inventory: { rustySword: 1, healingPotion: 1 },
+    flags: v06InitialFlags(),
+    inventory: { rustySword: 1 },
     equipment: { leftHand: null, rightHand: null, body: null, head: null, eye: null, heart: null, brain: null },
     sacrificed: {},
     deck,
@@ -326,7 +336,7 @@ function isWorldActive() {
 }
 
 function isOverlayOpen() {
-  return Boolean(activeActionEvent) || window.ActionEventPanel.isOpen() || !elsWorld.modal.classList.contains("hidden") || !elsWorld.characterPanel.classList.contains("hidden");
+  return isWorldShopOpen() || Boolean(activeActionEvent) || window.ActionEventPanel.isOpen() || !elsWorld.modal.classList.contains("hidden") || !elsWorld.characterPanel.classList.contains("hidden");
 }
 
 function canSpendStamina(amount = 1) {
@@ -358,7 +368,7 @@ function assignNpcLocationForToday(npcId, nodeId) {
 }
 
 function getNpcLocationForToday(npcId) {
-  return world.dailyNpcLocations[npcId] || null;
+  return getFlag(`${npcId}Location`) || world.dailyNpcLocations[npcId] || null;
 }
 
 function incomingEdges(nodeId) {
@@ -407,39 +417,10 @@ function areNodesConnected(fromId, toId) {
   return edgesForNode(fromId).some((edge) => isEdgeActive(edge) && (edge.from === toId || edge.to === toId));
 }
 
-function blocksAutoPath(node) {
-  if (!node) return false;
-  if (getNodeThreat(node.id)) return true;
-  if (isNodeResolved(node)) return false;
-  const set = WORLD_EVENT_SETS[node.eventSetId];
-  return (set?.entries || []).some((entry) => entry.kind === "battle" || entry.kind === "action" || (entry.kind === "npc" && entry.npcId === "bell"));
-}
-
-function canPathThrough(nodeId, fromId, toId) {
-  if (nodeId === fromId || nodeId === toId) return true;
-  return !blocksAutoPath(NODE_BY_ID.get(nodeId));
-}
-
+// 连线控制揭示，不限制已揭示节点之间的移动。
 function findReachablePath(fromId, toId) {
-  if (fromId === toId) return [fromId];
-  const queue = [[fromId]];
-  const seen = new Set([fromId]);
-  while (queue.length) {
-    const path = queue.shift();
-    const currentId = path[path.length - 1];
-    for (const edge of edgesForNode(currentId)) {
-      if (!isEdgeActive(edge)) continue;
-      const nextId = edge.from === currentId ? edge.to : edge.from;
-      if (seen.has(nextId) || !isNodeAvailable(NODE_BY_ID.get(nextId))) continue;
-      if (nextId !== toId && !world.exploredNodes.has(nextId)) continue;
-      if (!canPathThrough(nextId, fromId, toId)) continue;
-      const nextPath = [...path, nextId];
-      if (nextId === toId) return nextPath;
-      seen.add(nextId);
-      queue.push(nextPath);
-    }
-  }
-  return null;
+  if (!NODE_BY_ID.has(fromId) || !isNodeAvailable(NODE_BY_ID.get(toId))) return null;
+  return fromId === toId ? [fromId] : [fromId, toId];
 }
 
 function renderWorld() {
@@ -527,30 +508,47 @@ function renderPointCrawl() {
 }
 
 function handleNodeClick(nodeId) {
-  if (!isWorldActive() || isOverlayOpen() || interactionLocked) return;
-  if (suppressMapClick) return;
-  const node = NODE_BY_ID.get(nodeId);
-  if (!isNodeAvailable(node)) return;
-  if (nodeId === world.currentNodeId) return;
-  if (!findReachablePath(world.currentNodeId, nodeId)) return;
-  const firstVisit = !world.exploredNodes.has(nodeId);
-  if ((firstVisit || getNodeThreat(nodeId)) && !canSpendStamina()) {
-    showWorldModal({ kicker: "体力不足", title: "无法进入节点", body: "首次探索或面对节点中的怪物需要 1 点体力。你仍可在已探索的安全节点间移动，或长休恢复体力。" });
-    return;
-  }
-  if (firstVisit) spendStamina();
+  if (!isWorldActive() || isOverlayOpen() || interactionLocked || world.hp <= 0 || getFlag("becameDung")) return;
+  if (suppressMapClick || nodeId === world.currentNodeId) return;
+  const route = findReachablePath(world.currentNodeId, nodeId);
+  if (!route) return;
+  const preview = v06RouteCost(route);
+  if (!canSpendStamina(preview.stamina)) return showWorldModal({ title: "体力不足", bodyText: `这条路线需要 ${preview.stamina} 点体力。可以在已探索的安全点间移动，或长休。` });
+  if (preview.hp) return showWorldModal({
+    kicker: "移动预览", title: NODE_BY_ID.get(nodeId).label,
+    bodyText: `前往${NODE_BY_ID.get(nodeId).label}。\n体力 -${preview.stamina}，HP -${preview.hp}。${nodeId === "slice_drybench" ? "未清理的狭道需要挤过怪物和碎壳；清开检修槽或处理狭道可降低这项代价。" : "孢粉会侵蚀甲缝；实际装备鸟嘴防护可免除这项损耗。"}${preview.hp >= world.hp ? "这次通行会导致死亡。" : ""}`,
+    options: [{ label: "确认前往", hint: `体力 -${preview.stamina} · HP -${preview.hp}`, action: () => moveAlongWorldPath(route) }],
+  });
+  moveAlongWorldPath(route);
+}
+
+function moveAcrossWorldEdge(toId) {
+  if (world.hp <= 0 || v06EndingActive || world.currentNodeId === toId || !isNodeAvailable(NODE_BY_ID.get(toId))) return false;
+  const fromId = world.currentNodeId, node = NODE_BY_ID.get(toId);
+  const firstVisit = !world.exploredNodes.has(toId);
+  if (firstVisit && !canSpendStamina()) return false;
+  if (firstVisit) world.stamina--;
   const dispute = world.eventStates.corpseDispute;
-  if (dispute?.awaitingDeparture && world.currentNodeId === dispute.nodeId) {
-    dispute.awaitingDeparture = false;
-    dispute.threeCorpses = true;
-    dispute.resolved = true;
+  if (dispute?.awaitingDeparture && fromId === dispute.nodeId) {
+    dispute.awaitingDeparture = false; dispute.threeCorpses = true; dispute.resolved = true;
     setFlag("corpseClaimantsDied", true);
   }
-  world.currentNodeId = nodeId;
-  if (firstVisit) world.exploredNodes.add(nodeId);
-  renderWorld();
-  focusCameraOnNode(node);
-  if (firstVisit || getNodeThreat(node.id)) triggerNodeEvent(node, { arrivalPaid: firstVisit });
+  const damage = v06EntryDamage(fromId, toId);
+  world.currentNodeId = toId;
+  if (firstVisit) world.exploredNodes.add(toId);
+  v06OnMove(fromId, toId, damage);
+  renderWorld(); focusCameraOnNode(node);
+  if (world.hp <= 0) { v06ShowDeath("terrain"); return false; }
+  if (firstVisit || getNodeThreat(toId)) {
+    triggerNodeEvent(node, { arrivalPaid: firstVisit });
+    return false;
+  }
+  return true;
+}
+
+function moveAlongWorldPath(route) {
+  // 每步重新检查真实状态；不能把寻路成功当作已经移动。
+  for (const id of route.slice(1)) if (!moveAcrossWorldEdge(id)) break;
 }
 
 function closeWorldModal() {
@@ -560,6 +558,9 @@ function closeWorldModal() {
 }
 
 function showWorldModal({ kicker = "交互", title, body = "", bodyText = null, options = [], allowClose = true }) {
+  resetWorldShop();
+  // Descriptions own the screen until their final option explicitly opens the next interaction.
+  window.ActionEventPanel.close();
   interactionLocked = true;
   worldModalDismissible = allowClose;
   elsWorld.modalKicker.textContent = kicker;
@@ -568,15 +569,18 @@ function showWorldModal({ kicker = "交互", title, body = "", bodyText = null, 
   else elsWorld.modalBody.textContent = bodyText;
   elsWorld.modalOptions.innerHTML = "";
   const resolvedOptions = allowClose ? [...options, { label: "离开", hint: "返回地图", close: true }] : options;
+  let optionSelected = false;
   resolvedOptions.forEach((option) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "world-option";
     const enabled = option.enabled === undefined ? true : Boolean(option.enabled);
     button.disabled = !enabled;
-    button.innerHTML = `<span>${option.label}</span><small>${option.hint || ""}</small>`;
+    const label = document.createElement("span"), hint = document.createElement("small");
+    label.textContent = option.label; hint.textContent = option.hint || ""; button.append(label, hint);
     button.addEventListener("click", async () => {
-      if (!enabled) return;
+      if (!enabled || optionSelected) return;
+      optionSelected = true;
       if (option.close !== false) closeWorldModal();
       if (option.action) await option.action();
     });
@@ -586,7 +590,7 @@ function showWorldModal({ kicker = "交互", title, body = "", bodyText = null, 
 }
 
 function openCharacterPanel() {
-  if (!isWorldActive() || activeActionEvent) return;
+  if (!isWorldActive() || activeActionEvent || isWorldShopOpen() || world.hp <= 0 || v06EndingActive) return;
   interactionLocked = true;
   renderCharacterPanel();
   elsWorld.characterPanel.classList.remove("hidden");
@@ -604,7 +608,7 @@ function equipmentLabel(slotId) {
 }
 
 function inventoryActionMarkup(itemId, item) {
-  if (item.usable) return `<button type="button" data-item-use="${itemId}">使用</button>`;
+  if (item.usable) return `<button type="button" data-item-use="${itemId}" ${world.hp >= world.maxHp || world.hp <= 0 ? "disabled" : ""}>食用 · 恢复10 HP</button>`;
   if (item.slot === "hand") {
     return `<div class="inventory-actions">
       <button type="button" data-equip-item="${itemId}" data-equip-slot="leftHand" ${world.sacrificed.leftHand ? "disabled" : ""}>装左手</button>
@@ -681,10 +685,10 @@ function renderCharacterPanel() {
 }
 
 function useItem(itemId) {
-  if (itemId !== "healingPotion" || !removeItem(itemId)) return;
-  const healed = Math.min(18, world.maxHp - world.hp);
-  world.hp += healed;
+  if (itemId !== "freshFlesh" || world.hp <= 0 || world.hp >= world.maxHp || !removeItem(itemId)) return false;
+  world.hp = Math.min(world.maxHp, world.hp + 10);
   renderWorld();
+  return true;
 }
 
 function equipItem(itemId, targetSlot) {
@@ -765,7 +769,7 @@ function chooseInnateCard(npcId) {
 }
 
 function getDailyStock() {
-  return ["longSword", "shield", "dagger", "heavyArmor", "greatSword"][world.day - 1] || "healingPotion";
+  return ["longSword", "shield", "dagger", "heavyArmor", "greatSword"][world.day - 1] || "greatSword";
 }
 
 function getNpcDialogueContext() {
@@ -789,8 +793,11 @@ function applyDialogueEffects(effects = []) {
 }
 
 async function runNpcAction(npcId, actionId) {
+  if (actionId === "shop_eddie") return npcId === "eddie" && openWorldShop("eddie");
+  if (actionId.startsWith("v06_")) return runV06NpcAction(npcId, actionId);
   if (actionId === "fight_eddie") {
-    await runBattle("eddie", "eddie");
+    const result = await runBattle("eddie", "eddie", { prepaid: v06NpcBattlePrepaid(actionId) });
+    if (result) world.flags.npcBattlePrepaidNode = null;
   } else if (actionId === "fight_bell") {
     await runBattle("bell", "bell");
   } else {
@@ -801,29 +808,31 @@ async function runNpcAction(npcId, actionId) {
 }
 
 function optionCostsStamina(option) {
-  return option.action === "fight_eddie" || option.action === "fight_bell";
+  if (v06NpcBattlePrepaid(option.action)) return false;
+  return option.action === "fight_eddie" || option.action === "fight_bell" || option.action === "v06_genichiro_fight";
 }
 
 function showNpcDialogue(npcId, requestedNodeId = null) {
   const script = window.NpcDialogueData.get(npcId);
-  if (!script) return;
+  if (!script || getFlag(`${npcId}Killed`) || world.hp <= 0) return;
   const context = getNpcDialogueContext();
   const nodeId = requestedNodeId || window.NPCDialogueRuntime.resolveStart(script, context);
   const node = window.NPCDialogueRuntime.resolveNode(script, nodeId, context);
   if (!node) return;
+  const optionNode = node;
   applyDialogueEffects(node.effects);
-  const optionNode = window.NPCDialogueRuntime.resolveNode(script, nodeId, getNpcDialogueContext());
 
   const configuredOptions = (optionNode.options || []).map((option) => {
     const staminaCost = optionCostsStamina(option);
     return {
       label: option.label,
       hint: staminaCost ? staminaHint(option.hint || "消耗体力", 1) : option.hint,
-      enabled: option.enabled && (!staminaCost || canSpendStamina()),
+      enabled: option.enabled && v06NpcOptionEnabled(npcId, option.action) && (!staminaCost || canSpendStamina()),
       action: async () => {
         const freshContext = getNpcDialogueContext();
         if (!window.NPCDialogueRuntime.evaluateCondition(option.enabledWhen, freshContext)) return showNpcDialogue(npcId, nodeId);
-        if (staminaCost && !canSpendStamina()) return showNpcDialogue(npcId, nodeId);
+        if (!v06NpcOptionEnabled(npcId, option.action) || (staminaCost && !canSpendStamina())) return showNpcDialogue(npcId, nodeId);
+        if (!v06CanApplyEffects(option.effects || [])) return showNpcDialogue(npcId, nodeId);
         const completed = option.action ? await runNpcAction(npcId, option.action) : true;
         if (completed === false) return showNpcDialogue(npcId, nodeId);
         if (!window.NPCDialogueRuntime.applyEffects(option.effects || [], freshContext)) return showNpcDialogue(npcId, nodeId);
@@ -851,13 +860,9 @@ function showChris() { showNpcDialogue("chris"); }
 function showBell() { showNpcDialogue("bell"); }
 
 function showNpcAway(node) {
-  const script = window.NpcDialogueData.get(node.npcId);
+  const npcName = window.NpcDialogueData.get(node.npcId)?.name || node.label;
   const assignedNode = NODE_BY_ID.get(getNpcLocationForToday(node.npcId));
-  showWorldModal({
-    kicker: "节点 · 今日行踪",
-    title: node.label,
-    body: `${script?.name || node.label}今天不在这里。${assignedNode ? `有人说在「${assignedNode.label}」附近见过对方。` : "这片污雾暂时吞掉了所有脚印。"}`,
-  });
+  showWorldDialogue("world_status", "npcAway", { location: node, npcName, assignedNode });
 }
 
 function weightedRandomEntry(entries) {
@@ -886,52 +891,27 @@ function resolveNodeEventEntry(node) {
   return entry || null;
 }
 
-function showNoEvent(node) {
-  showWorldModal({ kicker: "节点 · 今日结果", title: node.label, body: "今天这里没有发生任何事。" });
-}
-
-function showDiscovery(node, flag, title, text) {
-  if (flag) setFlag(flag, true);
-  showWorldModal({ kicker: "探索完成", title: title || node.label, body: text || node.description || "雾气散开，新的道路显出轮廓。" });
-}
+function showNoEvent(node) { showWorldDialogue("world_status", "root", { location: node }); }
 
 function runWorldDialogue(dialogueId, node) {
-  const handlers = {
-    start: () => showStartNode(),
-    siltWoods: () => showDiscovery(node, "exploredSiltWoods", "污泥林", "你拨开像湿发一样缠绕的草根，发现一条仍有人类足迹的窄路。"),
-    drownedHuts: () => showDiscovery(node, "exploredDrownedHuts", "腐叶原野", "几间半沉的小屋在粪水里吱呀作响，门缝里露出还没烂尽的家具。"),
-    bellRoad: () => showDiscovery(node, "exploredBellRoad", "碎钟坡", "越往坡上走，空气里的钟声越像骨头互相敲击。远处站着一个无头的人影。"),
-    hut: showHut,
-    gate: showGate,
-    church: showChurch,
-    quietClearing: () => showWorldModal({ kicker: "地点", title: node.label, body: node.description || "这里只剩风吹过空地。" }),
-    node2: () => showWorldModal({ kicker: "地点", title: node.label, body: node.description || "腐烂的叶片铺成一条继续向前的路。" }),
-    node3: () => showWorldModal({ kicker: "地点", title: node.label, body: node.description || "弦鸣一样的虫声贴着泥水滑过。" }),
-  };
-  const handler = handlers[dialogueId];
   if (["fallenDragTrail", "corpseHiddenPath", "metalSoundSource"].includes(dialogueId)) return showSliceFollowup(dialogueId, node);
-  if (handler) return handler();
-  showWorldModal({ kicker: "配置错误", title: node.label, body: `未登记世界对话：${dialogueId}` });
+  if (dialogueId === `site_${node.id}`) return showV06Site(node);
+  showWorldDialogue(dialogueId, null, { location: node });
 }
 
 function triggerNodeEvent(node, { arrivalPaid = false } = {}) {
+  if (v06UsesSiteEntry(node)) return showV06Site(node, arrivalPaid);
   if (getNodeThreat(node.id)) return runNodeThreat(node, arrivalPaid);
   if (getFlag("thomasStayed") && world.eventStates.thomasCrossroads?.nodeId === node.id) return showNpcDialogue("thomas");
   const entry = resolveNodeEventEntry(node);
   if (!entry) return showNoEvent(node);
   if (entry.kind === "action" && SLICE_EVENT_IDS.has(entry.actionEventId) && showSliceRevisit(entry.actionEventId)) return;
   if (isEventEntryResolved(entry, node)) {
-    showWorldModal({ kicker: "节点 · 已解决", title: node.label, body: getFlag("thomasInfectedCorpse") && entry.actionEventId === "thomasCrossroads"
-      ? "托马斯感染孢子的尸体仍留在路口。粪怪已经不在这里，节点可以继续通行。"
-      : "这里的主要事件已经解决，节点仍可作为通路使用。" });
+    showWorldDialogue("world_status", "resolved", { location: node, eventId: entry.actionEventId });
     return;
   }
   if (entry.kind === "npc") {
-    if (!assignNpcLocationForToday(entry.npcId, node.id)) return showWorldModal({
-      kicker: "节点 · 空缺",
-      title: node.label,
-      body: "你找到的是刚被雨水抹平的脚印。那个人今天已经去了别处。",
-    });
+    if (!assignNpcLocationForToday(entry.npcId, node.id)) return showWorldDialogue("world_status", "away", { location: node });
     return showNpcDialogue(entry.npcId);
   }
   if (entry.kind === "action") return openActionEvent(entry.actionEventId, node, arrivalPaid);
@@ -960,6 +940,7 @@ function eventResources() {
 }
 
 function openActionEvent(eventId, node, prepaid = false) {
+  if (V06_EVENT_IDS.has(eventId) || (eventId === "thomasCrossroads" && v06UsesSiteEntry(node))) return openV06Event(eventId, node, prepaid);
   const event = window.ActionEventData.get(eventId);
   if (!event) return;
   let progress = world.eventStates[eventId];
@@ -1013,20 +994,7 @@ function showGroundedSurvivor() {
   const eventId = "fallenSurvivor", progress = world.eventStates[eventId];
   activeActionEvent = { eventId, nodeId: progress.nodeId, submitting: false };
   window.ActionEventPanel.close();
-  const finish = (kill) => {
-    if (world.eventStates[eventId].resolved) return;
-    progress.outcome = kill ? "fallen_kill" : "fallen_abandon";
-    setFlag(kill ? "fallenKilled" : "fallenAbandoned", true);
-    progress.resultText = kill ? "你结束了他的挣扎。先前取得的血肉没有增加。" : "你留下仍在挣扎的半截坠落者，走回菌林。后续命运：测试版尚未接入。";
-    completeActionEvent(eventId);
-    showWorldModal({ kicker: "行动结果", title: "半截坠落者", bodyText: progress.resultText });
-  };
-  showWorldModal({
-    kicker: "半截坠落者 · 再次选择", title: "他还活着", allowClose: false,
-    bodyText: "砍断的菌柄躺在泥地里。他痛苦地挣扎着。你已取得新鲜血肉 ×1，现在必须选择杀死或离开。",
-    options: [{ label: "杀死", hint: "结束挣扎；不再次消耗卡牌，不重复奖励", action: () => finish(true) },
-      { label: "离开", hint: "留下他；返回地图", action: () => finish(false) }],
-  });
+  showWorldDialogue("event_fallenSurvivor", "grounded", { eventId });
 }
 
 function handleFallenSurvivor(recipe, progress) {
@@ -1060,9 +1028,9 @@ function handleLivingHand(recipe, progress, chosen) {
   if (progress.failedStrikes >= 2) {
     progress.dead = true;
     progress.outcome = "hand_drown";
-    progress.resultText = "你被不知名的东西拖入了泥水中，很快就被看不清的巨大压力包裹…………";
+    rememberActionResult(progress, { resultDialogueId: "event_livingHand", resultNodeId: "dead" });
   } else {
-    progress.resultText = "泥水下东西感动了痛疼，但这似乎并不足以威胁到它，它反而更激烈地把你往泥水里拖";
+    rememberActionResult(progress, { resultDialogueId: "event_livingHand", resultNodeId: "failed" });
     progress.stage = "trapped";
     progress.retry = true;
   }
@@ -1084,7 +1052,7 @@ async function submitSliceEventAction(eventId, placements) {
     if (recipe.staminaCost) spendStamina(recipe.staminaCost);
     if (recipe.hpCost) world.hp = Math.max(1, world.hp - recipe.hpCost);
     progress.outcome = recipe.action;
-    progress.resultText = recipe.result;
+    rememberActionResult(progress, recipe);
     if (recipe.next) progress.stage = recipe.next;
     const handlers = {
       fallenSurvivor: handleFallenSurvivor, breathingCorpses: handleBreathingCorpses,
@@ -1101,14 +1069,11 @@ async function submitSliceEventAction(eventId, placements) {
   window.ActionEventPanel.close();
   if (progress.dead) {
     completeActionEvent(eventId);
-    showWorldModal({
-      kicker: "结局 · 死亡", title: event.name, bodyText: progress.resultText, allowClose: false,
-      options: [{ label: "重新开始 Vertical Slice", hint: "重置世界", close: false, action: startNewRun }],
-    });
+    showWorldDialogue(progress.resultDialogueId, progress.resultNodeId, { eventId });
     return;
   }
-  showWorldModal({
-    kicker: "行动结果", title: event.name, bodyText: progress.resultText, allowClose: false,
+  showActionResult(progress, {
+    kicker: "行动结果", title: event.name, allowClose: false,
     options: [{ label: "继续", close: false, action: async () => {
       if (!activeActionEvent || activeActionEvent.continuing) return;
       activeActionEvent.continuing = true;
@@ -1133,57 +1098,21 @@ async function submitSliceEventAction(eventId, placements) {
 function showSliceRevisit(eventId) {
   const progress = world.eventStates[eventId];
   if (!progress) return false;
-  if (eventId === "corpseDispute" && progress.threeCorpses) {
-    showWorldModal({
-      kicker: "再次到访", title: "三具尸体",
-      bodyText: progress.rewardClaimed ? "三具尸体还在这里，可以取得的部分已经被你收走。"
-        : "你回来时，已经没有人争夺。地上只剩三具尸体。原本的一份资源，如今成了三份。它们都不能安全食用。",
-      options: progress.rewardClaimed ? [] : [{
-        label: "取得腐败血肉 ×3", hint: "一次性领取；不消耗卡牌",
-        action: () => {
-          if (progress.rewardClaimed) return;
-          progress.rewardClaimed = true;
-          progress.outcome = "dispute_three_corpses";
-          progress.resultText = "你从三具尸体中取得腐败血肉 ×3。";
-          addItem("rottenFlesh", 3);
-          progress.resolved = true;
-          renderWorld();
-          showWorldModal({ kicker: "取得资源", title: "三具尸体", bodyText: progress.resultText });
-        },
-      }],
-    });
-    return true;
-  }
+  if (eventId === "corpseDispute" && progress.threeCorpses) { showWorldDialogue("event_corpseDispute", "threeCorpses", { eventId }); return true; }
   if (!progress.resolved) return false;
-  let body = eventId === "fallenSurvivor" && progress.outcome === "fallen_rescue"
-    ? "他还躺在你把他拖出来的位置，无法移动。再次到访后的死亡／被 NPC 找到：测试版尚未接入。"
-    : progress.resultText ? `此前的行动结果：\n\n${progress.resultText}` : "遭遇已经结束，这里仍可作为通路。";
-  if (progress.outcome === "metal_distract") body += getFlag("mistSafeDay") === world.day
-    ? "\n\n当前诱导仍然有效，下一次长休后失效。"
-    : "\n\n已经长休，临时诱导已失效。";
-  showWorldModal({ kicker: "节点 · 遭遇后果", title: window.ActionEventData.get(eventId).name, bodyText: body });
+  const nodeId = eventId === "fallenSurvivor" && progress.outcome === "fallen_rescue" ? "rescuedRevisit" : "revisit";
+  showWorldDialogue(`event_${eventId}`, nodeId, { eventId });
   return true;
 }
 
 function showSliceFollowup(dialogueId, node, alreadyPaidMistDamage = false) {
-  const bodies = {
-    fallenDragTrail: "拖行沟延伸进菌盖背后的黑暗。泥地中留下啃食者的痕迹。\n\n追踪啃食者的后续：测试版尚未接入。",
-    corpseHiddenPath: "类似人类的脚印延伸进一条隐蔽的小径。继续追查搭建蠕虫养殖堆的人：测试版尚未接入。",
-  };
-  if (dialogueId === "metalSoundSource") {
-    let damageText = "";
-    if (!getFlag("visitedMetalSource")) {
-      const safe = getFlag("knowsMistRhythm") || getFlag("mistSafeDay") === world.day || alreadyPaidMistDamage;
-      if (!safe) {
-        const lost = Math.min(6, Math.max(0, world.hp - 1));
-        world.hp -= lost;
-        damageText = `穿过孢子雾，HP -${lost}（最低保留 1）。污染后续：测试版尚未接入。\n\n`;
-      }
-      setFlag("visitedMetalSource", true);
-    }
-    bodies.metalSoundSource = damageText + "声源不是人在敲东西。\n\n一具死了很久的尸体，手腕被藤状菌丝吊着。风吹动菌盖时，它的手便一次次撞在腰间的金属杯上。\n\n铛。\n\n你之前一直以为那里有人。";
+  let damage = 0;
+  if (dialogueId === "metalSoundSource" && !getFlag("visitedMetalSource")) {
+    const safe = getFlag("knowsMistRhythm") || getFlag("mistSafeDay") === world.day || alreadyPaidMistDamage;
+    if (!safe) { damage = Math.min(6, Math.max(0, world.hp - 1)); world.hp -= damage; }
+    setFlag("visitedMetalSource", true);
   }
-  showWorldModal({ kicker: "探索后续", title: node.label, bodyText: bodies[dialogueId] });
+  showWorldDialogue(dialogueId, null, { location: node, damage });
 }
 
 function leaveThomas() {
@@ -1197,6 +1126,7 @@ function addEncounterThreat(event, nodeId, releaseDay = 0) {
 }
 
 async function submitEventAction(eventId, placements) {
+  if (V06_EVENT_IDS.has(eventId) || (eventId === "thomasCrossroads" && v06UsesSiteEntry(NODE_BY_ID.get(world.eventStates[eventId]?.nodeId)))) return submitV06Action(eventId, placements);
   if (SLICE_EVENT_IDS.has(eventId)) return submitSliceEventAction(eventId, placements);
   if (!activeActionEvent || activeActionEvent.eventId !== eventId || activeActionEvent.submitting) return;
   const event = window.ActionEventData.get(eventId);
@@ -1233,8 +1163,8 @@ async function submitEventAction(eventId, placements) {
     progress.stage = recipe.next;
   }
   window.ActionEventPanel.close();
-  showWorldModal({
-    kicker: "行动结果", title: event.name, bodyText: recipe.result, allowClose: false,
+  showActionResult(recipe, {
+    kicker: "行动结果", title: event.name, allowClose: false,
     options: [{ label: battleAction ? "面对粪怪" : "继续", close: false, action: async () => {
       // The same result button cannot launch two battles or pay costs twice.
       if (!activeActionEvent || activeActionEvent.continuing) return;
@@ -1324,39 +1254,11 @@ function showSacrificeMenu(npcId) {
   });
 }
 
-function showHut() {
-  if (getFlag("searchedHouse")) {
-    showWorldModal({ kicker: "地点", title: "废弃小屋", body: "这里已经没有值得搜索的东西。墙上的抓痕倒是比昨天更长了。" });
-    return;
-  }
-  showWorldModal({
-    kicker: "地点 · 一次性搜索",
-    title: "废弃小屋",
-    body: "门后堆着不属于同一个人的家具与骨头。伸手进去，也许会摸到东西，也许会被东西摸到。",
-    options: [{
-      label: "搜索",
-      hint: staminaHint("失去 0–5 HP；获得物品与卡牌", 1),
-      enabled: canSpendStamina(),
-      action: () => {
-        if (!spendStamina()) return showHut();
-        const damage = Math.floor(Math.random() * 6);
-        world.hp = Math.max(1, world.hp - damage);
-        addItem("ritualScrap");
-        addItem("healingPotion");
-        addCard("delay");
-        setFlag("searchedHouse", true);
-        showWorldModal({
-          kicker: "探索奖励",
-          title: damage ? `你被咬掉了 ${damage} HP` : "这次什么也没咬你",
-          body: "获得「止血瓶」与秘仪卡「割裂时序」。在献祭心脏之前，秘仪卡会留在牌组中但无法使用。",
-        });
-      },
-    }],
-  });
-}
+function showHut() { showWorldDialogue("hut"); }
 
 function showLongRestPrompt() {
-  if (activeActionEvent || !isWorldActive()) return;
+  if (world.hp <= 0 || getFlag("becameDung") || v06EndingActive) return;
+  if (activeActionEvent || isWorldShopOpen() || !isWorldActive()) return;
   showWorldModal({
     kicker: "固有操作 · 长休",
     title: "就地长休",
@@ -1370,15 +1272,10 @@ function showLongRestPrompt() {
 }
 
 function longRest() {
-  if (activeActionEvent) return;
+  if (activeActionEvent || v06EndingActive || world.hp <= 0 || getFlag("becameDung")) return;
   if (world.day >= 5) {
     setFlag("becameDung", true);
-    showWorldModal({
-      kicker: "结局 · 化粪",
-      title: "第六次醒来",
-      body: "你确实满血了。只是现在生命值属于一只粪怪。山顶不再是出口，只是一处讨厌的噪音。",
-      options: [{ label: "重新开始 Vertical Slice", hint: "重置世界", action: startNewRun }],
-    });
+    showWorldDialogue("ending_dung");
     return;
   }
   const releasedThreat = Object.values(world.threats).some((threat) => threat.releaseDay === world.day + 1);
@@ -1388,6 +1285,7 @@ function longRest() {
   world.stamina = world.maxStamina;
   world.dailyEventRolls = {};
   world.dailyNpcLocations = {};
+  advanceV06Day();
   setFlag(`restedDay${world.day}`, true);
   showWorldModal({
     kicker: "时间推进",
@@ -1396,77 +1294,14 @@ function longRest() {
   });
 }
 
-function showGate() {
-  if (getFlag("bridgeOpened")) {
-    showWorldModal({ kicker: "地点 · 已改变", title: "开放的山道", body: "守卫与铁栅已经不再封路。这个状态由 bridgeOpened 持久保存，山后的节点已经点亮。" });
-    return;
-  }
-  showWorldModal({
-    kicker: "地点 · World Flag",
-    title: "封锁山道",
-    body: "铁栅后的守卫没有兴趣谈判。锁孔很旧，山脊侧面也许另有缝隙。",
-    options: [
-      {
-        label: "使用老旧钥匙",
-        hint: hasItem("oldKey") ? staminaHint("打开道路", 1) : "缺少 oldKey",
-        enabled: hasItem("oldKey") && canSpendStamina(),
-        action: () => {
-          if (!spendStamina()) return showGate();
-          setFlag("bridgeOpened", true);
-          showGate();
-        },
-      },
-      {
-        label: "走克里斯指出的骨缝",
-        hint: getFlag("foundSecretPath") ? staminaHint("秘密路径可用", 1) : "尚未发现",
-        enabled: Boolean(getFlag("foundSecretPath")) && canSpendStamina(),
-        action: () => {
-          if (!spendStamina()) return showGate();
-          setFlag("bridgeOpened", true);
-          showGate();
-        },
-      },
-      {
-        label: "挑战逆流守卫",
-        hint: staminaHint("胜利后道路开放", 1),
-        enabled: canSpendStamina(),
-        action: () => runBattle("guard", "gate"),
-      },
-    ],
-  });
-}
+function showGate() { showWorldDialogue("gate"); }
 
-function showChurch() {
-  showWorldModal({
-    kicker: "地点 · 唯一出口",
-    title: "逆抽水器",
-    body: `教堂中央是一只倒悬的巨大水箱，管道通向不存在的天空。你在第 ${world.day} 天抵达，仍然有心跳。`,
-    options: [{
-      label: "握住冲水链",
-      hint: "完成 Vertical Slice",
-      action: () => {
-        setFlag("escapedPlane", true);
-        showWorldModal({
-          kicker: "结局 · 成功",
-          title: "逆向冲水",
-          body: "世界发出庄严而不体面的轰鸣。你被抽向山顶上方，带着剩余身体、装备和所有没有解决的关系离开。",
-          options: [{ label: "重新体验", hint: "重置世界", action: startNewRun }],
-        });
-      },
-    }],
-  });
-}
+function showChurch() { showWorldDialogue("church"); }
 
-function showStartNode() {
-  const node = getCurrentNode();
-  showWorldModal({
-    kicker: "起点",
-    title: node.label,
-    body: node.description || "这里是你醒来的地方。已点亮的节点可以自由移动。",
-  });
-}
+function showStartNode() { showWorldDialogue("start"); }
 
 function interactWithCurrentNode() {
+  if (world.hp <= 0 || getFlag("becameDung") || v06EndingActive) return;
   const node = getCurrentNode();
   if (!node || interactionLocked || !isNodeAvailable(node)) return;
   return triggerNodeEvent(node);
@@ -1520,7 +1355,6 @@ async function runBattle(enemyId, sourceId, options = {}) {
       setFlag("eddieKilled", true);
       addItem(getDailyStock());
       addItem("oldKey");
-      addItem("healingPotion", 2);
       addItem("freshFlesh", 2);
     } else if (sourceId === "bell") {
       setFlag("bellKilled", true);
@@ -1537,12 +1371,8 @@ async function runBattle(enemyId, sourceId, options = {}) {
   options.onResult?.(battle);
   renderWorld();
   if (battle.result === "Lose") {
-    showWorldModal({
-      kicker: "结局 · 死亡",
-      title: "三种结局之一",
-      body: "这次失败按 Demo 规则作为死亡处理。战斗桥接只返回 Lose；由 World 决定在这里结束，而不是由战斗模块写死 Game Over。",
-      options: [{ label: "重新开始 Vertical Slice", hint: "重置世界", action: startNewRun }],
-    });
+    world.hp = 0;
+    showWorldDialogue("ending_battle");
   } else if (battle.result === "Escape") {
     showWorldModal({ kicker: "战斗结果 · Escape", title: "敌人还在", body: "你保住了命，但损失的 HP 和战斗消耗的体力不会恢复，地图对象也没有消失。" });
   }
@@ -1577,6 +1407,8 @@ async function startNewRun() {
     return false;
   }
   world = createInitialWorld();
+  resetWorldShop();
+  v06EndingActive = false;
   activeActionEvent = null;
   window.ActionEventPanel.close();
   currentTarget = null;
@@ -1636,6 +1468,16 @@ elsWorld.characterPanel.addEventListener("click", (event) => {
   if (event.target === elsWorld.characterPanel) closeCharacterPanel();
 });
 elsWorld.focusPlayerButton.addEventListener("click", () => focusCameraOnNode(getCurrentNode(), true));
+$w("#mapOverviewButton").addEventListener("click", () => {
+  if (isOverlayOpen()) return;
+  if (cameraAnimationFrame) cancelAnimationFrame(cameraAnimationFrame);
+  cameraAnimationFrame = null;
+  camera.width = mapExtent.width;
+  camera.height = mapExtent.height;
+  camera.x = 0;
+  camera.y = 0;
+  applyCamera();
+});
 
 elsWorld.mapSvg.addEventListener("pointerdown", (event) => {
   if (event.button !== 0 || event.target.closest?.(".world-node") || isOverlayOpen()) return;
@@ -1672,7 +1514,8 @@ document.addEventListener("keydown", (event) => {
   if (!isWorldActive()) return;
   if (activeActionEvent) { if (event.key === "Escape") event.preventDefault(); return; }
   if (event.key === "Escape") {
-    if (!elsWorld.characterPanel.classList.contains("hidden")) closeCharacterPanel();
+    if (isWorldShopOpen()) closeWorldShop();
+    else if (!elsWorld.characterPanel.classList.contains("hidden")) closeCharacterPanel();
     else if (!worldDataError && worldModalDismissible && !elsWorld.modal.classList.contains("hidden")) closeWorldModal();
     return;
   }

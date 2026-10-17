@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "church_resident",
+  "combatEnabled": true,
+  "displayName": "饥饿守食者",
+  "role": "山中的搏命者",
+  "intro": "对方有自己的生存理由。",
+  "stats": {
+    "maxHp": 48,
+    "poise": 3
+  },
+  "skills": [
+    {
+      "id": "church_resident_strike_0",
+      "name": "抢食扑咬",
+      "description": "抢食扑咬正逼近你的呼吸缝",
+      "damage": 7,
+      "windup": 2
+    },
+    {
+      "id": "church_resident_strike_1",
+      "name": "护槽横扫",
+      "description": "护槽横扫正逼近你的呼吸缝",
+      "damage": 12,
+      "windup": 4
+    }
+  ]
+}

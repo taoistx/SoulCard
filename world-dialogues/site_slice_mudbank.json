@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "site_slice_mudbank",
+  "name": "漂积湾",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "岸线在这里弯进去，回水把漂流物推到同一片浅泥上。一具新近死去的坠落者卡在石边，甲缝还没有白丝；更远处的废壳下面，露出一片半透明的旧衬膜。来时的岸台就在右后方。",
+      "options": [],
+      "kicker": "地点 · 沉积山",
+      "title": "漂积湾",
+      "onEnter": "open_sliceMudbank"
+    }
+  }
+}

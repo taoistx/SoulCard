@@ -1,0 +1,210 @@
+[
+  {
+    "from": "start",
+    "to": "eddie"
+  },
+  {
+    "from": "bellRoad",
+    "to": "bell"
+  },
+  {
+    "from": "siltWoods",
+    "to": "hut"
+  },
+  {
+    "from": "drownedHuts",
+    "to": "node2"
+  },
+  {
+    "from": "eddie",
+    "to": "node"
+  },
+  {
+    "from": "node",
+    "to": "drownedHuts"
+  },
+  {
+    "from": "eddie",
+    "to": "node4"
+  },
+  {
+    "from": "node4",
+    "to": "node4Copy"
+  },
+  {
+    "from": "node4Copy",
+    "to": "node4CopyCopy"
+  },
+  {
+    "from": "node4Copy",
+    "to": "drownedHuts"
+  },
+  {
+    "from": "node4CopyCopy",
+    "to": "bellRoad"
+  },
+  {
+    "from": "node2",
+    "to": "node2Copy"
+  },
+  {
+    "from": "node2Copy",
+    "to": "node2Copy2"
+  },
+  {
+    "from": "node2Copy2",
+    "to": "node3"
+  },
+  {
+    "from": "node3",
+    "to": "node5"
+  },
+  {
+    "from": "node5",
+    "to": "drownedHuts"
+  },
+  {
+    "from": "node",
+    "to": "node6"
+  },
+  {
+    "from": "node",
+    "to": "node7"
+  },
+  {
+    "from": "node6",
+    "to": "node7Copy"
+  },
+  {
+    "from": "node7Copy",
+    "to": "node7Copy2"
+  },
+  {
+    "from": "node7Copy2",
+    "to": "node7Copy3"
+  },
+  {
+    "from": "node7Copy3",
+    "to": "node8"
+  },
+  {
+    "from": "node8",
+    "to": "node9"
+  },
+  {
+    "from": "node8Copy",
+    "to": "node9"
+  },
+  {
+    "from": "node9",
+    "to": "node10"
+  },
+  {
+    "from": "node10",
+    "to": "node"
+  },
+  {
+    "from": "node7",
+    "to": "node7CopyCopy"
+  },
+  {
+    "from": "node7CopyCopy",
+    "to": "node7CopyCopy2"
+  },
+  {
+    "from": "node7CopyCopy2",
+    "to": "node7CopyCopy3"
+  },
+  {
+    "from": "node10",
+    "to": "node7CopyCopy3"
+  },
+  {
+    "from": "node7CopyCopy3",
+    "to": "node8Copy"
+  },
+  {
+    "from": "node2Copy",
+    "to": "node7CopyCopy"
+  },
+  {
+    "from": "node9",
+    "to": "node11"
+  },
+  {
+    "from": "node8Copy",
+    "to": "node11Copy"
+  },
+  {
+    "from": "node8CopyCopy",
+    "to": "node11CopyCopy2"
+  },
+  {
+    "from": "node11",
+    "to": "node11CopyCopy2"
+  },
+  {
+    "from": "node11",
+    "to": "node11Copy"
+  },
+  {
+    "from": "node11",
+    "to": "node11CopyCopy"
+  },
+  {
+    "from": "node11",
+    "to": "node11Copy2"
+  },
+  {
+    "from": "node11",
+    "to": "node11CopyCopyCopy"
+  },
+  {
+    "from": "node11",
+    "to": "node11CopyCopyCopyCopy"
+  },
+  {
+    "from": "node8Copy2",
+    "to": "node11Copy2"
+  },
+  {
+    "from": "node8Copy2",
+    "to": "node11CopyCopy"
+  },
+  {
+    "from": "node7Copy3",
+    "to": "node8Copy2"
+  },
+  {
+    "from": "siltWoods",
+    "to": "node8CopyCopy"
+  },
+  {
+    "from": "node2Copy2",
+    "to": "node2Copy2Copy"
+  },
+  {
+    "from": "node2Copy2Copy",
+    "to": "siltWoods"
+  },
+  {
+    "from": "bellRoad",
+    "to": "node12"
+  },
+  {
+    "from": "node12",
+    "to": "node3"
+  },
+  {
+    "from": "node8",
+    "to": "fallenDragTrail"
+  },
+  {
+    "from": "node4Copy",
+    "to": "corpseHiddenPath"
+  },
+  {
+    "from": "node12",
+    "to": "metalSoundSource"
+  }
+]

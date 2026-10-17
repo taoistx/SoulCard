@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "site_slice_climbcourt",
+  "name": "落壳狭道",
+  "start": {
+    "default": "root",
+    "rules": [
+      {
+        "when": {
+          "mode": "all",
+          "clauses": [
+            {
+              "source": "flag",
+              "key": "courtSwarmCleared",
+              "operator": "eq",
+              "value": true
+            }
+          ]
+        },
+        "node": "cleared"
+      }
+    ]
+  },
+  "nodes": {
+    "root": {
+      "body": "铁壁和陡坡把路挤成一条窄带。上方沟里滑下的碎壳停在路边，几只粪怪围住其中的残骸，时而撞上能落脚的石面。下侧有一片宽些的残骸坡；越过这里，就是伸出井壁的检修台。",
+      "options": [],
+      "kicker": "地点 · 沉积山",
+      "title": "落壳狭道",
+      "onEnter": "open_sliceClimbcourt"
+    },
+    "cleared": {
+      "body": "这一批粪怪的尸体留在残骸坡，贴壁落脚带已空出来。头顶滑下的细粉仍在，通向检修台的路就在眼前。",
+      "options": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "quietClearing",
+  "name": "quietClearing",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "这里只剩风吹过空地。",
+      "options": [],
+      "kicker": "地点",
+      "title": "{{nodeLabel}}"
+    }
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "id": "sliceMudbank",
+  "name": "漂积湾",
+  "allowLeave": true,
+  "start": "opening",
+  "slots": [
+    {
+      "id": "corpse",
+      "name": "石边的尸体"
+    },
+    {
+      "id": "fiber",
+      "name": "废壳下的衬膜"
+    }
+  ],
+  "stages": {
+    "opening": {
+      "body": "岸线在这里弯进去，回水把漂流物推到同一片浅泥上。一具新近死去的坠落者卡在石边，甲缝还没有白丝；更远处的废壳下面，露出一片半透明的旧衬膜。来时的岸台就在右后方。",
+      "recipes": [
+        {
+          "id": "cut",
+          "action": "mud_cut",
+          "slots": {
+            "corpse": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "resultDialogueId": "event_sliceMudbank",
+          "resultNodeId": "result_opening_cut"
+        },
+        {
+          "id": "material",
+          "action": "salvage_take",
+          "slots": {
+            "fiber": {
+              "kind": "card",
+              "category": "technique",
+              "excludeCardId": "focus"
+            }
+          },
+          "staminaCost": 1,
+          "resultDialogueId": "event_sliceMudbank",
+          "resultNodeId": "result_opening_material"
+        },
+        {
+          "id": "brace",
+          "action": "salvage_take",
+          "slots": {
+            "fiber": {
+              "kind": "card",
+              "category": "defense"
+            }
+          },
+          "staminaCost": 1,
+          "resultDialogueId": "event_sliceMudbank",
+          "resultNodeId": "result_opening_brace"
+        },
+        {
+          "id": "observe",
+          "action": "mud_observe",
+          "slots": {
+            "corpse": {
+              "kind": "card",
+              "category": "technique",
+              "cardId": "focus"
+            }
+          },
+          "resultDialogueId": "event_sliceMudbank",
+          "resultNodeId": "result_opening_observe"
+        }
+      ]
+    }
+  }
+}

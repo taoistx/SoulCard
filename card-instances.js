@@ -21,7 +21,7 @@
     if (!base) return null;
     if (!instance.fatigue) return { ...base, instance };
     return {
-      id: base.id, name: base.name, icon: base.icon, instance,
+      id: base.id, name: base.name, icon: base.icon, instance, outOfCombatText: base.outOfCombatText,
       type: "fatigue", label: `疲劳 · ${instance.fatigue} 层`, cost: 1,
       text: "仅消耗 <strong>1</strong> 刻，消除 <strong>1</strong> 层疲劳。没有原卡效果。", speed: "恢复", fatigued: true,
     };

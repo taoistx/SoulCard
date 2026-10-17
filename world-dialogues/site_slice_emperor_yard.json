@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "site_slice_emperor_yard",
+  "name": "收肉棚",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": {
+        "default": "几根支架撑起低棚，搬肉的人从堤路进来，把废壳扔向棚外。小皇帝占着最干的一块地；莫尔盯着来往的人，温妮蹲在废料旁挑拣。棚后的脚印绕回铁壁下方。",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "emperorWasteMoved",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "几根支架撑起低棚，搬肉的人从堤路进来，把废壳扔向棚外。小皇帝占着最干的一块地；莫尔盯着来往的人，温妮蹲在废料旁挑拣。棚后的脚印绕回铁壁下方。\n棚口废料已经移到外侧凹坑，来往的人不再踩着碎肉走。"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "emperorGuardsAdded",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "几根支架撑起低棚，搬肉的人从堤路进来，把废壳扔向棚外。小皇帝占着最干的一块地；莫尔盯着来往的人，温妮蹲在废料旁挑拣。棚后的脚印绕回铁壁下方。\n棚口又添了看守，驱赶被碎肉吸来的游走体。"
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "talk_emperor",
+          "label": "与小皇帝交谈",
+          "action": "talk_emperor",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "emperorKilled",
+                "operator": "ne",
+                "value": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_mor",
+          "label": "与莫尔交谈",
+          "action": "talk_mor",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "morKilled",
+                "operator": "ne",
+                "value": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_winnie",
+          "label": "与温妮交谈",
+          "action": "talk_winnie",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "winnieKilled",
+                "operator": "ne",
+                "value": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_thomas",
+          "label": "与幸存者 托马斯交谈",
+          "action": "talk_thomas",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "thomasKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "thomasLocation",
+                "operator": "eq",
+                "value": "slice_emperor_yard"
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_genichiro",
+          "label": "与玄一螂交谈",
+          "action": "talk_genichiro",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "genichiroKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "genichiroLocation",
+                "operator": "eq",
+                "value": "slice_emperor_yard"
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_hollan",
+          "label": "与霍兰交谈",
+          "action": "talk_hollan",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "hollanKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "hollanLocation",
+                "operator": "eq",
+                "value": "slice_emperor_yard"
+              }
+            ]
+          }
+        }
+      ],
+      "kicker": "地点 · 沉积山",
+      "title": "收肉棚"
+    }
+  }
+}

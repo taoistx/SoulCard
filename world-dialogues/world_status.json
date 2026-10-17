@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "world_status",
+  "name": "地点状态",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "今天这里没有发生任何事。",
+      "options": [],
+      "title": "{{nodeLabel}}",
+      "kicker": "节点 · 今日结果"
+    },
+    "resolved": {
+      "body": {
+        "default": "这里的主要事件已经解决，节点仍可作为通路使用。",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "dialogueInfectedCorpse",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "托马斯感染孢子的尸体仍留在路口。粪怪已经不在这里，节点可以继续通行。"
+          }
+        ]
+      },
+      "options": [],
+      "title": "{{nodeLabel}}",
+      "kicker": "节点 · 已解决"
+    },
+    "away": {
+      "body": "你找到的是刚被雨水抹平的脚印。那个人今天已经去了别处。",
+      "options": [],
+      "title": "{{nodeLabel}}",
+      "kicker": "节点 · 空缺"
+    },
+    "npcAway": {
+      "body": {
+        "default": "{{npcName}}今天不在这里。这片污雾暂时吞掉了所有脚印。",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "dialogueNpcLocationKnown",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "{{npcName}}今天不在这里。有人说在「{{npcWhereabouts}}」附近见过对方。"
+          }
+        ]
+      },
+      "options": [],
+      "title": "{{nodeLabel}}",
+      "kicker": "节点 · 今日行踪"
+    }
+  },
+  "entryNodes": [
+    "resolved",
+    "away",
+    "npcAway"
+  ]
+}

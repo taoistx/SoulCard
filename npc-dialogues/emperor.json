@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "emperor",
+  "name": "小皇帝",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": {
+        "default": "“肉放里面，壳扔外头！”小皇帝站在干处指使搬运的人，随即转向你。“这棚里的肉归我分，别堵着搬东西的人。”",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "emperorWasteMoved",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "废料被移进无人壳坑，作业位安静了一些。他仍照样收贡。"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "emperorGuardsAdded",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "他又加派了人：“把路守住，谁也不许少交。”"
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "waste",
+          "label": "用伎俩将废料搬到无人壳坑",
+          "hint": "实际伎俩卡副本疲劳 +1；只改变此地",
+          "action": "v06_emperor_waste"
+        },
+        {
+          "id": "refuse",
+          "label": "拒绝并离开",
+          "hint": ""
+        }
+      ]
+    }
+  }
+}

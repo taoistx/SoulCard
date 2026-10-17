@@ -13,6 +13,10 @@ const nodes = { fallenSurvivor: "node8", breathingCorpses: "node4Copy", metalInM
   async function fresh(eventId, setup = {}) {
     await page.evaluate(async ({ eventId, setup, nodes }) => {
       await WorldGame.startNewRun();
+      WORLD_EDGES.splice(0, WORLD_EDGES.length, ...setup.legacyEdges);
+      // The archived fixture is wider than the current 12-node sediment map.
+      mapExtent.width = Math.max(mapExtent.width, ...WORLD_NODES.map((node) => node.x + 140));
+      NODE_BY_ID.get("node").eventSetId = "thomasEncounter";
       const id = nodes[eventId], parent = incomingEdges(id)[0].from;
       // Seed already explored connecting roads; enter each event through the actual map UI.
       world.exploredNodes = new Set(WORLD_NODES.filter((node) => !node.revealFlag && node.id !== id).map((node) => node.id));
@@ -22,8 +26,8 @@ const nodes = { fallenSurvivor: "node8", breathingCorpses: "node4Copy", metalInM
       if (setup.flesh) addItem("freshFlesh", setup.flesh);
       if (setup.ritual) addCard("delay");
       if (setup.heart) world.sacrificed.heart = true;
-      renderWorld(); focusCameraOnNode(NODE_BY_ID.get(parent), true);
-    }, { eventId, setup, nodes });
+      renderWorld(); focusCameraOnNode(NODE_BY_ID.get(id), true);
+    }, { eventId, setup: { ...setup, legacyEdges: require("./fixtures/legacy-map-edges.json") }, nodes });
     await page.locator(`[data-node-id="${nodes[eventId]}"]`).click();
     await page.waitForSelector("#actionEventPanel:not(.hidden)");
     assert.equal((await snapshot()).currentNodeId, nodes[eventId]);

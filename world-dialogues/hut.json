@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "hut",
+  "name": "废弃小屋",
+  "start": {
+    "default": "root",
+    "rules": [
+      {
+        "when": {
+          "mode": "all",
+          "clauses": [
+            {
+              "source": "flag",
+              "key": "searchedHouse",
+              "operator": "eq",
+              "value": true
+            }
+          ]
+        },
+        "node": "searched"
+      }
+    ]
+  },
+  "nodes": {
+    "root": {
+      "body": "门后堆着不属于同一个人的家具与骨头。伸手进去，也许会摸到东西，也许会被东西摸到。",
+      "options": [
+        {
+          "id": "search",
+          "label": "搜索",
+          "action": "search_hut",
+          "hint": "失去 0–5 HP；获得物品与卡牌 · 体力 -1"
+        }
+      ],
+      "kicker": "地点 · 一次性搜索"
+    },
+    "searched": {
+      "body": "这里已经没有值得搜索的东西。墙上的抓痕倒是比昨天更长了。",
+      "options": [],
+      "kicker": "地点"
+    },
+    "reward": {
+      "body": "获得秘仪残页与秘仪卡「割裂时序」。在献祭心脏之前，秘仪卡会留在牌组中但无法使用。",
+      "options": [],
+      "kicker": "探索奖励",
+      "title": {
+        "default": "这次什么也没咬你",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "dialogueDamage",
+                  "operator": "ne",
+                  "value": 0
+                }
+              ]
+            },
+            "text": "你被咬掉了 {{damage}} HP"
+          }
+        ]
+      }
+    }
+  },
+  "entryNodes": [
+    "reward"
+  ]
+}

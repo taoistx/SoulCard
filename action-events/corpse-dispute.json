@@ -35,7 +35,6 @@
             }
           },
           "action": "dispute_drive",
-          "result": "“都滚。”两个人退开，尸体留在原地。你取走腐败血肉 ×1。没有人替你评价这个决定。",
           "effects": [
             {
               "type": "addItem",
@@ -47,7 +46,9 @@
               "key": "droveOffCorpseClaimants",
               "value": true
             }
-          ]
+          ],
+          "resultDialogueId": "event_corpseDispute",
+          "resultNodeId": "result_opening_dispute_drive"
         },
         {
           "id": "dispute_endure",
@@ -58,7 +59,6 @@
             }
           },
           "action": "dispute_endure",
-          "result": "你强行站在二人之间，逼他们暂时冷静。额外体力 -1。\n\n后续分配与二人去向：测试版尚未接入。",
           "effects": [
             {
               "type": "setFlag",
@@ -66,7 +66,9 @@
               "value": true
             }
           ],
-          "staminaCost": 1
+          "staminaCost": 1,
+          "resultDialogueId": "event_corpseDispute",
+          "resultNodeId": "result_opening_dispute_endure"
         },
         {
           "id": "dispute_lie",
@@ -78,7 +80,6 @@
             }
           },
           "action": "dispute_lie",
-          "result": "你告诉他们，一群粪怪正朝这里赶来。两人终于松手，慌忙离开。你取走腐败血肉 ×1。",
           "effects": [
             {
               "type": "addItem",
@@ -90,7 +91,9 @@
               "key": "deceivedCorpseClaimants",
               "value": true
             }
-          ]
+          ],
+          "resultDialogueId": "event_corpseDispute",
+          "resultNodeId": "result_opening_dispute_lie"
         },
         {
           "id": "dispute_observe",
@@ -102,14 +105,15 @@
             }
           },
           "action": "dispute_observe",
-          "result": "尸体外表还很新鲜，内部却已经严重菌化。它根本不能安全食用。\n\n获得知识「菌化尸体」。本次遭遇结束。",
           "effects": [
             {
               "type": "setFlag",
               "key": "knowsDisputedCorpseCorruption",
               "value": true
             }
-          ]
+          ],
+          "resultDialogueId": "event_corpseDispute",
+          "resultNodeId": "result_opening_dispute_observe"
         },
         {
           "id": "dispute_ritual",
@@ -120,14 +124,15 @@
             }
           },
           "action": "dispute_ritual",
-          "result": "权柄的共鸣穿过尸体，你看见某种异常在它内部缓慢收缩。\n\n获得异常线索；异常的具体用途：测试版尚未接入。",
           "effects": [
             {
               "type": "setFlag",
               "key": "sensedDisputedCorpseAnomaly",
               "value": true
             }
-          ]
+          ],
+          "resultDialogueId": "event_corpseDispute",
+          "resultNodeId": "result_opening_dispute_ritual"
         }
       ]
     }

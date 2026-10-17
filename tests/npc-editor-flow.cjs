@@ -24,10 +24,10 @@ const base = process.env.DUNGEON_URL || "http://127.0.0.1:8765";
     await page.click("#sandboxButton");
     await page.fill("#sandboxDay", "4");
     await page.fill("#sandboxFlags", "{}");
-    await page.fill("#sandboxItems", "{\"healingPotion\":1}");
+    await page.fill("#sandboxItems", "{\"mistWrapMaterial\":1}");
     await page.click("#startSandboxButton");
     assert.match(await page.locator("#previewBody").innerText(), /明天我就上山/);
-    await page.getByRole("button", { name: /给她一瓶止血剂/ }).click();
+    await page.getByRole("button", { name: /给她一片包扎韧膜/ }).click();
     assert.match(await page.locator("#sandboxLog").innerText(), /foundSecretPath/);
     await page.click("#closeSandboxButton");
 

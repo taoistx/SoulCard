@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "ending_death",
+  "name": "没能走到教堂",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "{{deathReason}}",
+      "options": [
+        {
+          "id": "restart",
+          "label": "重新开始",
+          "action": "restart"
+        }
+      ],
+      "kicker": "结局 · 死亡",
+      "allowClose": false
+    },
+    "terrain": {
+      "body": "你没能穿过这段危险地形。",
+      "options": [
+        {
+          "id": "restart",
+          "label": "重新开始",
+          "action": "restart"
+        }
+      ],
+      "kicker": "结局 · 死亡",
+      "allowClose": false
+    }
+  },
+  "entryNodes": [
+    "terrain"
+  ]
+}

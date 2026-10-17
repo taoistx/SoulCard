@@ -6,7 +6,7 @@ const Runtime = require("../action-events.js");
 const Cards = require("../card-instances.js");
 const directory = path.join(__dirname, "../action-events");
 const manifest = JSON.parse(fs.readFileSync(path.join(directory, "manifest.json"), "utf8"));
-const events = Object.entries(manifest.events).filter(([id]) => id !== "thomasCrossroads")
+const events = Object.entries(manifest.events).filter(([id]) => ["fallenSurvivor", "breathingCorpses", "metalInMist", "corpseDispute", "livingHand"].includes(id))
   .map(([id, file]) => ({ id, event: JSON.parse(fs.readFileSync(path.join(directory, file), "utf8")) }));
 const catalog = {
   quick: { type: "attack", name: "短促刺击" }, guard: { type: "defense", name: "灰钢架势" },
@@ -16,12 +16,12 @@ const catalog = {
 };
 function resources(heart = false, flesh = true, wormKnowledge = false) {
   const state = {
-    deck: Cards.copyDeck(Object.keys(catalog), catalog), inventory: flesh ? { freshFlesh: 1, baitMeat: 1, rottenFlesh: 1 } : {},
+    deck: Cards.copyDeck(Object.keys(catalog), catalog), inventory: flesh ? { freshFlesh: 1, rottenFlesh: 1 } : {},
     knowledge: { dungLore: true, ...(wormKnowledge ? { wormFarming: true } : {}) }, sacrificed: heart ? { heart: true } : {},
   };
   return Runtime.resources(state, catalog, {
-    freshFlesh: { name: "新鲜血肉", eventTags: ["freshFlesh"] },
-    baitMeat: { name: "诱饵肉", eventTags: ["lure"] }, rottenFlesh: { name: "腐败血肉" },
+    freshFlesh: { name: "新鲜血肉", eventTags: ["freshFlesh", "lure"] },
+    rottenFlesh: { name: "腐败血肉" },
   });
 }
 const placements = (index, bait = false) => ({ subject: `card:battle_${index}`, ...(bait ? { bait: "item:freshFlesh" } : {}) });
@@ -169,7 +169,7 @@ test("living hand can throw only fresh flesh into mud without a card", () => {
   assert.deepEqual(result.chosen.map((resource) => resource.id), ["freshFlesh"]);
   assert.equal(Runtime.match(event, "opening", placement, resources()).valid, false);
   assert.equal(Runtime.match(event, "trapped", placement, resources(false, false)).valid, false);
-  for (const key of ["item:baitMeat", "item:rottenFlesh", "knowledge:dungLore"]) {
+  for (const key of ["item:rottenFlesh", "knowledge:dungLore"]) {
     assert.equal(Runtime.match(event, "trapped", { mud: key }, resources()).valid, false);
   }
   assert.equal(Runtime.match(event, "trapped", { hand: "item:freshFlesh" }, resources()).valid, false);

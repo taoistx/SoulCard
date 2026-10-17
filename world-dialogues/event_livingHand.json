@@ -1,0 +1,415 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "event_livingHand",
+  "name": "一截还活着的手",
+  "start": {
+    "default": "result_opening_hand_opening_attack_pair",
+    "rules": []
+  },
+  "nodes": {
+    "result_opening_hand_opening_attack_pair": {
+      "body": "你听到了一声不属于人类奇怪尖啸，泥水里翻起泡沫，感觉有什么东西在下面剧烈蠕动，过了好一会，才回归平静",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_hand_opening_attack": {
+      "body": "你听到了一声不属于人类奇怪尖啸，泥水里翻起泡沫，感觉有什么东西在下面剧烈蠕动，过了好一会，才回归平静",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_hand_opening_observe": {
+      "body": "你仔细的观察，发现这手总感觉非常 不自然，认真数了一下发现有6根手指",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_hand_opening_grab": {
+      "body": "就在你握住这只手准备拉起来的瞬间，泥水下涌出了无数有着各种数目手指的“手”捉住了你……",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_trapped_hand_trapped_attack_pair": {
+      "body": "你听到了一声不属于人类奇怪尖啸，因为吃痛所有手都松开，泥水里翻起泡沫，感觉有什么东西在下面剧烈蠕动，过了好一会，才回归平静",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_trapped_hand_trapped_attack": {
+      "body": "你听到了一声不属于人类奇怪尖啸，因为吃痛所有手都松开，泥水里翻起泡沫，感觉有什么东西在下面剧烈蠕动，过了好一会，才回归平静",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_trapped_hand_trapped_observe": {
+      "body": "你被不知名的东西拖入了泥水中，很快就被看不清的巨大压力包裹…………",
+      "options": [
+        {
+          "id": "restart",
+          "label": "重新开始 Vertical Slice",
+          "action": "restart",
+          "hint": "重置世界"
+        }
+      ],
+      "kicker": "结局 · 死亡",
+      "allowClose": false
+    },
+    "result_trapped_hand_trapped_grab": {
+      "body": "你被不知名的东西拖入了泥水中，很快就被看不清的巨大压力包裹…………",
+      "options": [
+        {
+          "id": "restart",
+          "label": "重新开始 Vertical Slice",
+          "action": "restart",
+          "hint": "重置世界"
+        }
+      ],
+      "kicker": "结局 · 死亡",
+      "allowClose": false
+    },
+    "result_trapped_hand_trapped_throw_flesh": {
+      "body": "你往远处的泥水投下一块血肉，血肉的腥味吸引了下面东西的注意，很快，手们松开了你， 你看到泥水翻涌起伏着朝血肉的落地蠕动过去。脱险了，还是赶紧离开",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "revisit": {
+      "body": {
+        "default": "此前的行动结果：\n\n{{resultText}}",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "dialogueHasResult",
+                  "operator": "eq",
+                  "value": false
+                }
+              ]
+            },
+            "text": "遭遇已经结束，这里仍可作为通路。"
+          }
+        ]
+      },
+      "options": [],
+      "kicker": "节点 · 遭遇后果"
+    },
+    "failed": {
+      "body": "泥水下东西感动了痛疼，但这似乎并不足以威胁到它，它反而更激烈地把你往泥水里拖",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "dead": {
+      "body": "你被不知名的东西拖入了泥水中，很快就被看不清的巨大压力包裹…………",
+      "options": [
+        {
+          "id": "restart",
+          "label": "重新开始 Vertical Slice",
+          "action": "restart",
+          "hint": "重置世界"
+        }
+      ],
+      "allowClose": false,
+      "kicker": "结局 · 死亡"
+    }
+  },
+  "entryNodes": [
+    "result_opening_hand_opening_attack_pair",
+    "result_opening_hand_opening_attack",
+    "result_opening_hand_opening_observe",
+    "result_opening_hand_opening_grab",
+    "result_trapped_hand_trapped_attack_pair",
+    "result_trapped_hand_trapped_attack",
+    "result_trapped_hand_trapped_observe",
+    "result_trapped_hand_trapped_grab",
+    "result_trapped_hand_trapped_throw_flesh",
+    "revisit",
+    "failed",
+    "dead"
+  ]
+}

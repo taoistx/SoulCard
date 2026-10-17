@@ -1,0 +1,710 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "event_thomasCrossroads",
+  "name": "断堤路口",
+  "start": {
+    "default": "result_opening_kill_and_strike",
+    "rules": []
+  },
+  "nodes": {
+    "result_opening_kill_and_strike": {
+      "body": "你杀死了陌生人，怪兽被鲜血气味所吸引，你抢到了额外 4 刻先机。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_kill": {
+      "body": "你杀死了陌生人，你将独自面对粪怪",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_strike": {
+      "body": "怪物并未注意到你，你获得了先机。你抢到了额外 4 刻先机。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_observe": {
+      "body": "怪物随滚动的残骸偏头，又追着气味转回。你记住了它的习性；这片刻迟疑中，它撞倒托马斯，孢子涌进她的呼吸缝。获得知识「粪怪习性」：对粪怪伤害 +15%。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_observe_field": {
+      "body": "怪物随滚动的残骸偏头，又追着气味转回。你记住了它的习性；这片刻迟疑中，它撞倒托马斯，孢子涌进她的呼吸缝。获得知识「粪怪习性」：对粪怪伤害 +15%。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_protect": {
+      "body": "你踏进托马斯与怪物之间，用肩甲挡住它，让她沿完整的堤面退到你身后。怪物仍在面前。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_lure": {
+      "body": "你借残骸和气味把怪物引到断口下的宽坡。它仍在下面翻找，托马斯趁机退回完整堤面。她扶着堤边，终于能说话了。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_trap": {
+      "body": "你借残骸和气味把怪物引到断口下的宽坡。它仍在下面翻找，托马斯趁机退回完整堤面。她扶着堤边，终于能说话了。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_infected_kill_and_strike": {
+      "body": "你同时向托马斯和粪怪出手。托马斯倒在泥水里；粪怪被迫回身，你抢到了额外 4 刻先机。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_infected_kill": {
+      "body": "托马斯甚至没来得及看清你的刀。她倒进泥水里，粪怪转向了你。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_infected_strike": {
+      "body": "你趁粪怪扑向托马斯之前出手。它踉跄着回头——你抢到了额外 4 刻先机。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_infected_observe_again": {
+      "body": "你继续盯着粪怪，没有出手。它当着你的面杀死托马斯，只留下一具布满孢子的感染尸体，然后朝你扑来。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_infected_observe_field_again": {
+      "body": "你继续观察路口与粪怪的动静，没有出手。它当着你的面杀死托马斯，只留下一具布满孢子的感染尸体，然后朝你扑来。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_infected_protect": {
+      "body": "你踏进托马斯与怪物之间，用肩甲挡住它，让她沿完整的堤面退到你身后。怪物仍在面前。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_infected_lure": {
+      "body": "你借残骸和气味把怪物引到断口下的宽坡。它仍在下面翻找，托马斯趁机退回完整堤面。她甲缝里的伤仍在，需要包扎。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_infected_trap": {
+      "body": "你借残骸和气味把怪物引到断口下的宽坡。它仍在下面翻找，托马斯趁机退回完整堤面。她甲缝里的伤仍在，需要包扎。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "revisit": {
+      "body": {
+        "default": "此前的行动结果：\n\n{{resultText}}",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "dialogueHasResult",
+                  "operator": "eq",
+                  "value": false
+                }
+              ]
+            },
+            "text": "遭遇已经结束，这里仍可作为通路。"
+          }
+        ]
+      },
+      "options": [],
+      "kicker": "节点 · 遭遇后果"
+    }
+  },
+  "entryNodes": [
+    "result_opening_kill_and_strike",
+    "result_opening_kill",
+    "result_opening_strike",
+    "result_opening_observe",
+    "result_opening_observe_field",
+    "result_opening_protect",
+    "result_opening_lure",
+    "result_opening_trap",
+    "result_infected_kill_and_strike",
+    "result_infected_kill",
+    "result_infected_strike",
+    "result_infected_observe_again",
+    "result_infected_observe_field_again",
+    "result_infected_protect",
+    "result_infected_lure",
+    "result_infected_trap",
+    "revisit"
+  ]
+}

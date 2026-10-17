@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "id": "mor",
+  "name": "莫尔",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": {
+        "default": "莫尔在收肉棚门口接过一只空筐，转头向你招手。“去教堂？我走过铁壁那段。给一份肉，告诉你怎么少踩几脚软泥。”",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "morChallenged",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "“我说的是贴壁能落脚，没说怪物今天不在那儿吃东西。”他把空筐推回棚下。"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "morTipOutdated",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "“上面有人看见新擦痕，我也正在问。”他的旧路线不是今天的安全承诺。"
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "buy",
+          "label": "付一份鲜肉买旧路况",
+          "hint": "鲜肉 -1；本局一次，不直接开启捷径",
+          "action": "v06_mor_buy",
+          "next": "tip"
+        },
+        {
+          "id": "challenge",
+          "label": "指出亲见的路况已经变了",
+          "hint": "需要实际观察证据",
+          "action": "v06_mor_challenge",
+          "next": "root"
+        }
+      ]
+    },
+    "tip": {
+      "body": "“从擦刀的凹缝上去，看铁壁脚下的铆钉边。那是半埋的检修槽，斜着通向平台。入口有没有堵，得你自己看。”",
+      "options": [
+        {
+          "id": "back",
+          "label": "返回",
+          "hint": "",
+          "next": "root"
+        }
+      ]
+    }
+  }
+}

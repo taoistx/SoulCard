@@ -35,7 +35,6 @@
             }
           },
           "action": "fallen_cut",
-          "result": "菌柄被砍断，他摔进泥地，却没有立刻死去。你收起断口处尚且新鲜的血肉 ×1。他仍在地上痛苦挣扎。",
           "effects": [
             {
               "type": "addItem",
@@ -47,7 +46,9 @@
               "key": "fallenDropped",
               "value": true
             }
-          ]
+          ],
+          "resultDialogueId": "event_fallenSurvivor",
+          "resultNodeId": "result_opening_fallen_cut"
         },
         {
           "id": "fallen_rescue",
@@ -58,7 +59,6 @@
             }
           },
           "action": "fallen_rescue",
-          "result": "菌丝灼伤你的手臂，HP -6（最低保留 1）。你把他拖到地上。他得救了，却已经无法移动。\n\n是否会被其他 NPC 找到：测试版尚未接入。",
           "effects": [
             {
               "type": "setFlag",
@@ -66,7 +66,9 @@
               "value": true
             }
           ],
-          "hpCost": 6
+          "hpCost": 6,
+          "resultDialogueId": "event_fallenSurvivor",
+          "resultNodeId": "result_opening_fallen_rescue"
         },
         {
           "id": "fallen_lie",
@@ -78,14 +80,15 @@
             }
           },
           "action": "fallen_lie",
-          "result": "“别乱动，我去找人。”你留下这句话，转身离开。没有额外消耗，参与行动的伎俩卡仍疲劳 +1。\n\n已记录你骗过一个濒死者；人格／NPC 反应：测试版尚未接入。",
           "effects": [
             {
               "type": "setFlag",
               "key": "liedToDyingSurvivor",
               "value": true
             }
-          ]
+          ],
+          "resultDialogueId": "event_fallenSurvivor",
+          "resultNodeId": "result_opening_fallen_lie"
         },
         {
           "id": "fallen_observe",
@@ -97,7 +100,6 @@
             }
           },
           "action": "fallen_observe",
-          "result": "他的下半身不是摔没的。断口处残留清楚的啃食痕迹，菌盖背后还有一道拖行留下的沟。\n\n解锁附近隐藏节点「拖行痕迹」。本次遭遇结束。",
           "effects": [
             {
               "type": "setFlag",
@@ -109,7 +111,9 @@
               "key": "revealedDragTrail",
               "value": true
             }
-          ]
+          ],
+          "resultDialogueId": "event_fallenSurvivor",
+          "resultNodeId": "result_opening_fallen_observe"
         }
       ]
     },

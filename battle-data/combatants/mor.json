@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "mor",
+  "combatEnabled": false,
+  "displayName": "莫尔",
+  "role": "山中的住民",
+  "intro": "各自有未完成的事。",
+  "stats": null,
+  "skills": []
+}

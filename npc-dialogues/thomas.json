@@ -11,6 +11,20 @@
           "clauses": [
             {
               "source": "flag",
+              "key": "thomasWound",
+              "operator": "eq",
+              "value": "treated"
+            }
+          ]
+        },
+        "node": "root"
+      },
+      {
+        "when": {
+          "mode": "all",
+          "clauses": [
+            {
+              "source": "flag",
               "key": "thomasInfected",
               "operator": "eq",
               "value": true
@@ -23,42 +37,143 @@
   },
   "nodes": {
     "root": {
-      "body": "“刚才要不是你挡在前面，我已经死了。”托马斯仍在发抖，但没有再跑。\n“我先留在这里……至少这里有你走过的脚印。”",
+      "body": {
+        "default": "她扶着完整的堤边，终于喘匀了气。“再往后一步就是断口……谢谢。”她看看岸台的火，又望向高处。“我不想一个人留在这儿。营地需要人做事吗？你要上山，我也得先收拾一下。”",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "thomasResentful",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "她记得自己逃出险地时你没有出手。“我能走，不代表我忘了那一次。”"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "thomasWound",
+                  "operator": "eq",
+                  "value": "treated"
+                }
+              ]
+            },
+            "text": "包扎压住了伤口。她试着站稳：“这次能自己走了。告诉我哪条路可走。”"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "thomasPrepared",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "她把实物和你说过的路况反复核对。“不是因为不怕，我只是准备了能用的东西。”"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "thomasTravelled",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "“贴到铁壁后，我一路沿有脚印的硬处走。”她把行囊靠在身旁。“营地、棚子、台子……总得找个我能待下去的地方。”"
+          }
+        ]
+      },
       "options": [
+        {
+          "id": "camp",
+          "label": "告诉她岸台营地的打捞活计",
+          "hint": "决定去向；下一次长休后按行程移动",
+          "action": "v06_thomas_camp",
+          "next": "departure"
+        },
+        {
+          "id": "climb",
+          "label": "告诉她自己要上山",
+          "hint": "决定去向；下一次长休后按行程移动",
+          "action": "v06_thomas_climb",
+          "next": "departure"
+        },
+        {
+          "id": "stop",
+          "label": "建议她在山腰检修台停留",
+          "hint": "决定去向；下一次长休后按行程移动",
+          "action": "v06_thomas_stop",
+          "next": "departure"
+        },
+        {
+          "id": "route",
+          "label": "分享实际验证过的走法",
+          "hint": "亲见狭道落脚处，或清开检修槽",
+          "action": "v06_thomas_route",
+          "next": "root"
+        },
+        {
+          "id": "bandage",
+          "label": "用韧膜包扎她的伤口",
+          "hint": "韧膜 -1；治疗与准备分别记录",
+          "action": "v06_thomas_bandage",
+          "next": "root"
+        },
+        {
+          "id": "supply",
+          "label": "给她留包扎材料",
+          "hint": "韧膜 -1；准备成立，尚未治疗",
+          "action": "v06_thomas_supply",
+          "next": "root"
+        },
+        {
+          "id": "protection",
+          "label": "交给她一套实际防护",
+          "hint": "移交防护；若正在穿戴会卸下",
+          "action": "v06_thomas_protection",
+          "next": "root"
+        },
         {
           "id": "ask",
-          "label": "你感觉怎么样？",
-          "next": "thanks"
-        }
-      ]
-    },
-    "thanks": {
-      "body": "“腿还是软的，脑子倒是清楚。那些东西闻得到我们……走路小心。”",
-      "options": [
-        {
-          "id": "back",
-          "label": "返回",
-          "next": "root"
+          "label": "问她还能否撑住",
+          "hint": "",
+          "next": "infected"
         }
       ]
     },
     "infected": {
-      "body": "托马斯缩在路边，指缝间渗出灰白的泡沫。\n“你把我救下来了……可我身体里好像有什么在动。”\n你挡住了后来的袭击，却无法抹去先前吸入的孢子。",
-      "options": [
-        {
-          "id": "ask",
-          "label": "问他是否还能撑住",
-          "next": "infected_reply"
-        }
-      ]
-    },
-    "infected_reply": {
-      "body": "“先别让我一个人待着。”他努力挤出一个笑，“我会留在这里。要是我开始不认识你了……你会看出来的。”",
+      "body": "她按着甲缝：“先别让我一个人待着。”孢子造成的伤害还在，鼓励不能代替包扎。",
       "options": [
         {
           "id": "back",
           "label": "返回",
-          "next": "infected"
+          "hint": "",
+          "next": "root"
+        }
+      ]
+    },
+    "departure": {
+      "body": "她把散开的行囊重新扎紧。“我记住了。先把东西收好，再沿堤走。要是到得早，我会留点痕迹。”",
+      "options": [
+        {
+          "id": "back",
+          "label": "再说几句",
+          "next": "root"
         }
       ]
     }

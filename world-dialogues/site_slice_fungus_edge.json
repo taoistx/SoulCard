@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "site_slice_fungus_edge",
+  "name": "菌壳斜坡",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "硬堤到这里散成一层层湿壳。右手的铁壁上挂着黄白菌须，脚下每压碎一片壳，灰粉便从缝里腾起。上方的小路夹在铁壁和陡坡之间，几只伏低的身影正在拖拽残骸。靠墙处另有一道半埋的槽口，里面的刮痕斜着伸向高处。",
+      "options": [],
+      "kicker": "地点 · 沉积山",
+      "title": "菌壳斜坡",
+      "onEnter": "open_sliceFungus"
+    }
+  }
+}

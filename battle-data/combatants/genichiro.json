@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "genichiro",
+  "combatEnabled": true,
+  "displayName": "玄一螂",
+  "role": "山中的搏命者",
+  "intro": "对方有自己的生存理由。",
+  "stats": {
+    "maxHp": 90,
+    "poise": 3
+  },
+  "skills": [
+    {
+      "id": "genichiro_strike_0",
+      "name": "斜斩",
+      "description": "斜斩正逼近你的呼吸缝",
+      "damage": 12,
+      "windup": 3
+    },
+    {
+      "id": "genichiro_strike_1",
+      "name": "短促进逼",
+      "description": "短促进逼正逼近你的呼吸缝",
+      "damage": 6,
+      "windup": 1
+    },
+    {
+      "id": "genichiro_strike_2",
+      "name": "压刀",
+      "description": "压刀正逼近你的呼吸缝",
+      "damage": 18,
+      "windup": 5
+    }
+  ]
+}

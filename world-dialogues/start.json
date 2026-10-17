@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "start",
+  "name": "坠落浅滩",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "污水退到脚边，留下你和一柄锈剑。右上方的岸台有火光；更高处，一座尖顶建筑靠着巨大的铁壁。甲缝里的白絮随着呼吸轻轻颤动。",
+      "options": [],
+      "kicker": "起点",
+      "title": "{{nodeLabel}}"
+    }
+  }
+}

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1650" viewBox="0 0 1000 1650">
+  <title>沉积山剖面：积潭、堤脊、井壁检修槽与高处教堂</title>
+  <defs>
+    <linearGradient id="air" x2="0" y2="1"><stop stop-color="#3c3c36"/><stop offset="1" stop-color="#121e1d"/></linearGradient>
+    <linearGradient id="silt" x2="1" y2="0"><stop stop-color="#574c35"/><stop offset="1" stop-color="#272d27"/></linearGradient>
+    <pattern id="wall" width="45" height="110" patternUnits="userSpaceOnUse"><rect width="45" height="110" fill="#394343"/><path d="M0 0H45M0 110H45M0 0V110" stroke="#66706a" stroke-width="2"/><circle cx="8" cy="9" r="3" fill="#858977"/></pattern>
+    <pattern id="layers" width="160" height="90" patternUnits="userSpaceOnUse"><path d="M0 30Q40 12 80 33T160 30M-30 73Q20 52 65 72T170 70" fill="none" stroke="#8b7852" opacity=".22" stroke-width="2"/></pattern>
+  </defs>
+  <rect width="1000" height="1650" fill="url(#air)"/>
+  <!-- 固定地貌先存在；交互节点仍由父子揭示控制。 -->
+  <path d="M50 1530L85 1250 210 1260 260 1110 235 1020 425 985 500 890 565 730 440 560 445 470 650 320 950 330V1650H50Z" fill="url(#silt)"/>
+  <path d="M50 1530L85 1250 210 1260 260 1110 235 1020 425 985 500 890 565 730 440 560 445 470 650 320 950 330V1650H50Z" fill="url(#layers)"/>
+  <path d="M0 1460Q100 1425 170 1470T330 1450L400 1650H0Z" fill="#355354"/>
+  <path d="M0 1450L65 1280Q85 1220 140 1260L128 1320 105 1460Z" fill="#355354"/>
+  <g fill="none" stroke="#90aaa0" opacity=".25"><path d="M0 1500Q70 1480 155 1500T290 1500M20 1550Q95 1530 190 1555T345 1560M0 1610Q85 1590 170 1610"/></g>
+  <rect x="920" width="80" height="1650" fill="url(#wall)"/>
+  <path d="M914 0V1650" stroke="#969988" stroke-width="8"/>
+  <!-- 从堤脊到贴壁窄道，落石沟朝左下的残骸坡排落。 -->
+  <path d="M210 1485L330 1350 490 1190 585 915 655 715 515 500 685 340" fill="none" stroke="#a99366" stroke-width="32" opacity=".4" stroke-linejoin="round"/>
+  <path d="M330 1350Q245 1300 165 1280M490 1190L305 1045 585 915" fill="none" stroke="#a99366" stroke-width="18" opacity=".3"/>
+  <path d="M720 390Q620 440 570 580L440 720" fill="none" stroke="#1c201b" stroke-width="24"/>
+  <g fill="#9a9278" opacity=".6"><path d="M452 638l25-10 14 21-29 15Z"/><path d="M486 601l12-22 23 17-7 22Z"/><path d="M558 536l15-8 15 24-22 5Z"/></g>
+  <!-- 菌层位于阴湿坡面，检修槽沿井壁斜升至平台。 -->
+  <g fill="#969b70" opacity=".22"><ellipse cx="685" cy="765" rx="80" ry="150"/><ellipse cx="742" cy="660" rx="53" ry="110"/></g>
+  <path d="M655 715L860 560 900 355 685 340" fill="none" stroke="#768786" stroke-width="30" opacity=".6"/>
+  <path d="M655 715L860 560 900 355 685 340" fill="none" stroke="#182a29" stroke-width="17"/>
+  <path d="M670 335H920V367H670Z" fill="#778080" stroke="#a9a58e" stroke-width="3"/>
+  <path d="M720 367L920 450M835 367L920 410" stroke="#697473" stroke-width="9"/>
+  <path d="M705 332L800 210 855 105" fill="none" stroke="#9a9682" stroke-width="28"/>
+  <g stroke="#4a534b" stroke-width="4"><path d="M721 304l20 14M736 285l20 14M751 266l20 14M766 247l20 14M786 222l20 14M798 202l22 10M810 180l22 10M822 156l22 10M834 132l22 10"/></g>
+  <path d="M803 106H952V128H803Z" fill="#9b9681"/>
+  <path d="M825 100V37L865 8 907 37V100Z" fill="#64695f" stroke="#aba58f" stroke-width="3"/>
+  <path d="M845 100V65Q867 42 887 65V100" fill="#c6a76d" opacity=".75"/>
+  <path d="M810 37L865 0 922 37" fill="none" stroke="#b0a48b" stroke-width="6"/>
+  <path d="M282 1370H375V1390H275Z" fill="#b1a07a"/>
+  <path d="M267 1035L320 1005 365 1035V1080H267Z" fill="#645e43" stroke="#998764"/>
+  <g font-family="sans-serif" fill="#c9c5a9" font-size="22" letter-spacing="5" opacity=".8">
+    <text x="60" y="1590">污水积潭</text><text x="420" y="1500">沉积坡</text>
+    <text x="948" y="870" writing-mode="tb">旧金属井壁</text>
+    <text x="80" y="885">硬化堤脊</text><text x="60" y="710">残骸沿坡沟下滚</text>
+    <text x="125" y="315">山腰平台</text><text x="245" y="100">教堂 · 高处检修平台</text>
+  </g>
+  <path d="M350 325H650M545 1500L640 1350M310 895L505 1000" stroke="#aaa083" stroke-width="1" opacity=".35" fill="none"/>
+</svg>

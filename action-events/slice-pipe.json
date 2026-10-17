@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "id": "slicePipe",
+  "name": "半埋检修槽",
+  "allowLeave": true,
+  "start": "opening",
+  "slots": [
+    {
+      "id": "shell",
+      "name": "入口碎壳"
+    },
+    {
+      "id": "hook",
+      "name": "铆钉边与刮痕"
+    }
+  ],
+  "stages": {
+    "opening": {
+      "body": "槽口沿铁壁斜着上升，几片碎壳堵在最窄的一段。透过外侧裂缝，能看见狭道里的怪物；上端的日光落在同一座检修台底下。碎壳表面布满干粉，脚边留有一条可缓慢挪身的缝。",
+      "recipes": [
+        {
+          "id": "observe",
+          "action": "pipe_observe",
+          "slots": {
+            "hook": {
+              "kind": "card",
+              "category": "technique",
+              "cardId": "focus"
+            }
+          },
+          "resultDialogueId": "event_slicePipe",
+          "resultNodeId": "result_opening_observe"
+        },
+        {
+          "id": "trick",
+          "action": "pipe_open",
+          "slots": {
+            "shell": {
+              "kind": "card",
+              "category": "technique",
+              "excludeCardId": "focus"
+            }
+          },
+          "staminaCost": 1,
+          "resultDialogueId": "event_slicePipe",
+          "resultNodeId": "result_opening_trick"
+        },
+        {
+          "id": "brace",
+          "action": "pipe_open",
+          "slots": {
+            "shell": {
+              "kind": "card",
+              "category": "defense"
+            }
+          },
+          "staminaCost": 1,
+          "resultDialogueId": "event_slicePipe",
+          "resultNodeId": "result_opening_brace"
+        },
+        {
+          "id": "cut",
+          "action": "pipe_cut",
+          "slots": {
+            "shell": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "hpCost": 4,
+          "staminaCost": 1,
+          "resultDialogueId": "event_slicePipe",
+          "resultNodeId": "result_opening_cut"
+        }
+      ]
+    }
+  }
+}

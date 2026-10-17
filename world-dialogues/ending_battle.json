@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "ending_battle",
+  "name": "倒在山路上",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "你没能再站起来。铁壁上方的教堂仍亮着微弱的光，山路上的脚步声渐渐远去。",
+      "options": [
+        {
+          "id": "restart",
+          "label": "重新开始 Vertical Slice",
+          "action": "restart",
+          "hint": "重置世界"
+        }
+      ],
+      "kicker": "结局 · 死亡"
+    }
+  }
+}

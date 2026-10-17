@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "id": "sliceGallery",
+  "name": "收网回廊",
+  "allowLeave": true,
+  "start": "opening",
+  "slots": [
+    {
+      "id": "net",
+      "name": "缠网"
+    },
+    {
+      "id": "ring",
+      "name": "固定环"
+    },
+    {
+      "id": "other",
+      "name": "另一侧吊架"
+    }
+  ],
+  "stages": {
+    "opening": {
+      "body": "吊架晃动，旧尸被勒在网中。气流来去时网兜收紧，另一侧只靠承重主绳吊着。可以退回外廊整备；踏上吊架会卷入一次收网。",
+      "recipes": []
+    },
+    "trapped": {
+      "body": "网已收紧，长休无法解除困境。固定环可套余绳；切副网可放低吊架；切主绳会让另一侧坠落。锈边磨断自己侧缠网需10 HP，之后仍需放架。",
+      "recipes": [
+        {
+          "id": "observe",
+          "action": "gallery_observe",
+          "slots": {
+            "ring": {
+              "kind": "card",
+              "category": "technique",
+              "cardId": "focus"
+            }
+          },
+          "resultDialogueId": "event_sliceGallery",
+          "resultNodeId": "result_trapped_observe"
+        },
+        {
+          "id": "ring",
+          "action": "gallery_ring",
+          "slots": {
+            "ring": {
+              "kind": "card",
+              "category": "technique",
+              "excludeCardId": "focus"
+            }
+          },
+          "hpCost": 2,
+          "when": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "observedSideDraft",
+                "operator": "eq",
+                "value": true
+              }
+            ]
+          },
+          "resultDialogueId": "event_sliceGallery",
+          "resultNodeId": "result_trapped_ring"
+        },
+        {
+          "id": "hold",
+          "action": "gallery_hold",
+          "slots": {
+            "other": {
+              "kind": "card",
+              "category": "defense"
+            }
+          },
+          "hpCost": 6,
+          "resultDialogueId": "event_sliceGallery",
+          "resultNodeId": "result_trapped_hold"
+        },
+        {
+          "id": "subnet",
+          "action": "gallery_subnet",
+          "slots": {
+            "net": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "hpCost": 4,
+          "when": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "galleryRopesKnown",
+                "operator": "eq",
+                "value": true
+              }
+            ]
+          },
+          "resultDialogueId": "event_sliceGallery",
+          "resultNodeId": "result_trapped_subnet"
+        },
+        {
+          "id": "mainrope",
+          "action": "gallery_mainrope",
+          "slots": {
+            "other": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "hpCost": 2,
+          "resultDialogueId": "event_sliceGallery",
+          "resultNodeId": "result_trapped_mainrope"
+        }
+      ]
+    },
+    "escaped": {
+      "body": "你已脱身，吊架仍偏在高处。需要实际放架才能继续；另一侧对象还留在原处。",
+      "recipes": []
+    },
+    "lowered": {
+      "body": "吊架到了可踏位置。检修入口里卡着一只磨亮的钩；先取到实物，再沿绳下行。",
+      "recipes": []
+    }
+  }
+}

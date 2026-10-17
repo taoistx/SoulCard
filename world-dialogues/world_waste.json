@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "world_waste",
+  "name": "将废料移入路外壳坑",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "选择实际使用的伎俩副本；只改变这里的作业位，不把废料转嫁给别人。",
+      "options": [
+        {
+          "id": "card",
+          "label": "{{cardName}} · 副本 {{cardIndex}}",
+          "action": "choose_waste_card",
+          "repeat": "wasteCards",
+          "hint": "该副本疲劳 +1"
+        }
+      ]
+    }
+  }
+}

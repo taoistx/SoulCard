@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "church",
+  "name": "逆抽水器",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "教堂中央是一只倒悬的巨大水箱，管道通向不存在的天空。你在第 {{day}} 天抵达，仍然有心跳。",
+      "options": [
+        {
+          "id": "escape",
+          "label": "握住冲水链",
+          "action": "escape_plane",
+          "hint": "完成 Vertical Slice"
+        }
+      ],
+      "kicker": "地点 · 唯一出口"
+    }
+  }
+}

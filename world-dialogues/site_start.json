@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "site_start",
+  "name": "坠落浅滩",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "污水退到脚边，留下你和一柄锈剑。右上方的岸台有火光；更高处，一座尖顶建筑靠着巨大的铁壁。甲缝里的白絮随着呼吸轻轻颤动。",
+      "options": [
+        {
+          "id": "inspect",
+          "label": "检查甲缝中的白絮",
+          "hint": "五日期限；仅长休推进一天，血肉只恢复 HP",
+          "next": "whiteFluff"
+        }
+      ],
+      "kicker": "地点 · 沉积山",
+      "title": "坠落浅滩"
+    },
+    "whiteFluff": {
+      "body": "白絮已经扎进甲缝深处。你能感觉到身体正在变得迟钝，必须尽快找到离开的办法。",
+      "options": []
+    }
+  }
+}

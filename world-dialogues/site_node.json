@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "site_node",
+  "name": "断堤路口",
+  "start": {
+    "default": "root",
+    "rules": [
+      {
+        "when": {
+          "mode": "all",
+          "clauses": [
+            {
+              "source": "flag",
+              "key": "thomasRescue",
+              "operator": "eq",
+              "value": "unresolved"
+            },
+            {
+              "source": "flag",
+              "key": "thomasKilled",
+              "operator": "ne",
+              "value": true
+            }
+          ]
+        },
+        "node": "unresolved"
+      }
+    ]
+  },
+  "nodes": {
+    "root": {
+      "body": {
+        "default": "断堤的边缘留下了抓痕，完整堤面向铁壁升去。托马斯已离开，泥上留下她重新扎好行囊后走出的脚印。",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "thomasKilled",
+                  "operator": "eq",
+                  "value": true
+                },
+                {
+                  "source": "flag",
+                  "key": "thomasMonsterDiverted",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "断堤的边缘留下了抓痕，完整堤面向铁壁升去。托马斯的遗体还在断口旁。坡下仍有翻动残骸的声音，那只怪物没有追上堤。"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "thomasLocation",
+                  "operator": "eq",
+                  "value": "node"
+                },
+                {
+                  "source": "flag",
+                  "key": "thomasMonsterDiverted",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "断堤的边缘留下了抓痕，完整堤面向铁壁升去。托马斯蹲在抓痕旁整理行囊。坡下仍有翻动残骸的声音，那只怪物没有追上堤。"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "thomasMonsterDiverted",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "断堤的边缘留下了抓痕，完整堤面向铁壁升去。托马斯已离开，泥上留下她重新扎好行囊后走出的脚印。坡下仍有翻动残骸的声音，那只怪物没有追上堤。"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "thomasKilled",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "断堤的边缘留下了抓痕，完整堤面向铁壁升去。托马斯的遗体还在断口旁。"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "thomasLocation",
+                  "operator": "eq",
+                  "value": "node"
+                }
+              ]
+            },
+            "text": "断堤的边缘留下了抓痕，完整堤面向铁壁升去。托马斯蹲在抓痕旁整理行囊。"
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "talk_thomas",
+          "label": "与幸存者 托马斯交谈",
+          "action": "talk_thomas",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "thomasKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "thomasLocation",
+                "operator": "eq",
+                "value": "node"
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_genichiro",
+          "label": "与玄一螂交谈",
+          "action": "talk_genichiro",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "genichiroKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "genichiroLocation",
+                "operator": "eq",
+                "value": "node"
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_hollan",
+          "label": "与霍兰交谈",
+          "action": "talk_hollan",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "hollanKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "hollanLocation",
+                "operator": "eq",
+                "value": "node"
+              }
+            ]
+          }
+        }
+      ],
+      "kicker": "地点 · 沉积山",
+      "title": "断堤路口"
+    },
+    "unresolved": {
+      "body": "托马斯还在断堤边挣扎。",
+      "options": [],
+      "onEnter": "open_thomasCrossroads"
+    }
+  }
+}

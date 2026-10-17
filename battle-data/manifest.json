@@ -7,6 +7,12 @@
     "dungling": "combatants/dungling.json",
     "dung_swarm": "combatants/dung_swarm.json",
     "guard": "combatants/guard.json",
-    "thomas": "combatants/thomas.json"
+    "thomas": "combatants/thomas.json",
+    "genichiro": "combatants/genichiro.json",
+    "winnie": "combatants/winnie.json",
+    "mor": "combatants/mor.json",
+    "emperor": "combatants/emperor.json",
+    "hollan": "combatants/hollan.json",
+    "church_resident": "combatants/church_resident.json"
   }
 }

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "id": "hollan",
+  "name": "霍兰",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": {
+        "default": "霍兰在检修台上翻过一片砸扁的壳，敲掉内侧碎屑。“下面的坡沟会送东西来。有的还活着，得补上一下。”他把能用的膜另放一边。",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "hollanRespect",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "“你确实打过，不只是说过。”他拨开手边的战利品，露出一片可用韧膜。"
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "respect",
+          "label": "说起实际赢过的战斗",
+          "hint": "读取本局实际战绩",
+          "action": "v06_hollan_respect",
+          "next": "root"
+        },
+        {
+          "id": "material",
+          "label": "用鲜肉换一片封缝韧膜",
+          "hint": "鲜肉 -1；获得尊重后可换一次",
+          "action": "v06_hollan_material",
+          "next": "root"
+        }
+      ]
+    }
+  }
+}

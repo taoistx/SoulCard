@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "corpseHiddenPath",
+  "name": "隐蔽小径",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "类似人类的脚印延伸进一条隐蔽的小径。继续追查搭建蠕虫养殖堆的人：测试版尚未接入。",
+      "options": [],
+      "kicker": "探索后续"
+    }
+  }
+}

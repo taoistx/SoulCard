@@ -45,6 +45,8 @@ class NodeEditorHandler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    # 三份 manifest 并发读取独立 JSON，Windows 的默认 5 个待接入连接不足。
+    ThreadingHTTPServer.request_queue_size = 128
     server = ThreadingHTTPServer(("127.0.0.1", PORT), NodeEditorHandler)
     print(f"Node editor server: http://127.0.0.1:{PORT}/node-editor/index.html")
     print("Saving exports to:", WORLD_MAP)

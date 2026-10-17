@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "site_slice_church_nave",
+  "name": "教堂门廊",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "门缝里透出暖光。一路上听见的金属闷响，到这里终于分成了绞盘和铁链的声音。\n门被拉开一线。越过守门人的肩膀，你看见一架载着活人的吊笼缓缓沉入地板下。\n他看了看你身上的白絮。\n“你也是来下去的？”",
+      "options": [],
+      "kicker": "地点 · 沉积山",
+      "title": "教堂门廊",
+      "onEnter": "enter_church"
+    }
+  }
+}

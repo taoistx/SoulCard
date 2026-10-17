@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "site_slice_church_approach",
+  "name": "登堂石阶",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "石阶嵌在井壁与教堂平台之间。松掉的扶手刚用新带子绑紧，台阶上的灰被扫到两侧，一道搬运擦痕一直延伸到上面的门廊。金属闷响从门后传来，间或夹着人声。",
+      "options": [
+        {
+          "id": "talk_thomas",
+          "label": "与幸存者 托马斯交谈",
+          "action": "talk_thomas",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "thomasKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "thomasLocation",
+                "operator": "eq",
+                "value": "slice_church_approach"
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_genichiro",
+          "label": "与玄一螂交谈",
+          "action": "talk_genichiro",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "genichiroKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "genichiroLocation",
+                "operator": "eq",
+                "value": "slice_church_approach"
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_hollan",
+          "label": "与霍兰交谈",
+          "action": "talk_hollan",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "hollanKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "hollanLocation",
+                "operator": "eq",
+                "value": "slice_church_approach"
+              }
+            ]
+          }
+        },
+        {
+          "id": "marks",
+          "label": "查看新绑带和搬运擦痕",
+          "next": "marks",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "churchMaintenanceSeen",
+              "value": true
+            }
+          ]
+        }
+      ],
+      "kicker": "地点 · 沉积山",
+      "title": "登堂石阶"
+    },
+    "marks": {
+      "body": "绑带的切口还很齐整，擦痕横过扫净的石阶，一直伸向门槛。门后有人喊了一声，随后铁链开始移动。",
+      "options": []
+    }
+  }
+}

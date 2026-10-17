@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "id": "sliceFungus",
+  "name": "菌壳斜坡",
+  "allowLeave": true,
+  "start": "opening",
+  "slots": [
+    {
+      "id": "wall",
+      "name": "半埋的槽口"
+    },
+    {
+      "id": "growth",
+      "name": "槽口前的湿壳"
+    }
+  ],
+  "stages": {
+    "opening": {
+      "body": "硬堤到这里散成一层层湿壳。右手的铁壁上挂着黄白菌须，脚下每压碎一片壳，灰粉便从缝里腾起。上方的小路夹在铁壁和陡坡之间，几只伏低的身影正在拖拽残骸。靠墙处另有一道半埋的槽口，里面的刮痕斜着伸向高处。",
+      "recipes": [
+        {
+          "id": "observe",
+          "action": "fungus_search",
+          "slots": {
+            "wall": {
+              "kind": "card",
+              "category": "technique",
+              "cardId": "focus"
+            }
+          },
+          "resultDialogueId": "event_sliceFungus",
+          "resultNodeId": "result_opening_observe"
+        },
+        {
+          "id": "trick",
+          "action": "fungus_search",
+          "slots": {
+            "growth": {
+              "kind": "card",
+              "category": "technique",
+              "excludeCardId": "focus"
+            }
+          },
+          "resultDialogueId": "event_sliceFungus",
+          "resultNodeId": "result_opening_trick"
+        },
+        {
+          "id": "cut",
+          "action": "fungus_search",
+          "slots": {
+            "growth": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "resultDialogueId": "event_sliceFungus",
+          "resultNodeId": "result_opening_cut"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,298 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "event_corpseDispute",
+  "name": "争夺尸体",
+  "start": {
+    "default": "result_opening_dispute_drive",
+    "rules": []
+  },
+  "nodes": {
+    "result_opening_dispute_drive": {
+      "body": "“都滚。”两个人退开，尸体留在原地。你取走腐败血肉 ×1。没有人替你评价这个决定。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_dispute_endure": {
+      "body": "你强行站在二人之间，逼他们暂时冷静。额外体力 -1。\n\n后续分配与二人去向：测试版尚未接入。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_dispute_lie": {
+      "body": "你告诉他们，一群粪怪正朝这里赶来。两人终于松手，慌忙离开。你取走腐败血肉 ×1。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_dispute_observe": {
+      "body": "尸体外表还很新鲜，内部却已经严重菌化。它根本不能安全食用。\n\n获得知识「菌化尸体」。本次遭遇结束。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_dispute_ritual": {
+      "body": "权柄的共鸣穿过尸体，你看见某种异常在它内部缓慢收缩。\n\n获得异常线索；异常的具体用途：测试版尚未接入。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "revisit": {
+      "body": {
+        "default": "此前的行动结果：\n\n{{resultText}}",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "dialogueHasResult",
+                  "operator": "eq",
+                  "value": false
+                }
+              ]
+            },
+            "text": "遭遇已经结束，这里仍可作为通路。"
+          }
+        ]
+      },
+      "options": [],
+      "kicker": "节点 · 遭遇后果"
+    },
+    "threeCorpses": {
+      "body": {
+        "default": "你回来时，已经没有人争夺。地上只剩三具尸体。原本的一份资源，如今成了三份。它们都不能安全食用。",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "dialogueRewardClaimed",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "三具尸体还在这里，可以取得的部分已经被你收走。"
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "claim",
+          "label": "取得腐败血肉 ×3",
+          "action": "claim_corpses",
+          "hint": "一次性领取；不消耗卡牌",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "dialogueRewardClaimed",
+                "operator": "ne",
+                "value": true
+              }
+            ]
+          }
+        }
+      ],
+      "kicker": "再次到访",
+      "title": "三具尸体"
+    },
+    "claimed": {
+      "body": "你从三具尸体中取得腐败血肉 ×3。",
+      "options": [],
+      "kicker": "取得资源",
+      "title": "三具尸体"
+    }
+  },
+  "entryNodes": [
+    "result_opening_dispute_drive",
+    "result_opening_dispute_endure",
+    "result_opening_dispute_lie",
+    "result_opening_dispute_observe",
+    "result_opening_dispute_ritual",
+    "revisit",
+    "threeCorpses",
+    "claimed"
+  ]
+}

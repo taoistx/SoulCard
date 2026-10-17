@@ -6,6 +6,10 @@
     "breathingCorpses": "breathing-corpses.json",
     "metalInMist": "metal-in-mist.json",
     "corpseDispute": "corpse-dispute.json",
-    "livingHand": "living-hand.json"
+    "livingHand": "living-hand.json",
+    "sliceMudbank": "slice-mudbank.json",
+    "sliceFungus": "slice-fungus.json",
+    "sliceClimbcourt": "slice-climbcourt.json",
+    "slicePipe": "slice-pipe.json"
   }
 }

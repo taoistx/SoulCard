@@ -40,16 +40,16 @@ assert.equal(Runtime.resolveStart(dialogues.bell, bellState.context), "hostile")
 bellState.state.sacrificed = { head: true, brain: true };
 assert.equal(Runtime.resolveStart(dialogues.bell, bellState.context), "recognized");
 
-const chrisState = createState({ day: 4, flags: {}, inventory: { healingPotion: 1 }, sacrificed: {} });
+const chrisState = createState({ day: 4, flags: {}, inventory: { mistWrapMaterial: 1 }, sacrificed: {} });
 assert.match(Runtime.resolveNode(dialogues.chris, "root", chrisState.context).body, /明天我就上山/);
 assert.equal(Runtime.resolveNode(dialogues.chris, "root", chrisState.context).options[0].enabled, true);
 
 const eddieState = createState({ day: 2, flags: {}, inventory: { freshFlesh: 1 }, sacrificed: {} });
 const eddieNode = Runtime.resolveNode(dialogues.eddie, "root", eddieState.context);
 assert.equal(eddieNode.options.find((option) => option.id === "attack").action, "fight_eddie");
-assert.equal(Runtime.resolveStart(dialogues.eddie, eddieState.context), "first_gift");
-assert.equal(Runtime.applyEffects(Runtime.resolveNode(dialogues.eddie, "first_gift", eddieState.context).effects, eddieState.context), true);
-assert.deepEqual(eddieState.state.inventory, { freshFlesh: 1, baitMeat: 1 });
+assert.equal(Runtime.resolveStart(dialogues.eddie, eddieState.context), "root");
+assert.equal(Runtime.applyEffects(eddieNode.effects, eddieState.context), true);
+assert.deepEqual(eddieState.state.inventory, { freshFlesh: 1 });
 assert.equal(Runtime.resolveStart(dialogues.eddie, eddieState.context), "root");
 assert.equal(Runtime.renderTemplate("{{dailyStockName}} · 第 {{day}} 天", eddieState.context), "长剑 · 第 2 天");
 assert.equal(Runtime.applyEffects([{ type: "setFlag", key: "visitedDay{{day}}", value: true }], eddieState.context), true);

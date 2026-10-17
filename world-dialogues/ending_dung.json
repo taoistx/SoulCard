@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "ending_dung",
+  "name": "第六次醒来",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "你睁开眼，已经认不出自己的手。高处传来的铁链声只剩刺耳的噪音，曾经让你上山的念头也散去了。",
+      "options": [
+        {
+          "id": "restart",
+          "label": "重新开始 Vertical Slice",
+          "action": "restart",
+          "hint": "重置世界"
+        }
+      ],
+      "kicker": "结局 · 化粪"
+    }
+  }
+}

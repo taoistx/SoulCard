@@ -4,11 +4,7 @@ const $ = (selector) => document.querySelector(selector);
 const h = (tag, className, text) => { const element = document.createElement(tag); if (className) element.className = className; if (text !== undefined) element.textContent = text; return element; };
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const ID_PATTERN = /^[A-Za-z][A-Za-z0-9_-]*$/;
-const DIALOGUES = {
-  start: "坠落处", siltWoods: "污泥林", drownedHuts: "腐叶原野", bellRoad: "碎钟坡", hut: "废弃小屋",
-  gate: "封锁山道", church: "逆抽水器", quietClearing: "空地", node2: "腐叶原野深处", node3: "弦一螂",
-  fallenDragTrail: "拖行痕迹", corpseHiddenPath: "隐蔽小径", metalSoundSource: "金属声源",
-};
+let DIALOGUES = {};
 const KIND_NAMES = { npc: "NPC 对话", dialogue: "世界对话", battle: "战斗", action: "行动事件" };
 const els = {
   app: $("#eventEditorApp"), setList: $("#eventSetList"), entryList: $("#eventEntryList"), setTitle: $("#setTitle"), inspector: $("#inspector"), inspectorKind: $("#inspectorKind"),
@@ -103,6 +99,7 @@ function renderEntryInspector() {
   fields.append(makeInput("元素 ID", entry.id, (value) => mutate(() => { if (!ID_PATTERN.test(value) || currentSet().entries.some((item, index) => index !== selectedEntryIndex && item.id === value)) return showFeedback("元素 ID 无效或重复", true); entry.id = value; })), makeInput("权重", entry.weight, (value) => mutate(() => { entry.weight = Math.max(1, value || 1); }), { type: "number" }));
   fields.appendChild(makeSelect("类型", entry.kind, Object.entries(KIND_NAMES), (value) => mutate(() => changeEntryKind(entry, value)), { wide: true }));
   if (entry.kind === "npc") fields.appendChild(makeSelect("NPC", entry.npcId, npcIds.map((id) => [id, id]), (value) => mutate(() => { entry.npcId = value; }), { wide: true }));
+  if (entry.kind === "dialogue") { const link = h("a", "", "在对话编辑器中打开"); link.href = `../npc-editor/index.html?kind=world&id=${encodeURIComponent(entry.dialogueId)}`; fields.appendChild(link); }
   if (entry.kind === "dialogue") fields.appendChild(makeSelect("世界对话", entry.dialogueId, Object.entries(DIALOGUES).map(([id, name]) => [id, `${name} · ${id}`]), (value) => mutate(() => { entry.dialogueId = value; }), { wide: true }));
   if (entry.kind === "action") fields.appendChild(makeSelect("行动事件 JSON", entry.actionEventId, window.ActionEventData.list().map((event) => [event.id, `${event.name} · ${event.id}`]), (value) => mutate(() => { entry.actionEventId = value; }), { wide: true }));
   if (entry.kind === "battle") {
@@ -164,7 +161,8 @@ async function save() {
 
 async function initialize() {
   try {
-    await window.ActionEventData.ready;
+    await Promise.all([window.ActionEventData.ready, window.WorldDialogueData.ready]);
+    DIALOGUES = Object.fromEntries(Object.values(window.WorldDialogueData.getAll()).map((dialogue) => [dialogue.id, dialogue.name]));
     const [npc, battle] = await Promise.all([fetch("../npc-dialogues/manifest.json", { cache: "no-store" }).then((r) => r.json()), fetch("../battle-data/manifest.json", { cache: "no-store" }).then((r) => r.json())]);
     npcIds = Object.keys(npc.dialogues || {}); enemyIds = Object.keys(battle.combatants || {});
     const saved = sessionStorage.getItem("event-set-editor-draft"); let source = window.WORLD_EVENT_SET_BUNDLE;

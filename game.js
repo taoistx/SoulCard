@@ -12,7 +12,7 @@ const CARD_LIBRARY = {
 //   parry: { id: "parry", name: "听钟辨刃", type: "technique", label: "伎俩 · 即时", cost: 2, icon: "⌖", text: "弃 <strong>1</strong> 张手牌，招架下一次攻击并反击 <strong>13</strong> 点。无牌可弃则失败。", parry: true, discardCost: 1, immediate: true, speed: "反制" },
   delay: { id: "delay", name: "割裂时序", type: "ritual", label: "秘仪", cost: 1, icon: "◴", text: "结算时令敌方意图延后 <strong>2</strong> 节点。", delay: 2, speed: "操时" },
   bleed: { id: "bleed", name: "刻血", type: "ritual", label: "秘仪", cost: 3, icon: "♢", text: "造成 <strong>2</strong> 点伤害；随后 4 个节点各造成 6 点。", damage: 2, bleed: 4, speed: "持续" },
-  focus: { id: "focus", name: "观察", type: "technique", label: "伎俩 · 即时", cost: 1, icon: "⊙", text: "下一张暴力牌伤害提高 <strong>50%</strong>。", focus: .5, immediate: true, speed: "蓄势" },
+  focus: { id: "focus", name: "观察", type: "technique", label: "伎俩 · 即时", cost: 1, icon: "⊙", text: "下一张暴力牌伤害提高 <strong>50%</strong>。", outOfCombatText: "放入交互卡槽，观察目标、发现线索。具体结果取决于场景。", focus: .5, immediate: true, speed: "蓄势" },
 //   mend: { id: "mend", name: "饮下残露", type: "restoration", label: "恢复", cost: 3, icon: "♜", text: "结算时恢复 <strong>13</strong> 点生命。", heal: 13, speed: "迟缓" },
   adjust: { id: "adjust", name: "调整", type: "technique", label: "伎俩 · 即时", cost: 1, icon: "↺", text: "抽 <strong>2</strong> 张牌。", draw: 2, speed: "调息" },
   adjustStance: { id: "adjustStance", name: "快速换架", type: "technique", label: "伎俩 · 即时", cost: 0, icon: "↻", text: "弃 <strong>1</strong> 张手牌，抽 <strong>2</strong> 张牌。", discardCost: 1, draw: 2, immediate: true, speed: "调息" },
@@ -599,6 +599,14 @@ function renderTimeline() {
   }
 }
 
+// Shared by battle cards and the World interaction picker; an absent effect stays blank.
+function cardEffectsMarkup(card) {
+  return `<div class="card-effects">
+    <div class="card-effect card-effect-battle"><span class="card-effect-label">战斗效果</span><p>${card.text || ""}</p></div>
+    <div class="card-effect card-effect-world"><span class="card-effect-label">战斗外效果</span><p>${card.outOfCombatText || ""}</p></div>
+  </div>`;
+}
+
 function renderHand() {
   els.hand.innerHTML = "";
   renderRefillButton();
@@ -631,7 +639,7 @@ function renderHand() {
       <p class="card-type">${card.label}</p>
       <div class="card-art"><span>${card.icon}</span></div>
       <h3>${card.name}</h3>
-      <p>${card.text}</p>
+      ${cardEffectsMarkup(card)}
       <span class="card-key">${index + 1}</span>
       <span class="card-speed">${ritualLocked ? "心脏仍在 · 无法使用" : interruptReady ? "可打断" : clashReady ? "拼刀" : guardReady ? "格挡" : risky ? "危险" : card.speed} · ${enemyTargeted ? "敌方" : "自身"}</span>`;
     button.addEventListener("mouseenter", () => previewCard(cardId, index));
@@ -663,7 +671,7 @@ function renderDeckChoiceCards() {
       <p class="card-type">${card.label}</p>
       <div class="card-art"><span>${card.icon}</span></div>
       <h3>${card.name}</h3>
-      <p>${card.text}</p>
+      ${cardEffectsMarkup(card)}
       <span class="card-key">${index + 1}</span>
       <span class="card-speed">预读 · 入手</span>`;
     button.addEventListener("mouseenter", () => previewCard(cardId, null));

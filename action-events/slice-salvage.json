@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "sliceSalvage",
+  "name": "废壳滩",
+  "allowLeave": true,
+  "start": "opening",
+  "slots": [
+    {
+      "id": "shell",
+      "name": "压壳"
+    },
+    {
+      "id": "fiber",
+      "name": "织纤"
+    }
+  ],
+  "stages": {
+    "opening": {
+      "body": "空壳外侧很脏，内部压着一片完整织纤。可用于仿罩、营地罩布或包扎，一次只能取一片。",
+      "recipes": [
+        {
+          "id": "lift",
+          "action": "salvage_take",
+          "slots": {
+            "shell": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "resultDialogueId": "event_sliceSalvage",
+          "resultNodeId": "result_opening_lift"
+        },
+        {
+          "id": "pull",
+          "action": "salvage_take",
+          "slots": {
+            "fiber": {
+              "kind": "card",
+              "category": "technique",
+              "excludeCardId": "focus"
+            }
+          },
+          "resultDialogueId": "event_sliceSalvage",
+          "resultNodeId": "result_opening_pull"
+        },
+        {
+          "id": "brace",
+          "action": "salvage_take",
+          "slots": {
+            "shell": {
+              "kind": "card",
+              "category": "defense"
+            }
+          },
+          "resultDialogueId": "event_sliceSalvage",
+          "resultNodeId": "result_opening_brace"
+        }
+      ]
+    }
+  }
+}

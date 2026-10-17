@@ -12,8 +12,8 @@ const catalog = {
   guard: { id: "guard", type: "defense", name: "灰钢架势", block: 12, cost: 1 },
 };
 function fixture() {
-  const state = { deck: Cards.copyDeck(["quick", "quick", "heavy", "focus", "guard", "adjust"], catalog), inventory: { baitMeat: 1 }, knowledge: { dungLore: true }, sacrificed: {} };
-  const resources = Runtime.resources(state, catalog, { baitMeat: { name: "诱饵肉", eventTags: ["lure"] } });
+  const state = { deck: Cards.copyDeck(["quick", "quick", "heavy", "focus", "guard", "adjust"], catalog), inventory: { freshFlesh: 1 }, knowledge: { dungLore: true }, sacrificed: {} };
+  const resources = Runtime.resources(state, catalog, { freshFlesh: { name: "新鲜血肉", eventTags: ["freshFlesh", "lure"] } });
   const match = (placements, stage = "opening", config = event) => Runtime.match(config, stage, placements, resources);
   return { state, resources, match };
 }
@@ -27,8 +27,8 @@ test("JSON validates and all directional recipes work", () => {
     [{ monster: "card:battle_3" }, "observe_dung"],
     [{ field: "card:battle_3" }, "observe_dung"],
     [{ thomas: "card:battle_4" }, "protect_thomas"],
-    [{ field: "card:battle_5", monster: "item:baitMeat" }, "lure_dung"],
-    [{ monster: "card:battle_5", field: "item:baitMeat" }, "trap_dung"],
+    [{ field: "card:battle_5", monster: "item:freshFlesh" }, "lure_dung"],
+    [{ monster: "card:battle_5", field: "item:freshFlesh" }, "trap_dung"],
   ]) assert.equal(match(placements).recipe.action, action);
 });
 test("same category has same result; duplicate templates have separate fatigue", () => {
@@ -52,7 +52,7 @@ test("second observation forces battle; non-focus technique cannot observe or lu
   assert.equal(match({ field: "card:battle_3" }, "infected").recipe.action, "observe_infected");
   assert.equal(match({ monster: "card:battle_5" }).valid, false);
   assert.equal(match({ field: "card:battle_5" }).valid, false);
-  assert.equal(match({ field: "card:battle_3", monster: "item:baitMeat" }).recipe.action, "observe_dung");
+  assert.equal(match({ field: "card:battle_3", monster: "item:freshFlesh" }).recipe.action, "observe_dung");
   assert.equal(match({ field: "card:battle_3", monster: "card:battle_4" }).valid, false);
   assert.equal(match({ monster: "card:battle_3", field: "card:battle_0" }).valid, false);
   assert.equal(match({ thomas: "card:battle_4" }, "infected").valid, true);
@@ -63,7 +63,7 @@ test("attack and defense override technique without consuming overridden resourc
     [{ thomas: "card:battle_0", monster: "card:battle_1", field: "card:battle_3" }, "kill_thomas_and_attack_dung", 2],
     [{ thomas: "card:battle_0", field: "card:battle_3" }, "kill_thomas", 1],
     [{ monster: "card:battle_0", field: "card:battle_3" }, "attack_dung", 1],
-    [{ thomas: "card:battle_4", field: "card:battle_3", monster: "item:baitMeat" }, "protect_thomas", 1],
+    [{ thomas: "card:battle_4", field: "card:battle_3", monster: "item:freshFlesh" }, "protect_thomas", 1],
     [{ thomas: "card:battle_4", monster: "card:battle_0", field: "card:battle_5" }, "attack_dung", 1],
   ]) {
     const result = match(slots);
@@ -75,9 +75,9 @@ test("attack and defense override technique without consuming overridden resourc
 test("duplicate instances, missing inventory, and unmatched combinations fail", () => {
   const { match } = fixture();
   for (const placements of [
-    {}, { field: "item:baitMeat" }, { monster: "card:battle_0", thomas: "card:battle_0" },
+    {}, { field: "item:freshFlesh" }, { monster: "card:battle_0", thomas: "card:battle_0" },
     { field: "card:battle_5", monster: "item:missing" },
-    { field: "card:battle_5", monster: "item:baitMeat", thomas: "item:baitMeat" },
+    { field: "card:battle_5", monster: "item:freshFlesh", thomas: "item:freshFlesh" },
   ]) assert.equal(match(placements).valid, false);
 });
 test("ambiguous recipes are an error; conditions can reject a recipe", () => {

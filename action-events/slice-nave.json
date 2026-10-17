@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "sliceNave",
+  "name": "空食槽大殿",
+  "allowLeave": true,
+  "start": "opening",
+  "slots": [
+    {
+      "id": "resident",
+      "name": "饥饿守食者"
+    },
+    {
+      "id": "food",
+      "name": "可见的食槽"
+    },
+    {
+      "id": "road",
+      "name": "网架下的路"
+    }
+  ],
+  "stages": {
+    "opening": {
+      "body": "住民护住一点湿肉。它只断续说着“还会赐下来”“别碰它”。给肉可暂时通行；改变注意也能穿过。你可以退回外廊，沿破侧廊去回廊。",
+      "recipes": [
+        {
+          "id": "feed",
+          "action": "nave_feed",
+          "slots": {
+            "food": {
+              "kind": "rhetoric",
+              "tag": "freshFlesh"
+            }
+          },
+          "itemOnly": true,
+          "resultDialogueId": "event_sliceNave",
+          "resultNodeId": "result_opening_feed"
+        },
+        {
+          "id": "trick",
+          "action": "nave_trick",
+          "slots": {
+            "road": {
+              "kind": "card",
+              "category": "technique",
+              "excludeCardId": "focus"
+            }
+          },
+          "resultDialogueId": "event_sliceNave",
+          "resultNodeId": "result_opening_trick"
+        },
+        {
+          "id": "battle",
+          "action": "nave_battle",
+          "slots": {
+            "resident": {
+              "kind": "card",
+              "category": "attack"
+            }
+          },
+          "resultDialogueId": "event_sliceNave",
+          "resultNodeId": "result_opening_battle"
+        }
+      ]
+    }
+  },
+  "enemyId": "church_resident"
+}

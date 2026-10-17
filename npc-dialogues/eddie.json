@@ -4,29 +4,14 @@
   "name": "渔夫 艾迪",
   "start": {
     "default": "root",
-    "rules": [
-      {
-        "when": {
-          "mode": "all",
-          "clauses": [
-            {
-              "source": "flag",
-              "key": "eddieBaitGiven",
-              "operator": "ne",
-              "value": true
-            }
-          ]
-        },
-        "node": "first_gift"
-      }
-    ]
+    "rules": []
   },
   "nodes": {
     "root": {
-      "kicker": "NPC · 第 {{day}} 天货物",
+      "kicker": "NPC · 岸台营地",
       "title": "渔夫 艾迪",
       "body": {
-        "default": "中年男人站在粪海边，似乎在打捞着什么东西。\n他注意到了你，“嗯……又有新来者了”",
+        "default": "艾迪把一只湿壳翻过来晾着，抬眼看你。\n“从浅滩上来的？先站稳，台子外面都是软泥。”",
         "variants": [
           {
             "when": {
@@ -40,7 +25,7 @@
                 }
               ]
             },
-            "text": "“我这有好东西你可能用得着。”\n“但得拿东西来交换，有用的道具，肢体，都可以”"
+            "text": "“我这有好东西你可能用得着。”\n“拿新鲜的肉换装备，好膜能制防护，也能罩住作业位。想换什么，到货摊上看看。”"
           }
         ]
       },
@@ -66,13 +51,32 @@
           },
           "hint": "触发战斗",
           "action": "fight_eddie"
+        },
+        {
+          "id": "shop",
+          "label": "看看你的货物",
+          "hint": "打开商店 · 以物易物",
+          "action": "shop_eddie"
+        },
+        {
+          "id": "slice_salvage",
+          "label": "问漂积湾里有什么",
+          "hint": "",
+          "action": "v06_eddie_salvage",
+          "next": "slice_salvage"
+        },
+        {
+          "id": "slice_report",
+          "label": "告诉他亲自试穿的结果",
+          "hint": "",
+          "next": "slice_report"
         }
       ]
     },
     "church_info": {
       "kicker": "艾迪 · 情报",
-      "title": "山顶的建筑是唯一出口",
-      "body": "“这里就是粪世界，粪坑的东西都会到的一个奇怪次元。如果5天内你回不去原来的世界，你就会变成粪怪，永远的留在这。当然，如果你能吃到正常人的血肉，你能撑得更久。唯一离开这里的东西在山顶那建筑里，但这一路上不好走”",
+      "title": "山上的教堂仍有人往来",
+      "body": "“看见铁壁上头那个尖顶了吗？那是教堂。我见过有人背着东西从那边下来，石阶也有人修。至于能不能回到原来的地方……我没见谁回来告诉我。”\n他朝硬堤指了指：“沿堤上去，贴到铁壁再往高处走。”",
       "options": [
         {
           "id": "ask_identity",
@@ -98,7 +102,7 @@
     "eddie_info": {
       "kicker": "艾迪 · 情报",
       "title": "这里能交易",
-      "body": "“我叫艾迪，也是一个坠入这里的倒霉蛋了…………已经记不得在这里多久了。靠捞点有用的东西换点血肉维持着……你要有血肉也可以拿来跟我换点东西，你肯定不会后悔的”",
+      "body": "“我叫艾迪。水把东西送过来，我挑能用的，拿去换肉。你有新鲜的肉也能换东西，废壳里的好膜我也用得上。”",
       "options": [
         {
           "id": "ask_stay",
@@ -109,16 +113,16 @@
         {
           "id": "back_trade",
           "label": "继续交易",
-          "hint": "返回",
-          "next": "root"
+          "hint": "打开商店",
+          "action": "shop_eddie"
         }
       ],
       "effects": []
     },
     "flesh_info": {
       "kicker": "艾迪 · 情报",
-      "title": "主动献上血肉能获得异能",
-      "body": "“是的，唯一维持自我的方式了”",
+      "title": "血肉只能填补伤势",
+      "body": "“能吃的肉会让伤口合上，别拿长白丝的凑数。可你甲缝里那东西已经扎进去了，吃肉拔不出来。”",
       "options": [
         {
           "id": "back_trade",
@@ -132,7 +136,7 @@
     "whyhere_info": {
       "kicker": "艾迪 · 情报",
       "title": "这里能交易",
-      "body": "“我老了，没那个本事…………在山里，大量以前想回去的人困在那变成了粪怪……唉，太难了”",
+      "body": "“山腰的灰粉，我受不了。下来的那些人也从不肯带我走。这里还有活计，我就先守着。”",
       "options": [
         {
           "id": "back_trade",
@@ -143,30 +147,42 @@
       ],
       "effects": []
     },
-    "first_gift": {
-      "kicker": "艾迪 · 见面礼",
-      "body": "男人从渔篓里挑出一块气味刺鼻的肉，扔到你脚边。\n“拿着，别吃。这东西能让路上的怪物多看一眼——你最好趁那一眼做点什么。”\n获得诱饵肉 ×1。",
-      "effects": [
-        {
-          "type": "addItem",
-          "itemId": "baitMeat",
-          "amount": 1
-        },
-        {
-          "type": "setFlag",
-          "key": "eddieBaitGiven",
-          "value": true
-        },
-        {
-          "type": "setFlag",
-          "key": "eddieMet",
-          "value": true
-        }
-      ],
+    "slice_salvage": {
+      "body": "“台子左边的回水湾，会把东西留在石头旁。废壳下面有时夹着好膜，剥掉沾泥的外层，剩下的能包甲缝。”",
       "options": [
         {
-          "id": "continue",
-          "label": "收起诱饵，和他交谈",
+          "id": "back",
+          "label": "返回",
+          "hint": "",
+          "next": "root"
+        }
+      ]
+    },
+    "slice_report": {
+      "body": {
+        "default": "你还没有亲自穿着仿罩走过菌丛，暂时没有验证可说。",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "wrapTested",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "你说出穿过菌丛时甲缝没有再刺痛的体验。艾迪翻过罩布：“能挡这一段，不代表能挡刀。”"
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "back",
+          "label": "返回",
+          "hint": "",
           "next": "root"
         }
       ]

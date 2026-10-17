@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "id": "winnie",
+  "name": "温妮",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": {
+        "default": "温妮从废料中抽出一条筋膜，缺损的肢体稳住另一头。“舍掉的地方不会长回来。”她看向你的手。“但换来的本事，能让我继续干这个。”",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "winnieTrading",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "她忙着和皇帝手下谈交易。“我又不是在这儿专门等你。”"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "winnieSacrificeTaught",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "“代价你已经见过。做不做是你的事，别来让我替你后悔。”"
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "teach",
+          "label": "问她献祭的步骤与代价",
+          "hint": "",
+          "action": "v06_winnie_teach",
+          "next": "demonstration"
+        }
+      ]
+    },
+    "demonstration": {
+      "body": "她用缺损后得到的力量稳住抖动的废壳，腾出手抽走筋膜，随后指给你看那块永久缺失的身体。“先想好拿哪儿换。别等使上力了，才问能不能长回来。”",
+      "options": [
+        {
+          "id": "back",
+          "label": "返回",
+          "hint": "",
+          "next": "root"
+        }
+      ]
+    }
+  }
+}

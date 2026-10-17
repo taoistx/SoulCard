@@ -13,11 +13,11 @@
       },
       "options": [
         {
-          "id": "give_potion",
-          "label": "给她一瓶止血剂",
-          "hint": { "default": "无法选择", "variants": [{ "when": { "mode": "all", "clauses": [{ "source": "item", "itemId": "healingPotion", "operator": "has", "amount": 1 }, { "source": "flag", "key": "helpedChris", "operator": "notExists" }] }, "text": "也许能换来信任" }] },
-          "enabledWhen": { "mode": "all", "clauses": [{ "source": "item", "itemId": "healingPotion", "operator": "has", "amount": 1 }, { "source": "flag", "key": "helpedChris", "operator": "notExists" }] },
-          "effects": [{ "type": "removeItem", "itemId": "healingPotion", "amount": 1 }, { "type": "setFlag", "key": "helpedChris", "value": true }, { "type": "setFlag", "key": "foundSecretPath", "value": true }, { "type": "addItem", "itemId": "ladyHat", "amount": 1 }],
+          "id": "give_material",
+          "label": "给她一片包扎韧膜",
+          "hint": { "default": "无法选择", "variants": [{ "when": { "mode": "all", "clauses": [{ "source": "item", "itemId": "mistWrapMaterial", "operator": "has", "amount": 1 }, { "source": "flag", "key": "helpedChris", "operator": "notExists" }] }, "text": "也许能换来信任" }] },
+          "enabledWhen": { "mode": "all", "clauses": [{ "source": "item", "itemId": "mistWrapMaterial", "operator": "has", "amount": 1 }, { "source": "flag", "key": "helpedChris", "operator": "notExists" }] },
+          "effects": [{ "type": "removeItem", "itemId": "mistWrapMaterial", "amount": 1 }, { "type": "setFlag", "key": "helpedChris", "value": true }, { "type": "setFlag", "key": "foundSecretPath", "value": true }, { "type": "addItem", "itemId": "ladyHat", "amount": 1 }],
           "next": "gift"
         },
         {

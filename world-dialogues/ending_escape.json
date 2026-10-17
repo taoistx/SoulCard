@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "ending_escape",
+  "name": "逆向冲水",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "世界发出庄严而不体面的轰鸣。你被抽向山顶上方，带着剩余身体、装备和所有没有解决的关系离开。",
+      "options": [
+        {
+          "id": "restart",
+          "label": "重新体验",
+          "action": "restart",
+          "hint": "重置世界"
+        }
+      ],
+      "kicker": "结局 · 成功"
+    }
+  }
+}

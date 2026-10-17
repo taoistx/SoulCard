@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "site_slice_pipe_seam",
+  "name": "半埋检修槽",
+  "start": {
+    "default": "root",
+    "rules": [
+      {
+        "when": {
+          "mode": "all",
+          "clauses": [
+            {
+              "source": "flag",
+              "key": "pipeOpened",
+              "operator": "eq",
+              "value": true
+            }
+          ]
+        },
+        "node": "cleared"
+      }
+    ]
+  },
+  "nodes": {
+    "root": {
+      "body": "槽口沿铁壁斜着上升，几片碎壳堵在最窄的一段。透过外侧裂缝，能看见狭道里的怪物；上端的日光落在同一座检修台底下。碎壳表面布满干粉，脚边留有一条可缓慢挪身的缝。",
+      "options": [],
+      "kicker": "地点 · 沉积山",
+      "title": "半埋检修槽",
+      "onEnter": "open_slicePipe"
+    },
+    "cleared": {
+      "body": "入口碎壳已经塞到槽壁旁。你能沿铆钉边看见山腰检修台；外侧裂缝下，怪物仍在狭道拖拽残骸。这里留下了你清理时的擦痕。",
+      "options": []
+    }
+  }
+}

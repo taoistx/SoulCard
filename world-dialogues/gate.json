@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "gate",
+  "name": "封锁山道",
+  "start": {
+    "default": "root",
+    "rules": [
+      {
+        "when": {
+          "mode": "all",
+          "clauses": [
+            {
+              "source": "flag",
+              "key": "bridgeOpened",
+              "operator": "eq",
+              "value": true
+            }
+          ]
+        },
+        "node": "opened"
+      }
+    ]
+  },
+  "nodes": {
+    "root": {
+      "body": "铁栅后的守卫没有兴趣谈判。锁孔很旧，山脊侧面也许另有缝隙。",
+      "options": [
+        {
+          "id": "key",
+          "label": "使用老旧钥匙",
+          "action": "gate_key",
+          "hint": "打开道路 · 体力 -1",
+          "enabledWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "item",
+                "itemId": "oldKey",
+                "operator": "has"
+              }
+            ]
+          }
+        },
+        {
+          "id": "path",
+          "label": "走克里斯指出的骨缝",
+          "action": "gate_path",
+          "hint": "秘密路径可用 · 体力 -1",
+          "enabledWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "foundSecretPath",
+                "operator": "eq",
+                "value": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "fight",
+          "label": "挑战逆流守卫",
+          "action": "gate_fight",
+          "hint": "胜利后道路开放 · 体力 -1"
+        }
+      ],
+      "kicker": "地点 · World Flag"
+    },
+    "opened": {
+      "body": "守卫与铁栅已经不再封路。这个状态由 bridgeOpened 持久保存，山后的节点已经点亮。",
+      "options": [],
+      "kicker": "地点 · 已改变",
+      "title": "开放的山道"
+    }
+  }
+}

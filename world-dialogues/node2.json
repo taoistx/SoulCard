@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "node2",
+  "name": "山道粪怪",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "腐烂的叶片铺成一条继续向前的路。",
+      "options": [],
+      "kicker": "地点",
+      "title": "{{nodeLabel}}"
+    }
+  }
+}

@@ -145,11 +145,11 @@
           <p class="eyebrow">五日生存 · 轻量 CRPG 切片</p>
           <h2>你被马桶冲进了<br />一个认真吃人的世界。</h2>
           <p class="intro-copy">
-            五天内吃不到新鲜血肉，你就会化成粪怪。移动和交谈不推进日期；
-            只有<strong>长休</strong>会让你满血，也会夺走一天。
+            深度感染只留给你五天。高处的教堂仍有人往来，你得沿沉积山找到一条生路。
+            新鲜血肉可以疗伤，无法延长期限；只有<strong>长休</strong>恢复生命与体力，并推进一天。
           </p>
           <div class="rules">
-            <div><span>01</span><p><strong>探索粪坑边境</strong>，首次进入暗色节点消耗 1 点体力并触发事件；重访后按 E 调查。</p></div>
+            <div><span>01</span><p><strong>沿沉积山上行</strong>，首次进入已揭示的新节点消耗 1 点体力；任意已揭示节点均可到达，重访后按 E 调查。</p></div>
             <div><span>02</span><p><strong>体力限制关键动作</strong>：探索、献祭、搜索、开路和战斗都会消耗体力。</p></div>
             <div><span>03</span><p><strong>身体就是角色卡</strong>：保留完整身体或永久献祭器官，都是 Build。</p></div>
           </div>
@@ -212,12 +212,12 @@
           <g id="mapContent">
           <image
             class="world-terrain"
-            href="assets/point-crawl-terrain-bg.png"
+            href="assets/sediment-section.svg"
             x="18"
             y="18"
             width="964"
             height="644"
-            preserveAspectRatio="xMidYMid slice"
+            preserveAspectRatio="none"
             clip-path="url(#worldGroundClip)"
           />
           <rect id="worldGround" class="world-ground" x="18" y="18" width="964" height="644" rx="26" />
@@ -229,6 +229,7 @@
           </g>
           </g>
         </svg>
+        <button id="mapOverviewButton" class="focus-player-button map-overview-button" type="button">地貌总览</button>
         <button id="focusPlayerButton" class="focus-player-button" type="button" aria-label="回到玩家">回到玩家</button>
         <div id="interactionPrompt" class="interaction-prompt hidden"><kbd>E</kbd><span>交互</span></div>
         <p id="mapHint" class="map-hint">点击节点移动 · E 交互 · L 长休。</p>
@@ -251,6 +252,26 @@
         </div>
       </section>
 
+      <section id="shopPanel" class="shop-panel hidden" role="dialog" aria-modal="true" aria-labelledby="shopTitle" aria-describedby="shopRules">
+        <div class="shop-card">
+          <header class="shop-header">
+            <div><p id="shopDay" class="eyebrow"></p><h3 id="shopTitle">艾迪的货摊</h3><p>拿用得上的东西，换一段好走的路。</p></div>
+            <button id="closeShopButton" type="button">离开商店 <small>Esc</small></button>
+          </header>
+          <div class="shop-wallet"><span>你的交换材料</span><div id="shopBalances"></div></div>
+          <div class="shop-layout">
+            <div><h4 class="shop-section-title">货物与服务</h4><div id="shopOffers" class="shop-offers"></div></div>
+            <section class="shop-detail" aria-labelledby="shopOfferName">
+              <p id="shopOfferCategory" class="eyebrow"></p><h4 id="shopOfferName"></h4>
+              <p id="shopOfferDescription"></p><p id="shopOfferDelivery" class="shop-delivery"></p>
+              <div class="shop-checkout"><span>兑换所需</span><strong id="shopOfferPrice"></strong><p id="shopOfferBalance"></p><button id="shopExchangeButton" type="button">确认兑换</button></div>
+            </section>
+          </div>
+          <p id="shopFeedback" class="shop-feedback" role="status" aria-live="polite"></p>
+          <p id="shopRules" class="shop-rules">以物易物 · 交易不消耗体力，不推进天数。装备款式随长休更换；装备兑换额度本局共一次，制作与营地服务也各限一次。</p>
+        </div>
+      </section>
+
       <section id="characterPanel" class="character-panel hidden" role="dialog" aria-modal="true" aria-label="身体与背包">
         <div class="character-card">
           <header><div><p class="eyebrow">Character Sheet</p><h3>你的身体</h3></div><button id="closeCharacterButton" type="button">关闭</button></header>
@@ -270,10 +291,15 @@
     <script src="battle-data-loader.js"></script>
     <script src="group-combat.js"></script>
     <script src="card-instances.js"></script>
+    <script src="world-dialogue-catalog.js"></script>
+    <script src="world-dialogue-loader.js"></script>
     <script src="action-events.js"></script>
     <script src="action-event-panel.js"></script>
     <script src="game.js?v=bell-pose-20260909-2"></script>
     <script>document.write(`<script src="world-events.js?v=${Date.now()}"><\/script><script src="world-map.js?v=${Date.now()}"><\/script>`);</script>
+    <script src="world-v06.js"></script>
+    <script src="world-dialogue-bridge.js"></script>
+    <script src="world-shop.js"></script>
     <script src="world.js"></script>
   </body>
 </html>

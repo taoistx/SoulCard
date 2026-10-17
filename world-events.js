@@ -1,6 +1,6 @@
 "use strict";
 
-// 由事件集编辑器导出。事件集可被任意数量的地图节点复用。
+// 地图与事件编辑器共享的数据。
 window.WORLD_EVENT_SET_BUNDLE = {
   "schemaVersion": 1,
   "eventSets": {
@@ -283,6 +283,138 @@ window.WORLD_EVENT_SET_BUNDLE = {
           "id": "metalSoundSource",
           "kind": "dialogue",
           "dialogueId": "metalSoundSource",
+          "weight": 1
+        }
+      ]
+    },
+    "v06_start": {
+      "name": "坠落浅滩",
+      "entries": [
+        {
+          "id": "site",
+          "kind": "dialogue",
+          "dialogueId": "site_start",
+          "weight": 1
+        }
+      ]
+    },
+    "v06_eddie": {
+      "name": "岸台营地",
+      "entries": [
+        {
+          "id": "site",
+          "kind": "dialogue",
+          "dialogueId": "site_eddie",
+          "weight": 1
+        }
+      ]
+    },
+    "v06_node": {
+      "name": "断堤路口",
+      "entries": [
+        {
+          "id": "site",
+          "kind": "dialogue",
+          "dialogueId": "site_node",
+          "weight": 1
+        }
+      ]
+    },
+    "v06_node3": {
+      "name": "铁壁避风凹",
+      "entries": [
+        {
+          "id": "site",
+          "kind": "dialogue",
+          "dialogueId": "site_node3",
+          "weight": 1
+        }
+      ]
+    },
+    "v06_slice_mudbank": {
+      "name": "漂积湾",
+      "entries": [
+        {
+          "id": "site",
+          "kind": "dialogue",
+          "dialogueId": "site_slice_mudbank",
+          "weight": 1
+        }
+      ]
+    },
+    "v06_slice_emperor_yard": {
+      "name": "收肉棚",
+      "entries": [
+        {
+          "id": "site",
+          "kind": "dialogue",
+          "dialogueId": "site_slice_emperor_yard",
+          "weight": 1
+        }
+      ]
+    },
+    "v06_slice_fungus_edge": {
+      "name": "菌壳斜坡",
+      "entries": [
+        {
+          "id": "site",
+          "kind": "dialogue",
+          "dialogueId": "site_slice_fungus_edge",
+          "weight": 1
+        }
+      ]
+    },
+    "v06_slice_climbcourt": {
+      "name": "落壳狭道",
+      "entries": [
+        {
+          "id": "site",
+          "kind": "dialogue",
+          "dialogueId": "site_slice_climbcourt",
+          "weight": 1
+        }
+      ]
+    },
+    "v06_slice_pipe_seam": {
+      "name": "半埋检修槽",
+      "entries": [
+        {
+          "id": "site",
+          "kind": "dialogue",
+          "dialogueId": "site_slice_pipe_seam",
+          "weight": 1
+        }
+      ]
+    },
+    "v06_slice_drybench": {
+      "name": "山腰检修台",
+      "entries": [
+        {
+          "id": "site",
+          "kind": "dialogue",
+          "dialogueId": "site_slice_drybench",
+          "weight": 1
+        }
+      ]
+    },
+    "v06_slice_church_approach": {
+      "name": "登堂石阶",
+      "entries": [
+        {
+          "id": "site",
+          "kind": "dialogue",
+          "dialogueId": "site_slice_church_approach",
+          "weight": 1
+        }
+      ]
+    },
+    "v06_slice_church_nave": {
+      "name": "教堂门廊",
+      "entries": [
+        {
+          "id": "site",
+          "kind": "dialogue",
+          "dialogueId": "site_slice_church_nave",
           "weight": 1
         }
       ]

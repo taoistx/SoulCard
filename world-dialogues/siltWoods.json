@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "siltWoods",
+  "name": "污泥林",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "你拨开像湿发一样缠绕的草根，发现一条仍有人类足迹的窄路。",
+      "options": [],
+      "kicker": "探索完成",
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "exploredSiltWoods",
+          "value": true
+        }
+      ]
+    }
+  }
+}

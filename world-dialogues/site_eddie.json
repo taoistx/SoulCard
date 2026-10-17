@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "site_eddie",
+  "name": "岸台营地",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": {
+        "default": "硬泥台高出水面，几根短桩拴住打捞绳。艾迪把湿壳拖到脚边，挑出能用的东西。沿岸向左是漂满杂物的回水湾，右边的硬堤向山上爬去。\n剥开的废料堆在绳桩旁。",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "eddieKilled",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "硬泥台高出水面，几根短桩拴住打捞绳。湿壳散落在绳桩旁。沿岸向左是漂满杂物的回水湾，右边的硬堤向山上爬去。\n艾迪的尸体留在台边，打捞绳已经无人收起。"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "eddieWorkProtected",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "硬泥台高出水面，几根短桩拴住打捞绳。艾迪把湿壳拖到脚边，挑出能用的东西。沿岸向左是漂满杂物的回水湾，右边的硬堤向山上爬去。\n作业位支起了你留下的罩膜。"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "eddieWorkShrunk",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "硬泥台高出水面，几根短桩拴住打捞绳。艾迪把湿壳拖到脚边，挑出能用的东西。沿岸向左是漂满杂物的回水湾，右边的硬堤向山上爬去。\n废料边多了翻找的身影，艾迪把绳子收短了一截。"
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "shop_eddie",
+          "label": "逛艾迪的货摊",
+          "hint": "打开商店 · 装备、防护与营地服务",
+          "action": "shop_eddie",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [{ "source": "flag", "key": "eddieKilled", "operator": "ne", "value": true }]
+          }
+        },
+        {
+          "id": "talk_eddie",
+          "label": "与艾迪交谈",
+          "action": "talk_eddie",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "eddieKilled",
+                "operator": "ne",
+                "value": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_thomas",
+          "label": "与幸存者 托马斯交谈",
+          "action": "talk_thomas",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "thomasKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "thomasLocation",
+                "operator": "eq",
+                "value": "eddie"
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_genichiro",
+          "label": "与玄一螂交谈",
+          "action": "talk_genichiro",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "genichiroKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "genichiroLocation",
+                "operator": "eq",
+                "value": "eddie"
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_hollan",
+          "label": "与霍兰交谈",
+          "action": "talk_hollan",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "hollanKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "hollanLocation",
+                "operator": "eq",
+                "value": "eddie"
+              }
+            ]
+          }
+        },
+        {
+          "id": "waste",
+          "label": "把废料搬到台外的凹坑",
+          "action": "move_local_waste",
+          "hint": "选择一张普通伎俩；该副本疲劳 +1",
+          "enabledWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "localWasteMoved",
+                "operator": "ne",
+                "value": true
+              }
+            ]
+          }
+        }
+      ],
+      "kicker": "地点 · 沉积山",
+      "title": "岸台营地"
+    }
+  }
+}

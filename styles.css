@@ -93,11 +93,11 @@ kbd { padding: 2px 5px; border: 1px solid #59564d; background: #20201d; color: #
 .map-svg { width: 100%; height: 100%; min-height: 0; cursor: grab; touch-action: none; }
 .map-svg.is-panning { cursor: grabbing; }
 .world-terrain {
-  opacity: .68;
-  filter: saturate(.58) contrast(.92) brightness(.7);
+  opacity: .94;
+  filter: saturate(.75) contrast(.96) brightness(.95);
 }
 .world-ground {
-  fill: rgba(4, 6, 5, .4);
+  fill: rgba(4, 6, 5, .12);
   stroke: #45433a;
   stroke-width: 3;
 }
@@ -169,6 +169,7 @@ kbd { padding: 2px 5px; border: 1px solid #59564d; background: #20201d; color: #
   letter-spacing: .08em;
 }
 .focus-player-button:hover { border-color: #b99a63; color: #fff0cd; }
+.map-overview-button { right: 96px; }
 @keyframes world-target { to { opacity: .72; } }
 .map-hint {
   position: absolute;
@@ -209,7 +210,7 @@ kbd { padding: 2px 5px; border: 1px solid #59564d; background: #20201d; color: #
 .legend-poi { border-radius: 0; border-color: #6d7c6a; }
 .legend-enemy { width: 9px; height: 9px; transform: rotate(45deg); background: var(--blood); }
 
-.world-modal, .character-panel {
+.world-modal, .character-panel, .shop-panel {
   position: fixed;
   inset: 0;
   z-index: 10;
@@ -275,6 +276,47 @@ kbd { padding: 2px 5px; border: 1px solid #59564d; background: #20201d; color: #
 .inventory-item button:disabled { opacity: .35; cursor: not-allowed; }
 .deck-summary { color: #8c8981; font: 10px/1.7 sans-serif; }
 .deck-summary strong { color: #cabf9f; font-weight: 500; }
+
+.shop-card { width: min(940px, calc(100vw - 36px)); max-height: calc(100dvh - 48px); overflow-y: auto; padding: 30px; color: #ccc2b5; background: linear-gradient(130deg, #20231e, #101210 65%); border: 1px solid #5a5849; border-top: 2px solid #aa8a52; box-shadow: 0 28px 80px #000; }
+.shop-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.shop-header h3 { margin: 8px 0; color: #e2d5bd; font-size: 30px; font-weight: 400; letter-spacing: .12em; }
+.shop-header p:not(.eyebrow) { margin: 0; color: #a29f90; font: 12px/1.7 sans-serif; }
+.shop-header button { flex-shrink: 0; padding: 9px 12px; color: #d4c9b3; background: #20241d; border: 1px solid #595d4b; font: 12px/1.5 sans-serif; cursor: pointer; }
+.shop-header button small { margin-left: 8px; color: #959181; }
+.shop-wallet { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin: 24px 0; padding: 14px 16px; background: #0c0f0d; border: 1px solid #373c31; font: 12px/1.5 sans-serif; }
+.shop-wallet > span { color: #a29f90; }
+.shop-wallet div { display: flex; flex-wrap: wrap; gap: 24px; color: #dec99e; }
+.shop-layout { display: grid; grid-template-columns: minmax(220px, .9fr) minmax(0, 1.2fr); gap: 24px; }
+.shop-section-title { margin: 0 0 12px; color: #b2aa98; font: 12px/1.5 sans-serif; letter-spacing: .15em; }
+.shop-offers { display: grid; gap: 10px; }
+.shop-offer { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; width: 100%; padding: 16px; text-align: left; background: #151914; border: 1px solid #3b4034; color: #bbb3a2; cursor: pointer; }
+.shop-offer > small { grid-column: 1 / -1; color: #a19f8b; font: 11px/1.5 sans-serif; }
+.shop-offer strong { font: 17px/1.5 Georgia, "Songti SC", serif; color: #e0d3b8; }
+.shop-offer span { align-self: center; font: 12px/1.5 sans-serif; }
+.shop-offer[aria-pressed="true"] { border-color: #ba9d66; background: #2b2b20; box-shadow: inset 3px 0 #ba9d66; }
+.shop-panel button:focus-visible { outline: 2px solid #d7bd85; outline-offset: 3px; }
+.shop-detail { display: flex; flex-direction: column; padding: 24px; border: 1px solid #494c3e; background: #0f130f; }
+.shop-detail h4 { margin: 6px 0 16px; color: #e5d8bd; font-size: 26px; font-weight: 400; }
+.shop-detail > p:not(.eyebrow) { margin: 0 0 18px; color: #b6b5a4; font: 13px/1.8 sans-serif; }
+.shop-detail > .shop-delivery { color: #929b87; font-size: 11px; }
+.shop-checkout { margin-top: auto; padding-top: 20px; border-top: 1px solid #373c31; font: 12px/1.7 sans-serif; }
+.shop-checkout > span { display: block; color: #a29f90; }
+.shop-checkout strong { color: #dec99e; font-size: 20px; font-weight: 400; }
+.shop-checkout p { color: #aaa797; margin: 8px 0 16px; }
+.shop-checkout button { width: 100%; padding: 13px; color: #f2e2bd; background: #50462e; border: 1px solid #9c8653; font: 13px/1.5 sans-serif; cursor: pointer; }
+.shop-header button:hover, .shop-checkout button:hover:not(:disabled) { filter: brightness(1.18); }
+.shop-checkout button:disabled { cursor: not-allowed; color: #999b8b; border-color: #414538; background: #20241d; }
+.shop-feedback { min-height: 24px; margin: 16px 0 8px; color: #cbd7af; font: 13px/1.8 sans-serif; }
+.shop-rules { margin: 0; color: #979888; font: 11px/1.8 sans-serif; }
+@media (max-width: 680px) {
+  .shop-panel { padding: 12px; }
+  .shop-card { padding: 18px; width: calc(100vw - 24px); max-height: calc(100dvh - 24px); }
+  .shop-header h3 { font-size: 24px; }
+  .shop-header button { padding: 8px; }
+  .shop-header button small { display: none; }
+  .shop-layout { grid-template-columns: 1fr; gap: 18px; }
+  .shop-detail { padding: 18px; }
+}
 
 html, body { width: 100%; min-height: 100%; margin: 0; background: #050609; }
 
@@ -773,8 +815,10 @@ button { font: inherit; }
   --accent: #9b3a37;
   position: relative;
   flex: 0 1 144px;
-  height: 212px;
-  padding: 11px;
+  height: 300px;
+  padding: 11px 11px 26px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   color: #d7d1c9;
   text-align: left;
@@ -820,12 +864,18 @@ button { font: inherit; }
 .card.drag-ghost.returning { opacity: 0; transition: left .2s ease, top .2s ease, opacity .2s, transform .2s ease; transform: translate(-50%, -50%) scale(.72) !important; }
 .card-time { position: absolute; z-index: 2; top: 8px; right: 8px; display: grid; place-items: center; width: 35px; height: 35px; color: #f2e8da; background: #15171b; border: 1px solid var(--accent); transform: rotate(45deg); box-shadow: 0 3px 9px #000; }
 .card-time span { transform: rotate(-45deg); font: 600 17px/1 Georgia, serif; }
-.card-type { position: relative; z-index: 1; margin: 3px 0 8px; color: var(--accent); font: 8px/1 sans-serif; letter-spacing: .2em; text-transform: uppercase; }
-.card-art { position: relative; display: grid; place-items: center; height: 74px; margin: 0 0 8px; color: rgba(223,218,209,.86); font-size: 34px; border-top: 1px solid rgba(200,190,180,.13); border-bottom: 1px solid rgba(200,190,180,.13); }
+.card .card-type { position: relative; z-index: 1; margin: 3px 32px 8px 0; color: var(--accent); font: 8px/1 sans-serif; letter-spacing: .2em; text-transform: uppercase; }
+.card-art { position: relative; display: grid; place-items: center; flex-shrink: 0; height: 42px; margin: 0 0 8px; color: rgba(223,218,209,.86); font-size: 28px; border-top: 1px solid rgba(200,190,180,.13); border-bottom: 1px solid rgba(200,190,180,.13); }
 .card-art span { position: relative; z-index: 1; text-shadow: 0 0 18px var(--accent); }
 .card h3 { position: relative; margin: 0 0 5px; font-size: 15px; font-weight: 500; letter-spacing: .12em; }
 .card p { position: relative; margin: 0; color: #8e8c8c; font: 10px/1.45 sans-serif; }
 .card p strong { color: #d5cfc6; font-weight: 500; }
+.card-effects { position: relative; display: grid; grid-template-rows: 1fr 1fr; width: 100%; flex: 1; min-height: 146px; text-align: left; }
+.card-effect { padding: 7px 0; border-top: 1px solid rgba(200,190,180,.2); }
+.card-effect-label { display: block; margin-bottom: 5px; color: #c5b9a7; font: 10px/1.2 sans-serif; letter-spacing: .08em; }
+.card-effect-world .card-effect-label { color: #94aca2; }
+.card-effects p { margin: 0; color: #aaa6a0; font: 10px/1.5 sans-serif; overflow-wrap: anywhere; }
+.card-effects p strong { color: #e1d7c8; font-weight: 500; }
 .card-key { position: absolute; left: 10px; bottom: 8px; color: #5e5e62; font: 8px sans-serif; }
 .card-speed { position: absolute; right: 10px; bottom: 8px; color: var(--accent); font: 8px sans-serif; letter-spacing: .12em; }
 .card.defense { --accent: #7891a6; }
@@ -1075,8 +1125,10 @@ button { font: inherit; }
   .timeline-wrap { right: 2%; left: auto; bottom: 205px; width: 38vw; }
   .timeline-heading p, .timeline-legend { display: none; }
   .hand-area { width: 76vw; }
-  .card { height: 198px; padding: 9px; }
-  .card-art { height: 62px; }
+  .game .refill-button { bottom: 326px; }
+  .innate-button { bottom: 386px; }
+  .card { height: 300px; padding: 9px 9px 26px; }
+  .card-art { height: 32px; }
   .player-hud { left: 2%; }
 }
 
@@ -1118,9 +1170,11 @@ button { font: inherit; }
 .action-resource-tabs { display: flex; gap: 8px; border-bottom: 1px solid #4b473c; padding-bottom: 12px; }
 .action-resource-tabs button { background: #202727; color: #bdb4a0; border: 1px solid #4b473c; border-radius: 5px; padding: 8px 20px; cursor: pointer; }
 .action-resource-tabs button.active { color: #f8e9c5; border-color: #c5ac76; }
-.action-resource-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin: 14px 0; max-height: 240px; overflow-y: auto; padding: 3px; }
+.action-resource-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin: 14px 0; max-height: 300px; overflow-y: auto; padding: 3px; }
 .action-resource { display: grid; gap: 8px; padding: 15px; background: #252b2c; border: 1px solid #505251; border-radius: 8px; text-align: left; color: #e6ddcb; cursor: grab; }
 .action-resource small { color: #aaa695; font-size: 11px; }
+.action-resource .card-effects { min-height: 174px; }
+.action-resource .card-effects p { font-size: 11px; }
 .action-resource.attack { border-left: 3px solid #a36554; }
 .action-resource.defense { border-left: 3px solid #6c95a7; }
 .action-resource.technique { border-left: 3px solid #b29b60; }

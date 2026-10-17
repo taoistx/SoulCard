@@ -42,7 +42,7 @@ window.ActionEventPanel = (() => {
     const title = element("h2", "", model.event.name);
     title.id = "actionEventTitle";
     panel.append(eyebrow, title, element("p", "action-event-story", model.event.stages[model.stage].body));
-    panel.append(element("p", "action-event-help", "在槽位放入卡牌、物品或知识。只要放入观察以外的行动卡，就优先处理其他行动；条件未满足时不能结算观察。未参与结算的资源不会消耗。拖动资源，或先选资源再点槽位。"));
+    panel.append(element("p", "action-event-help", "在槽位放入卡牌、物品或知识，再点击「确认行动」结算。只要放入观察以外的行动卡，就优先处理其他行动；条件未满足时不能结算观察。未参与结算的资源不会消耗。拖动资源，或先选资源再点槽位。"));
     if (model.event.actionSlot) panel.append(element("p", "action-event-help", "本事件的行动卡可放入任意槽位；需要的物品仍须放入配方指定槽位。"));
     const slots = element("div", "action-event-slots");
     slots.style.gridTemplateColumns = `repeat(${model.event.slots.length}, minmax(0, 1fr))`;
@@ -88,6 +88,10 @@ window.ActionEventPanel = (() => {
       btn.addEventListener("dragstart", (e) => e.dataTransfer.setData("text/plain", resource.key));
       btn.append(element("strong", "", resource.name));
       btn.append(element("small", "", resource.kind === "card" ? `${categoryNames[resource.category]} · 疲劳 ${resource.fatigue} 层 · 副本 ${resource.copyNumber}` : resource.kind === "item" ? `拥有 ${resource.amount} · 使用消耗 1` : "知识 · 不消耗"));
+      if (resource.kind === "card") {
+        const card = window.CardInstances.describe({ cardId: resource.cardId, fatigue: resource.fatigue }, window.BattleBridge.getCardCatalog());
+        btn.insertAdjacentHTML("beforeend", cardEffectsMarkup(card));
+      }
       if (used) btn.append(element("span", "", `已放入 ${used}`));
       if (!resource.available) btn.append(element("span", "", "需要献祭心脏"));
       resources.append(btn);
@@ -100,7 +104,7 @@ window.ActionEventPanel = (() => {
     status.setAttribute("role", "status");
     if (match.valid) for (const r of match.chosen.filter((r) => r.kind === "item")) status.textContent += ` · ${r.name} -1`;
     if (match.valid && match.recipe.staminaCost) status.textContent += ` · 额外体力 -${match.recipe.staminaCost}`;
-    if (match.valid && match.recipe.hpCost) status.textContent += ` · HP -${match.recipe.hpCost}（最低保留 1）`;
+    if (match.valid && match.recipe.hpCost) status.textContent += ` · HP -${match.recipe.hpCost}${model.lethalHpCost ? "（可能致死）" : "（最低保留 1）"}`;
     panel.append(status);
     const submit = button(model.busy ? "处理中…" : "确认行动", async () => {
       if (model.busy) return;

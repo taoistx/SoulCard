@@ -1,7 +1,7 @@
 "use strict";
 
 (function (global) {
-  const ACTIONS = new Set(["kill_thomas", "kill_thomas_and_attack_dung", "attack_dung", "observe_dung", "observe_infected", "protect_thomas", "lure_dung", "trap_dung", "fallen_cut", "fallen_rescue", "fallen_lie", "fallen_observe", "corpse_observe_first", "corpse_observe_worms", "corpse_observe_environment", "corpse_reveal_path", "corpse_attack_stack", "corpse_attack_environment", "corpse_defend_stack", "corpse_defend_environment", "metal_observe", "metal_endure", "metal_distract", "metal_cut", "dispute_drive", "dispute_endure", "dispute_lie", "dispute_observe", "dispute_ritual", "hand_observe", "hand_attack", "hand_grab", "hand_strike", "hand_drown", "hand_throw_flesh"]);
+  const ACTIONS = new Set(["mud_cut", "mud_material", "mud_observe", "salvage_take", "fungus_observe", "fungus_search", "court_observe", "court_fix", "court_cut", "court_hold", "court_bait", "court_battle", "pipe_observe", "pipe_open", "pipe_cut", "nave_feed", "nave_trick", "nave_battle", "gallery_observe", "gallery_ring", "gallery_hold", "gallery_subnet", "gallery_mainrope","kill_thomas", "kill_thomas_and_attack_dung", "attack_dung", "observe_dung", "observe_infected", "protect_thomas", "lure_dung", "trap_dung", "fallen_cut", "fallen_rescue", "fallen_lie", "fallen_observe", "corpse_observe_first", "corpse_observe_worms", "corpse_observe_environment", "corpse_reveal_path", "corpse_attack_stack", "corpse_attack_environment", "corpse_defend_stack", "corpse_defend_environment", "metal_observe", "metal_endure", "metal_distract", "metal_cut", "dispute_drive", "dispute_endure", "dispute_lie", "dispute_observe", "dispute_ritual", "hand_observe", "hand_attack", "hand_grab", "hand_strike", "hand_drown", "hand_throw_flesh"]);
   const ENEMY_ACTIONS = new Set(["kill_thomas", "kill_thomas_and_attack_dung", "attack_dung", "observe_dung", "observe_infected", "protect_thomas", "lure_dung", "trap_dung"]);
   const KNOWLEDGE = Object.freeze({
     dungLore: { name: "粪怪习性", description: "辨识粪怪对气味与动静的反应。对粪怪伤害 +15%；可作诱导依据，不消耗。", tags: ["lure"] },
@@ -26,7 +26,7 @@
         if (!recipe || typeof recipe !== "object") { errors.push(`阶段 ${id} 配方无效`); continue; }
         if (!recipe.id || recipeIds.has(recipe.id)) errors.push(`阶段 ${id} 配方 ID 重复或缺失`);
         recipeIds.add(recipe.id);
-        if ((recipe.action && !ACTIONS.has(recipe.action)) || typeof recipe.result !== "string") errors.push(`配方 ${recipe.id} 动作或结果无效`);
+        if ((recipe.action && !ACTIONS.has(recipe.action)) || !(typeof recipe.result === "string" || (typeof recipe.resultDialogueId === "string" && typeof recipe.resultNodeId === "string"))) errors.push(`配方 ${recipe.id} 动作或结果无效`);
         if (ENEMY_ACTIONS.has(recipe.action) && !event.enemyId) errors.push(`配方 ${recipe.id} 缺少事件敌人`);
         if (recipe.action === "lure_dung" && !event.lureNodeId) errors.push(`配方 ${recipe.id} 缺少迁移节点`);
         for (const field of ["staminaCost", "hpCost"]) if (recipe[field] !== undefined && (!Number.isInteger(recipe[field]) || recipe[field] < 0)) errors.push(`配方 ${recipe.id} ${field} 无效`);

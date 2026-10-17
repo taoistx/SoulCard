@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "bellRoad",
+  "name": "碎钟坡",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "越往坡上走，空气里的钟声越像骨头互相敲击。远处站着一个无头的人影。",
+      "options": [],
+      "kicker": "探索完成",
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "exploredBellRoad",
+          "value": true
+        }
+      ]
+    }
+  }
+}

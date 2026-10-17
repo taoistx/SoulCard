@@ -1,5 +1,6 @@
 assets/*
 !assets/point-crawl-terrain-bg.png
+!assets/sediment-section.svg
 !assets/map-terrain/
 !assets/map-terrain/*.jpg
 *.rar

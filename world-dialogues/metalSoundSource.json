@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "metalSoundSource",
+  "name": "金属声源",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": {
+        "default": "声源不是人在敲东西。\n\n一具死了很久的尸体，手腕被藤状菌丝吊着。风吹动菌盖时，它的手便一次次撞在腰间的金属杯上。\n\n铛。\n\n你之前一直以为那里有人。",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "dialogueDamage",
+                  "operator": "ne",
+                  "value": 0
+                }
+              ]
+            },
+            "text": "穿过孢子雾，HP -{{damage}}（最低保留 1）。污染后续：测试版尚未接入。\n\n声源不是人在敲东西。\n\n一具死了很久的尸体，手腕被藤状菌丝吊着。风吹动菌盖时，它的手便一次次撞在腰间的金属杯上。\n\n铛。\n\n你之前一直以为那里有人。"
+          }
+        ]
+      },
+      "options": [],
+      "kicker": "探索后续"
+    }
+  }
+}

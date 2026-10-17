@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "drownedHuts",
+  "name": "腐叶原野",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "几间半沉的小屋在粪水里吱呀作响，门缝里露出还没烂尽的家具。",
+      "options": [],
+      "kicker": "探索完成",
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "exploredDrownedHuts",
+          "value": true
+        }
+      ]
+    }
+  }
+}

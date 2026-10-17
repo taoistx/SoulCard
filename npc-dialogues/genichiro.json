@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 1,
+  "id": "genichiro",
+  "name": "玄一螂",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": {
+        "default": "武士坐在避风凹里，把刀上的碎屑擦净。“上面先是菌坡，再是怪物挤着的窄路。我歇好就走，去山腰检修台落脚。”",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "genichiroTreated",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "包扎压住了破裂的甲缝。“我能自己撤出去。这份帮助我记得。”"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "genichiroWound",
+                  "operator": "eq",
+                  "value": "serious"
+                }
+              ]
+            },
+            "text": "他靠着干壳，伤口已经裂开。“狭道上的壳会滑。我顶着一次冲撞过去，甲缝又裂了。”"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "genichiroWound",
+                  "operator": "eq",
+                  "value": "minor"
+                }
+              ]
+            },
+            "text": "他压着肩甲的裂口。“狭道那次冲撞留下的。至少台子上能站稳。”"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "genichiroTravelled",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "“你也上来了。我沿铁壁走，过狭道后才歇下。”他指向更高的石阶。“新绑带还没沾灰，上面有人修路。”"
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "inspect",
+          "label": "主动细察他的装备",
+          "hint": "",
+          "next": "protection"
+        },
+        {
+          "id": "exposure",
+          "label": "告诉他自己受蚀的经历",
+          "hint": "需要玩家实际受过侵蚀",
+          "action": "v06_genichiro_exposure",
+          "next": "protection"
+        },
+        {
+          "id": "supply",
+          "label": "给他留一片包扎材料",
+          "hint": "韧膜 -1；日后实际使用才算治疗",
+          "action": "v06_genichiro_supply",
+          "next": "root"
+        },
+        {
+          "id": "bandage",
+          "label": "包扎他当前的伤口",
+          "hint": "韧膜 -1",
+          "action": "v06_genichiro_bandage",
+          "next": "root"
+        },
+        {
+          "id": "fight",
+          "label": "挑战他，夺取他的东西",
+          "hint": "胜利意味着真正杀死他；首访复用探索费用，重访另需1体力",
+          "action": "v06_genichiro_fight"
+        }
+      ]
+    },
+    "protection": {
+      "body": "他露出旧鸟嘴罩的接缝：“戴好整套才挡这段雾。它不挡刀，也不能替你多争一天。”",
+      "options": [
+        {
+          "id": "back",
+          "label": "返回",
+          "hint": "",
+          "next": "root"
+        }
+      ]
+    }
+  }
+}

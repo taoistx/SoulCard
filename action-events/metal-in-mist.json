@@ -36,7 +36,6 @@
             }
           },
           "action": "metal_observe",
-          "result": "声音每隔固定时间响一次。你看清风吹菌盖、孢子雾散开的规律，可以循着节奏安全穿越。\n\n获得知识「菌雾节奏」，解锁「金属声源」。本次遭遇结束。",
           "effects": [
             {
               "type": "setFlag",
@@ -48,7 +47,9 @@
               "key": "revealedMetalSource",
               "value": true
             }
-          ]
+          ],
+          "resultDialogueId": "event_metalInMist",
+          "resultNodeId": "result_opening_metal_observe"
         },
         {
           "id": "metal_endure",
@@ -59,7 +60,6 @@
             }
           },
           "action": "metal_endure",
-          "result": "你蒙住口鼻，直接穿过孢子雾。额外体力 -1、HP -6（最低保留 1），抵达「金属声源」。污染后续：测试版尚未接入。",
           "effects": [
             {
               "type": "setFlag",
@@ -73,7 +73,9 @@
             }
           ],
           "staminaCost": 1,
-          "hpCost": 6
+          "hpCost": 6,
+          "resultDialogueId": "event_metalInMist",
+          "resultNodeId": "result_opening_metal_endure"
         },
         {
           "id": "metal_distract",
@@ -85,7 +87,6 @@
             }
           },
           "action": "metal_distract",
-          "result": "你朝另一个方向制造巨响，菌雾深处的东西被引了过去。\n\n解锁「金属声源」。在下一次长休前，穿越这里暂时安全。",
           "effects": [
             {
               "type": "setFlag",
@@ -97,7 +98,9 @@
               "key": "distractedMistCreature",
               "value": true
             }
-          ]
+          ],
+          "resultDialogueId": "event_metalInMist",
+          "resultNodeId": "result_opening_metal_distract"
         },
         {
           "id": "metal_cut",
@@ -108,7 +111,6 @@
             }
           },
           "action": "metal_cut",
-          "result": "你一路砍开菌丛。金属声仍在继续，声源旁却传来了别的动静。\n\n解锁「金属声源」，已记录惊动附近生物。惊动生物的后续：测试版尚未接入。",
           "effects": [
             {
               "type": "setFlag",
@@ -120,7 +122,9 @@
               "key": "alarmedMetalSource",
               "value": true
             }
-          ]
+          ],
+          "resultDialogueId": "event_metalInMist",
+          "resultNodeId": "result_opening_metal_cut"
         }
       ]
     }

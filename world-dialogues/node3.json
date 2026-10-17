@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "node3",
+  "name": "铁壁避风凹",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "堤路贴上巨大的铁壁，一道凹缝挡住了坡下的湿气。上方硬壳逐渐变成黄白菌层；更高处的建筑仍露着尖顶。石面有擦刀的亮痕和反复系紧行囊留下的勒印。",
+      "options": [],
+      "kicker": "地点",
+      "title": "{{nodeLabel}}"
+    }
+  }
+}

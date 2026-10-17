@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "fallenDragTrail",
+  "name": "拖行痕迹",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": "拖行沟延伸进菌盖背后的黑暗。泥地中留下啃食者的痕迹。\n\n追踪啃食者的后续：测试版尚未接入。",
+      "options": [],
+      "kicker": "探索后续"
+    }
+  }
+}

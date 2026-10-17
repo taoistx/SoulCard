@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "site_node3",
+  "name": "铁壁避风凹",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": {
+        "default": "堤路贴上巨大的铁壁，一道凹缝挡住了坡下的湿气。上方硬壳逐渐变成黄白菌层；更高处的建筑仍露着尖顶。石面有擦刀的亮痕和反复系紧行囊留下的勒印。\n武士已经出发，一枚压住布条的小石头指向上坡。",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "genichiroKilled",
+                  "operator": "ne",
+                  "value": true
+                },
+                {
+                  "source": "flag",
+                  "key": "genichiroLocation",
+                  "operator": "eq",
+                  "value": "node3"
+                }
+              ]
+            },
+            "text": "堤路贴上巨大的铁壁，一道凹缝挡住了坡下的湿气。上方硬壳逐渐变成黄白菌层；更高处的建筑仍露着尖顶。石面有擦刀的亮痕和反复系紧行囊留下的勒印。\n玄一螂正在收紧行囊，他准备下一次休整后继续上山。"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "genichiroKilled",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "堤路贴上巨大的铁壁，一道凹缝挡住了坡下的湿气。上方硬壳逐渐变成黄白菌层；更高处的建筑仍露着尖顶。石面有擦刀的亮痕和反复系紧行囊留下的勒印。\n武士的遗体靠在凹缝里。"
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "talk_thomas",
+          "label": "与幸存者 托马斯交谈",
+          "action": "talk_thomas",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "thomasKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "thomasLocation",
+                "operator": "eq",
+                "value": "node3"
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_genichiro",
+          "label": "与玄一螂交谈",
+          "action": "talk_genichiro",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "genichiroKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "genichiroLocation",
+                "operator": "eq",
+                "value": "node3"
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_hollan",
+          "label": "与霍兰交谈",
+          "action": "talk_hollan",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "hollanKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "hollanLocation",
+                "operator": "eq",
+                "value": "node3"
+              }
+            ]
+          }
+        }
+      ],
+      "kicker": "地点 · 沉积山",
+      "title": "铁壁避风凹"
+    }
+  }
+}

@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "site_slice_drybench",
+  "name": "山腰检修台",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "body": {
+        "default": "铆在井壁上的平台接住了两条来路：一边是狭道，另一边是检修槽的上口。脚下终于是完整的金属板，靠墙的旧工具匣里露出一角衬膜。前方石阶沿井壁继续升高，顶端就是教堂。\n霍兰去了侧坡猎食，平台边留下新敲出的碎壳。",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "hollanKilled",
+                  "operator": "ne",
+                  "value": true
+                },
+                {
+                  "source": "flag",
+                  "key": "hollanLocation",
+                  "operator": "eq",
+                  "value": "slice_drybench"
+                }
+              ]
+            },
+            "text": "铆在井壁上的平台接住了两条来路：一边是狭道，另一边是检修槽的上口。脚下终于是完整的金属板，靠墙的旧工具匣里露出一角衬膜。前方石阶沿井壁继续升高，顶端就是教堂。\n霍兰正把一片砸扁的怪壳翻过来。"
+          }
+        ]
+      },
+      "options": [
+        {
+          "id": "talk_thomas",
+          "label": "与幸存者 托马斯交谈",
+          "action": "talk_thomas",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "thomasKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "thomasLocation",
+                "operator": "eq",
+                "value": "slice_drybench"
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_genichiro",
+          "label": "与玄一螂交谈",
+          "action": "talk_genichiro",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "genichiroKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "genichiroLocation",
+                "operator": "eq",
+                "value": "slice_drybench"
+              }
+            ]
+          }
+        },
+        {
+          "id": "talk_hollan",
+          "label": "与霍兰交谈",
+          "action": "talk_hollan",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "hollanKilled",
+                "operator": "ne",
+                "value": true
+              },
+              {
+                "source": "flag",
+                "key": "hollanLocation",
+                "operator": "eq",
+                "value": "slice_drybench"
+              }
+            ]
+          }
+        },
+        {
+          "id": "material",
+          "label": {
+            "default": "取下工具匣里的完整衬膜",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "upperMaterialTaken",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "工具匣只剩剥落的碎屑"
+              }
+            ]
+          },
+          "action": "take_upper_material",
+          "hint": "获得韧膜 ×1；仅此一份",
+          "enabledWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "upperMaterialTaken",
+                "operator": "ne",
+                "value": true
+              }
+            ]
+          }
+        }
+      ],
+      "kicker": "地点 · 沉积山",
+      "title": "山腰检修台"
+    }
+  }
+}

@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "kind": "world",
+  "id": "event_metalInMist",
+  "name": "菌雾里的金属声",
+  "start": {
+    "default": "result_opening_metal_observe",
+    "rules": []
+  },
+  "nodes": {
+    "result_opening_metal_observe": {
+      "body": "声音每隔固定时间响一次。你看清风吹菌盖、孢子雾散开的规律，可以循着节奏安全穿越。\n\n获得知识「菌雾节奏」，解锁「金属声源」。本次遭遇结束。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_metal_endure": {
+      "body": "你蒙住口鼻，直接穿过孢子雾。额外体力 -1、HP -6（最低保留 1），抵达「金属声源」。污染后续：测试版尚未接入。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_metal_distract": {
+      "body": "你朝另一个方向制造巨响，菌雾深处的东西被引了过去。\n\n解锁「金属声源」。在下一次长休前，穿越这里暂时安全。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "result_opening_metal_cut": {
+      "body": "你一路砍开菌丛。金属声仍在继续，声源旁却传来了别的动静。\n\n解锁「金属声源」，已记录惊动附近生物。惊动生物的后续：测试版尚未接入。",
+      "options": [
+        {
+          "id": "continue",
+          "label": {
+            "default": "继续",
+            "variants": [
+              {
+                "when": {
+                  "mode": "all",
+                  "clauses": [
+                    {
+                      "source": "flag",
+                      "key": "dialogueBattleAction",
+                      "operator": "eq",
+                      "value": true
+                    }
+                  ]
+                },
+                "text": "面对粪怪"
+              }
+            ]
+          },
+          "action": "result_continue"
+        }
+      ],
+      "kicker": "行动结果",
+      "allowClose": false,
+      "allowCloseWhen": {
+        "mode": "all",
+        "clauses": [
+          {
+            "source": "flag",
+            "key": "dialogueResultDismissible",
+            "operator": "eq",
+            "value": true
+          }
+        ]
+      }
+    },
+    "revisit": {
+      "body": {
+        "default": "此前的行动结果：\n\n{{resultText}}",
+        "variants": [
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "dialogueMetalDistract",
+                  "operator": "eq",
+                  "value": true
+                },
+                {
+                  "source": "flag",
+                  "key": "dialogueMistSafe",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "此前的行动结果：\n\n{{resultText}}\n\n当前诱导仍然有效，下一次长休后失效。"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "dialogueMetalDistract",
+                  "operator": "eq",
+                  "value": true
+                }
+              ]
+            },
+            "text": "此前的行动结果：\n\n{{resultText}}\n\n已经长休，临时诱导已失效。"
+          },
+          {
+            "when": {
+              "mode": "all",
+              "clauses": [
+                {
+                  "source": "flag",
+                  "key": "dialogueHasResult",
+                  "operator": "eq",
+                  "value": false
+                }
+              ]
+            },
+            "text": "遭遇已经结束，这里仍可作为通路。"
+          }
+        ]
+      },
+      "options": [],
+      "kicker": "节点 · 遭遇后果"
+    }
+  },
+  "entryNodes": [
+    "result_opening_metal_observe",
+    "result_opening_metal_endure",
+    "result_opening_metal_distract",
+    "result_opening_metal_cut",
+    "revisit"
+  ]
+}

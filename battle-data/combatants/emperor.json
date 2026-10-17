@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "emperor",
+  "combatEnabled": false,
+  "displayName": "小皇帝",
+  "role": "山中的住民",
+  "intro": "各自有未完成的事。",
+  "stats": null,
+  "skills": []
+}
