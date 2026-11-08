@@ -60,6 +60,7 @@ function validateWorldConfiguration(mapBundle, eventBundle) {
     if (!Number.isFinite(node?.y) || node.y < 0) errors.push(`节点 ${node?.id || "(空)"} y 必须大于等于 0`);
     if (typeof node?.eventSetId !== "string" || !eventSetIds.has(node.eventSetId)) errors.push(`节点 ${node?.id || "(空)"} 引用了未知事件集`);
     if (node?.revealFlag !== undefined && (typeof node.revealFlag !== "string" || !node.revealFlag.trim())) errors.push(`节点 ${node.id} revealFlag 无效`);
+    if (node?.fog !== undefined && typeof node.fog !== "boolean") errors.push(`节点 ${node.id} fog 必须是布尔值`);
   });
   if (!nodeIds.has(map.startNodeId)) errors.push("startNodeId 必须指向现有节点");
   if (map.nodes?.find((node) => node.id === map.startNodeId)?.revealFlag) errors.push("起点不能是隐藏节点");
@@ -382,6 +383,16 @@ function isNodeAvailable(node) {
   return incomingEdges(node.id).some((edge) => world.exploredNodes.has(edge.from));
 }
 
+// 迷雾只过滤地图显示，不改写揭示状态或已揭示节点的可达性。
+function isNodeVisibleOnMap(node) {
+  if (!isNodeAvailable(node)) return false;
+  const current = getCurrentNode();
+  if (!current?.fog || node.id === current.id) return true;
+  return WORLD_EDGES.some((edge) =>
+    (edge.from === current.id && edge.to === node.id) ||
+    (edge.to === current.id && edge.from === node.id));
+}
+
 function isEventEntryResolved(entry, node = null) {
   if (!entry) return false;
   if (entry.kind === "action") return Boolean(world.eventStates[entry.actionEventId]?.resolved);
@@ -446,16 +457,17 @@ function renderWorld() {
   currentTarget = getCurrentNode();
   elsWorld.prompt.classList.toggle("hidden", !currentTarget || isOverlayOpen());
   if (currentTarget) elsWorld.prompt.querySelector("span").textContent = `调查${currentTarget.label}`;
-  elsWorld.mapHint.textContent = "拖动空白处查看地图 · 点击节点移动 · E 调查 · L 长休";
+  elsWorld.mapHint.textContent = `${currentTarget?.fog ? "迷雾中：仅显示当前位置及已揭示的直接父、子节点 · " : ""}拖动空白处查看地图 · 点击节点移动 · E 调查 · L 长休`;
   if (!elsWorld.characterPanel.classList.contains("hidden")) renderCharacterPanel();
 }
 
 function renderPointCrawl() {
   elsWorld.edges.innerHTML = "";
   elsWorld.nodes.innerHTML = "";
+  const visibleNodeIds = new Set(WORLD_NODES.filter(isNodeVisibleOnMap).map((node) => node.id));
 
   for (const edge of WORLD_EDGES) {
-    if (!isEdgeRevealed(edge)) continue;
+    if (!visibleNodeIds.has(edge.from) || !visibleNodeIds.has(edge.to)) continue;
     const from = NODE_BY_ID.get(edge.from);
     const to = NODE_BY_ID.get(edge.to);
     if (!from || !to) continue;
@@ -472,7 +484,7 @@ function renderPointCrawl() {
   }
 
   for (const node of WORLD_NODES) {
-    if (!isNodeAvailable(node)) continue;
+    if (!visibleNodeIds.has(node.id)) continue;
     const group = document.createElementNS(SVG_NS, "g");
     const isCurrent = node.id === world.currentNodeId;
     const isExplored = world.exploredNodes.has(node.id);

@@ -398,7 +398,7 @@ function renderNodeList() {
     const button = h("button", selectedNodeId === node.id && selectedEdgeIndex === null ? "active" : "");
     button.type = "button";
     const eventName = eventSets[node.eventSetId]?.name || node.eventSetId || "未绑定";
-    button.append(h("span", "", node.label), h("small", "", `${node.revealFlag ? "隐藏 · " : ""}${eventName}`));
+    button.append(h("span", "", node.label), h("small", "", `${node.fog ? "迷雾 · " : ""}${node.revealFlag ? "隐藏 · " : ""}${eventName}`));
     button.addEventListener("click", () => { selectedNodeId = node.id; selectedEdgeIndex = null; renderAll(); });
     els.nodeList.appendChild(button);
   });
@@ -443,6 +443,13 @@ function renderNodeInspector() {
   hiddenLabel.append(checkbox, document.createTextNode("隐藏节点：必须由 Flag 与已探索父节点共同揭示")); hiddenCard.appendChild(hiddenLabel);
   if (node.revealFlag) hiddenCard.appendChild(makeInput("揭示 Flag", node.revealFlag, (value) => mutate(() => { node.revealFlag = value; }), { wide: true }));
   els.inspector.appendChild(hiddenCard);
+  const fogCard = h("div", "card");
+  const fogLabel = h("label", "toggle-row");
+  const fogCheckbox = document.createElement("input"); fogCheckbox.type = "checkbox"; fogCheckbox.checked = node.fog === true;
+  fogCheckbox.addEventListener("change", () => mutate(() => { if (fogCheckbox.checked) node.fog = true; else delete node.fog; }));
+  fogLabel.append(fogCheckbox, document.createTextNode("迷雾节点"));
+  fogCard.append(fogLabel, h("p", "subtle", "玩家位于此节点时，地图仅显示自身及已揭示的直接父、子节点；其余节点和相关连线暂时隐藏。到达非迷雾节点后恢复显示，不改变揭示条件与通行规则。"));
+  els.inspector.appendChild(fogCard);
   els.inspector.appendChild(h("h4", "", "子节点"));
   map.edges.forEach((edge, index) => {
     if (edge.from !== node.id) return;
@@ -549,6 +556,7 @@ function validationResult() {
     if (!Number.isFinite(node.x) || node.x < 0 || !Number.isFinite(node.y) || node.y < 0) errors.push(`节点 ${node.id} 坐标必须为非负数`);
     if (!eventSets[node.eventSetId]) errors.push(`节点 ${node.id} 引用了未知事件集：${node.eventSetId || "(空)"}`);
     if (node.revealFlag !== undefined && !String(node.revealFlag).trim()) errors.push(`节点 ${node.id} 的揭示 Flag 为空`);
+    if (node.fog !== undefined && typeof node.fog !== "boolean") errors.push(`节点 ${node.id} 的迷雾属性 fog 必须是布尔值`);
     if (node.id !== map.startNodeId && !map.edges.some((edge) => edge.to === node.id)) warnings.push(`节点 ${node.id} 没有父节点，运行时不可见`);
   });
   if (!ids.has(map.startNodeId)) errors.push("起点必须指向现有节点");
