@@ -5,7 +5,9 @@ const clone = Runtime.clone;
 const documentKey = (d) => `${d.kind || "npc"}:${d.id}`;
 const isWorldDialogue = () => current()?.kind === "world";
 const dataSource = () => isWorldDialogue() ? window.WorldDialogueData : window.NpcDialogueData;
-const sourceDirectory = () => isWorldDialogue() ? "world-dialogues" : "npc-dialogues";
+const sourceDirectory = () => window.DialogueEditorEnvironment?.directory || (window.DialogueEditorEnvironment?.sampleOnly ? "npc-editor/examples" : isWorldDialogue() ? "world-dialogues" : "npc-dialogues");
+const sourceFile = () => window.DialogueEditorEnvironment?.files?.[currentId]?.file || dataSource()?.getManifest()?.dialogues?.[current().id] || `${current().id}.json`;
+const editorStorageKey = (key) => `${window.DialogueEditorEnvironment?.storagePrefix || ""}${key}`;
 const $ = (selector) => document.querySelector(selector);
 const h = (tag, className, text) => {
   const node = document.createElement(tag);
@@ -18,7 +20,7 @@ const els = {
   app: $("#editorApp"), npcSelect: $("#npcSelect"), npcSettings: $("#npcSettingsButton"), nodeList: $("#nodeList"), addNode: $("#addNodeButton"),
   graph: $("#graphViewport"), graphNodes: $("#graphNodes"), graphEdges: $("#graphEdges"), inspector: $("#inspector"), inspectorKind: $("#inspectorKind"),
   selectionStatus: $("#selectionStatus"), feedback: $("#feedback"), dirty: $("#dirtyState"), undo: $("#undoButton"), redo: $("#redoButton"),
-  create: $("#newNpcButton"), importButton: $("#importButton"), importFile: $("#importFile"), validate: $("#validateButton"), export: $("#exportButton"),
+  create: $("#newNpcButton"), importButton: $("#importButton"), importFile: $("#importFile"), validate: $("#validateButton"), apply: $("#applyGraphButton"),
   sandboxButton: $("#sandboxButton"), sandbox: $("#sandbox"), closeSandbox: $("#closeSandboxButton"), sandboxDay: $("#sandboxDay"),
   sandboxFlags: $("#sandboxFlags"), sandboxItems: $("#sandboxItems"), sandboxSacrifices: $("#sandboxSacrifices"), startSandbox: $("#startSandboxButton"),
   previewKicker: $("#previewKicker"), previewTitle: $("#previewTitle"), previewBody: $("#previewBody"), previewOptions: $("#previewOptions"), sandboxLog: $("#sandboxLog"),
@@ -41,6 +43,7 @@ let graphOffset = { x: 0, y: 0 };
 let linkDrag = null;
 let sandboxState = null;
 let sandboxNodeId = null;
+let savingJson = false;
 
 const itemNames = { freshFlesh: "新鲜血肉", oldKey: "老旧钥匙", ritualScrap: "秘仪残页", rustySword: "锈剑", longSword: "长剑", dagger: "剔骨匕首", greatSword: "排污双手剑", shield: "井盖盾", heavyArmor: "铸铁浴缸甲", gi: "污白道服", ladyHat: "克里斯的礼帽", mistWrapMaterial: "韧膜", eddieMistWrap: "粗糙鸟嘴防护", oldMistWrap: "旧鸟嘴防护", maintenanceHook: "检修钩" };
 const bodyNames = { leftHand: "左手", rightHand: "右手", body: "身体", head: "头", eye: "眼", heart: "心", brain: "脑" };
@@ -52,11 +55,24 @@ function normalizeDialogue(dialogue) {
   dialogue.editor ||= { positions: {} };
   dialogue.editor.positions ||= {};
   Object.keys(dialogue.nodes || {}).forEach((id, index) => { dialogue.editor.positions[id] ||= { x: 60 + (index % 3) * 320, y: 60 + Math.floor(index / 3) * 230 }; });
-  Object.values(dialogue.nodes || {}).forEach((node) => { node.options ||= []; node.effects ||= []; });
+  Object.values(dialogue.nodes || {}).forEach((node) => { if (!dialogue.optionLists) node.options ||= []; node.effects ||= []; });
   return dialogue;
 }
 
 function current() { return documents[currentId]; }
+function nodeOptions(node, dialogue = current()) { return Runtime.getNodeOptions(dialogue, node); }
+function setNodeOptions(node, options) {
+  if (current().optionLists) {
+    if (!node.optionList) {
+      const stem = `${Object.keys(current().nodes).find((id) => current().nodes[id] === node)}Choices`;
+      let id = stem, serial = 2;
+      while (current().nodes[id] || current().optionLists[id]) id = `${stem}${serial++}`;
+      node.optionList = id;
+    }
+    current().optionLists[node.optionList] = { ...current().optionLists[node.optionList], options };
+    delete node.options;
+  } else node.options = options;
+}
 function snapshot() { return JSON.stringify(current()); }
 
 function dialogueReferences(dialogue) {
@@ -94,23 +110,25 @@ function persistDraft() {
   if (!current()) return;
   for (const kind of ["npc", "world"]) {
     const saved = Object.fromEntries(Object.values(documents).filter((d) => d.kind === kind).map((d) => [d.id, d]));
-    sessionStorage.setItem(`${kind}-editor-draft`, JSON.stringify({ id: current().kind === kind ? current().id : null, documents: saved }));
+    const revisions = Object.fromEntries(Object.values(documents).filter((d) => d.kind === kind).map((d) => [d.id, window.DialogueEditorEnvironment?.files?.[documentKey(d)]?.revision || null]));
+    const sources = Object.fromEntries(Object.values(documents).filter((d) => d.kind === kind && window.DialogueEditorEnvironment?.files?.[documentKey(d)]).map((d) => [d.id, window.DialogueEditorEnvironment.files[documentKey(d)]]));
+    sessionStorage.setItem(editorStorageKey(`${kind}-editor-draft`), JSON.stringify({ id: current().kind === kind ? current().id : null, documents: saved, revisions, sources }));
   }
-  sessionStorage.setItem("dialogue-editor-selection", currentId);
+  sessionStorage.setItem(editorStorageKey("dialogue-editor-selection"), currentId);
 }
 
 function updateHistoryUi() {
   els.undo.disabled = historyIndex <= 0;
   els.redo.disabled = historyIndex < 0 || historyIndex >= history.length - 1;
   const clean = cleanSnapshot === snapshot();
-  els.dirty.textContent = clean ? "已保存" : "未保存";
+  els.dirty.textContent = savingJson ? "保存中…" : clean ? "已保存" : "未保存";
   els.dirty.classList.toggle("saved", clean);
 }
 
 function resetHistory() {
   history = [snapshot()];
   historyIndex = 0;
-  cleanSnapshot = originalSnapshots[currentId] || history[0];
+  cleanSnapshot = originalSnapshots[currentId] ?? null;
   updateHistoryUi();
 }
 
@@ -125,14 +143,19 @@ function recordHistory() {
   updateHistoryUi();
 }
 
-function restoreHistory(index) {
+function restoreHistory(index, skipTextGuard = false) {
   if (index < 0 || index >= history.length) return;
+  if (!skipTextGuard && window.DialogueTextEditor?.hasDraft()) return window.DialogueTextEditor.guard(() => restoreHistory(index, true));
+  const previousSnapshot = snapshot();
   historyIndex = index;
   const restored = JSON.parse(history[index]), nextKey = documentKey(restored);
   if (nextKey !== currentId && documents[nextKey]) return showFeedback("该 ID 已被其他对话使用，无法撤销重命名", true);
+  window.DialogueTextEditor?.moveDraft(currentId, nextKey);
+  moveSourceFile(currentId, nextKey);
   delete documents[currentId]; documents[nextKey] = restored; currentId = nextKey;
+  window.DialogueTextEditor?.restoreAliases(previousSnapshot, snapshot());
   if (selectedNodeId && !current().nodes[selectedNodeId]) selectedNodeId = null;
-  if (selectedOptionIndex !== null && !current().nodes[selectedNodeId]?.options?.[selectedOptionIndex]) selectedOptionIndex = null;
+  if (selectedOptionIndex !== null && !nodeOptions(current().nodes[selectedNodeId])[selectedOptionIndex]) selectedOptionIndex = null;
   persistDraft();
   renderAll();
   updateHistoryUi();
@@ -188,9 +211,16 @@ function conditionEditor(value, onChange, optional = true) {
     root.appendChild(add);
     return root;
   }
-  root.appendChild(makeSelect("组合方式", value.mode || "all", [["all", "全部满足（AND）"], ["any", "任一满足（OR）"]], (mode) => { value.mode = mode; onChange(value); }));
+  root.appendChild(makeSelect("组合方式", value.mode || "all", [["all", "全部满足（&）"], ["any", "任一满足（/）"], ["not", "取反（!）"]], (mode) => {
+    if (mode === "not" && value.mode !== "not") value.clauses = [{ mode: value.mode, clauses: value.clauses }];
+    value.mode = mode; onChange(value);
+  }));
   value.clauses = value.clauses || [];
   value.clauses.forEach((clause, index) => {
+    if (clause.mode) {
+      const group = conditionEditor(clause, (next) => { if (next) value.clauses[index] = next; else value.clauses.splice(index, 1); onChange(value); }, value.mode !== "not");
+      group.classList.add("nested-condition"); root.appendChild(group); return;
+    }
     const row = h("div", "condition-row");
     const source = document.createElement("select");
     [["flag", "Flag"], ["day", "天数"], ["sacrificedCount", "献祭数量"], ["item", "物品"], ["sacrifice", "身体部位"]].forEach(([id, name]) => { const option = h("option", "", name); option.value = id; option.selected = clause.source === id; source.appendChild(option); });
@@ -221,10 +251,14 @@ function conditionEditor(value, onChange, optional = true) {
     row.appendChild(remove);
     if (clause.source === "item") row.appendChild(makeInput("数量", clause.amount || 1, (amount) => { clause.amount = amount; onChange(value); }, { type: "number", wide: true }));
     if (clause.source === "flag" && ["eq", "ne"].includes(clause.operator)) row.appendChild(makeInput("比较值（JSON）", JSON.stringify(clause.value ?? true), (raw) => { try { clause.value = JSON.parse(raw); } catch { clause.value = raw; } onChange(value); }, { wide: true }));
+    if (value.mode === "not") remove.disabled = true;
     root.appendChild(row);
   });
   const actions = h("div", "row-actions");
-  const add = h("button", "", "添加条件"); add.type = "button"; add.addEventListener("click", () => { value.clauses.push(defaultClause()); onChange(value); }); actions.appendChild(add);
+  if (value.mode !== "not") {
+    const add = h("button", "", "添加条件"); add.type = "button"; add.addEventListener("click", () => { value.clauses.push(defaultClause()); onChange(value); }); actions.appendChild(add);
+    const subgroup = h("button", "", "添加子条件组"); subgroup.type = "button"; subgroup.addEventListener("click", () => { value.clauses.push({ mode: "all", clauses: [defaultClause()] }); onChange(value); }); actions.appendChild(subgroup);
+  }
   if (optional) { const clear = h("button", "danger", "清除条件组"); clear.type = "button"; clear.addEventListener("click", () => onChange(null)); actions.appendChild(clear); }
   root.appendChild(actions);
   return root;
@@ -273,7 +307,7 @@ function textSpecEditor(label, owner, key) {
 function renderNpcInspector() {
   const dialogue = current();
   els.inspectorKind.textContent = isWorldDialogue() ? "世界对话" : "NPC";
-  els.inspector.appendChild(h("p", "help", `来源：${sourceDirectory()}/${dataSource().getManifest()?.dialogues?.[dialogue.id] || dialogue.id + ".json"}`));
+  els.inspector.appendChild(h("p", "help", `来源：${sourceDirectory()}/${sourceFile()}`));
   for (const reference of dialogueReferences(dialogue)) els.inspector.appendChild(h("p", "help", `引用：${reference}`));
   els.inspector.appendChild(h("h3", "", dialogue.name));
   const fields = h("div", "field-grid");
@@ -293,10 +327,17 @@ function renderNpcInspector() {
 function renderNodeInspector() {
   const dialogue = current(), node = dialogue.nodes[selectedNodeId];
   els.inspectorKind.textContent = selectedOptionIndex === null ? "节点" : "选项";
-  if (selectedOptionIndex !== null) return renderOptionInspector(node, node.options[selectedOptionIndex]);
+  if (selectedOptionIndex !== null) return renderOptionInspector(node, nodeOptions(node)[selectedOptionIndex]);
   els.inspector.appendChild(h("h3", "", selectedNodeId));
   const fields = h("div", "field-grid");
-  fields.appendChild(makeInput("节点 ID", selectedNodeId, (value) => renameNode(selectedNodeId, value)));
+  const nodeIdField = makeInput("节点 ID", selectedNodeId, (value) => renameNode(selectedNodeId, value));
+  if (window.DialogueEditorEnvironment?.sampleOnly) nodeIdField.querySelector("input").readOnly = true;
+  fields.appendChild(nodeIdField);
+  const optionSource = node.optionList || dialogue.editor?.textAuthoring?.optionSources?.[selectedNodeId];
+  if (dialogue.optionLists) {
+    fields.appendChild(makeSelect("选项组 ID（共享修改）", node.optionList || "", [["", "无"], ...Object.keys(dialogue.optionLists).map((id) => [id, id])], (id) => mutate(() => { if (id) node.optionList = id; else delete node.optionList; })));
+  }
+  if (optionSource) els.inspector.appendChild(h("p", "help", `此节点保留自己的正文，选项组 / 复用 ${optionSource}；编辑选项会影响所有引用它的节点。`));
   fields.appendChild(makeInput("标题", simpleText(node.title), (value) => mutate(() => setDefaultText(node, "title", value))));
   fields.appendChild(makeInput("眉题", simpleText(node.kicker), (value) => mutate(() => setDefaultText(node, "kicker", value)), { wide: true }));
   els.inspector.appendChild(fields);
@@ -318,9 +359,9 @@ function renderNodeInspector() {
   els.inspector.appendChild(h("h4", "", "进入节点时的效果"));
   els.inspector.appendChild(effectsEditor(node.effects || [], (effects) => mutate(() => { node.effects = effects; })));
   els.inspector.appendChild(h("h4", "", "玩家选项"));
-  (node.options || []).forEach((option, index) => { const button = h("button", `option-summary${selectedOptionIndex === index ? " active" : ""}`, `${index + 1}. ${simpleText(option.label) || option.id}`); button.type = "button"; button.addEventListener("click", () => { selectedOptionIndex = index; renderAll(); }); els.inspector.appendChild(button); });
+  nodeOptions(node).forEach((option, index) => { const button = h("button", `option-summary${selectedOptionIndex === index ? " active" : ""}`, `${index + 1}. ${simpleText(option.label) || option.id}`); button.type = "button"; button.addEventListener("click", () => { selectedOptionIndex = index; renderAll(); }); els.inspector.appendChild(button); });
   const actions = h("div", "row-actions");
-  const add = h("button", "", "添加选项"); add.type = "button"; add.addEventListener("click", () => mutate(() => { node.options = node.options || []; node.options.push({ id: uniqueOptionId(node, "option"), label: "新选项", hint: "", next: "" }); selectedOptionIndex = node.options.length - 1; })); actions.appendChild(add);
+  const add = h("button", "", "添加选项"); add.type = "button"; add.addEventListener("click", () => mutate(() => { setNodeOptions(node, nodeOptions(node)); nodeOptions(node).push({ id: uniqueOptionId(node, "option"), label: "新选项", hint: "", next: "" }); selectedOptionIndex = nodeOptions(node).length - 1; })); actions.appendChild(add);
   const duplicate = h("button", "", "复制节点"); duplicate.type = "button"; duplicate.addEventListener("click", () => duplicateNode(selectedNodeId)); actions.appendChild(duplicate);
   const remove = h("button", "danger", "删除节点"); remove.type = "button"; remove.addEventListener("click", () => deleteNode(selectedNodeId)); actions.appendChild(remove);
   els.inspector.appendChild(actions);
@@ -329,7 +370,7 @@ function renderNodeInspector() {
 function renderOptionInspector(node, option) {
   els.inspector.appendChild(h("h3", "", simpleText(option.label) || option.id));
   const fields = h("div", "field-grid");
-  fields.appendChild(makeInput("选项 ID", option.id, (value) => mutate(() => { if (/^[A-Za-z][A-Za-z0-9_-]*$/.test(value) && !node.options.some((item, i) => i !== selectedOptionIndex && item.id === value)) option.id = value; else showFeedback("选项 ID 无效或重复", true); })));
+  fields.appendChild(makeInput("选项 ID", option.id, (value) => mutate(() => { if (/^[A-Za-z][A-Za-z0-9_-]*$/.test(value) && !nodeOptions(node).some((item, i) => i !== selectedOptionIndex && item.id === value)) option.id = value; else showFeedback("选项 ID 无效或重复", true); })));
   fields.appendChild(makeSelect("下一节点", option.next || "", [["", "结束 / 不跳转"], ...Object.keys(current().nodes).map((id) => [id, id])], (value) => mutate(() => { if (value) option.next = value; else delete option.next; })));
   if (isWorldDialogue()) fields.appendChild(makeSelect("选项来源", option.repeat || "", [["", "单个选项"], ["wasteCards", "每个可搬废料的伎俩副本"]], (value) => mutate(() => { if (value) option.repeat = value; else delete option.repeat; })));
   fields.appendChild(makeInput("具名动作", option.action || "", (value) => mutate(() => { if (value) option.action = value; else delete option.action; }), { list: "actionIds", wide: true }));
@@ -345,7 +386,7 @@ function renderOptionInspector(node, option) {
   const actions = h("div", "row-actions");
   const connect = h("button", "", option.next ? "重新连线" : "连接节点"); connect.type = "button"; connect.addEventListener("click", () => { linking = { nodeId: selectedNodeId, optionIndex: selectedOptionIndex }; renderGraph(); showFeedback("点击图中的目标节点完成连线"); }); actions.appendChild(connect);
   const back = h("button", "", "返回节点"); back.type = "button"; back.addEventListener("click", () => { selectedOptionIndex = null; renderAll(); }); actions.appendChild(back);
-  const remove = h("button", "danger", "删除选项"); remove.type = "button"; remove.addEventListener("click", () => mutate(() => { node.options.splice(selectedOptionIndex, 1); selectedOptionIndex = null; })); actions.appendChild(remove);
+  const remove = h("button", "danger", "删除选项"); remove.type = "button"; remove.addEventListener("click", () => mutate(() => { nodeOptions(node).splice(selectedOptionIndex, 1); selectedOptionIndex = null; })); actions.appendChild(remove);
   els.inspector.appendChild(actions);
 }
 
@@ -373,6 +414,12 @@ function edgePathData(x1, y1, x2, y2) {
 }
 
 function optionPortPoint(nodeId, nodeIndex, optionIndex) {
+  const card = Array.from(els.graphNodes.children).find((element) => element.dataset.nodeId === nodeId);
+  const port = card?.querySelectorAll(".node-option .port")[optionIndex];
+  if (port) {
+    const rect = port.getBoundingClientRect(), graphRect = els.graph.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2 - graphRect.left - graphOffset.x, y: rect.top + rect.height / 2 - graphRect.top - graphOffset.y };
+  }
   const pos = nodePosition(nodeId, nodeIndex);
   return { x: pos.x + 250, y: pos.y + 104 + optionIndex * 25 };
 }
@@ -382,7 +429,7 @@ function nodeFromPointer(event) {
 }
 
 function disconnectOption(nodeId, optionIndex) {
-  const option = current().nodes[nodeId]?.options?.[optionIndex];
+  const option = nodeOptions(current().nodes[nodeId])[optionIndex];
   if (!option?.next) return;
   mutate(() => {
     delete option.next;
@@ -437,7 +484,7 @@ function finishLinkDrag(event) {
   if (!dragState.moved) return renderEdges();
   const targetNodeId = nodeFromPointer(event);
   if (!targetNodeId) return renderEdges();
-  const option = current().nodes[dragState.nodeId]?.options?.[dragState.optionIndex];
+  const option = nodeOptions(current().nodes[dragState.nodeId])[dragState.optionIndex];
   if (!option) return renderEdges();
   mutate(() => {
     option.next = targetNodeId;
@@ -448,12 +495,14 @@ function finishLinkDrag(event) {
 }
 
 function renderEdges() {
+  if (!current()) return;
   els.graphEdges.replaceChildren();
   const ids = Object.keys(current().nodes);
   ids.forEach((nodeId, nodeIndex) => {
     const from = nodePosition(nodeId, nodeIndex);
-    (current().nodes[nodeId].options || []).forEach((option, optionIndex) => {
-      if (!option.next || !current().nodes[option.next]) return;
+    nodeOptions(current().nodes[nodeId]).forEach((option, optionIndex) => {
+      // 返回 root 的跳转保留在选项中，画布省略回连线以减少交叉。
+      if (!option.next || option.next === "root" || !current().nodes[option.next]) return;
       const targetIndex = ids.indexOf(option.next), to = nodePosition(option.next, targetIndex);
       const { x: x1, y: y1 } = optionPortPoint(nodeId, nodeIndex, optionIndex);
       const x2 = to.x, y2 = to.y + 45;
@@ -477,23 +526,32 @@ function renderEdges() {
 }
 
 function renderGraph() {
+  if (!current()) return;
   els.graphNodes.replaceChildren();
   const dialogue = current(), ids = Object.keys(dialogue.nodes), entries = new Set([dialogue.start.default, ...(dialogue.start.rules || []).map((rule) => rule.node)]);
   if (!ids.length) { els.graphNodes.appendChild(h("p", "graph-empty", "创建一个节点开始编写剧情。")); return; }
   ids.forEach((nodeId, index) => {
     const node = dialogue.nodes[nodeId], pos = nodePosition(nodeId, index);
     const card = h("article", `graph-node${selectedNodeId === nodeId ? " selected" : ""}${linking ? " linking-target" : ""}`); card.dataset.nodeId = nodeId; card.style.left = `${pos.x}px`; card.style.top = `${pos.y}px`;
-    const head = h("header", "node-head"); if (entries.has(nodeId)) head.appendChild(h("span", "entry-badge", "入口")); head.appendChild(h("strong", "", simpleText(node.title) || nodeId)); head.appendChild(h("small", "", nodeId)); card.appendChild(head);
-    card.appendChild(h("p", "node-excerpt", simpleText(node.body).replace(/\n/g, " ") || "空白节点"));
+    const head = h("header", "node-head");
+    const meta = h("div", "node-meta");
+    meta.appendChild(h("strong", "", simpleText(node.title) || nodeId));
+    meta.appendChild(h("small", "", nodeId));
+    head.appendChild(meta);
+    if (entries.has(nodeId)) head.appendChild(h("span", "entry-badge", "入口"));
+    const excerpt = h("p", "node-excerpt", simpleText(node.body) || "空白节点");
+    excerpt.title = excerpt.textContent;
+    head.appendChild(excerpt);
+    card.appendChild(head);
     const options = h("div", "node-options");
-    (node.options || []).forEach((option, optionIndex) => { const row = h("div", `node-option${selectedNodeId === nodeId && selectedOptionIndex === optionIndex ? " active" : ""}`); row.appendChild(h("span", "", simpleText(option.label) || option.id)); const port = h("i", "port"); port.title = "拖到目标节点连接；也可点击后选择目标节点"; port.addEventListener("pointerdown", (event) => startLinkDrag(event, nodeId, optionIndex)); port.addEventListener("click", (event) => { event.stopPropagation(); linking = { nodeId, optionIndex }; selectedNodeId = nodeId; selectedOptionIndex = optionIndex; renderAll(); showFeedback("点击目标节点完成连线"); }); row.appendChild(port); row.addEventListener("click", (event) => { event.stopPropagation(); selectedNodeId = nodeId; selectedOptionIndex = optionIndex; linking = null; renderAll(); }); options.appendChild(row); });
+    nodeOptions(node).forEach((option, optionIndex) => { const row = h("div", `node-option${selectedNodeId === nodeId && selectedOptionIndex === optionIndex ? " active" : ""}`); row.appendChild(h("span", "", simpleText(option.label) || option.id)); const port = h("i", "port"); port.title = "拖到目标节点连接；也可点击后选择目标节点"; port.addEventListener("pointerdown", (event) => startLinkDrag(event, nodeId, optionIndex)); port.addEventListener("click", (event) => { event.stopPropagation(); linking = { nodeId, optionIndex }; selectedNodeId = nodeId; selectedOptionIndex = optionIndex; renderAll(); showFeedback("点击目标节点完成连线"); }); row.appendChild(port); row.addEventListener("click", (event) => { event.stopPropagation(); selectedNodeId = nodeId; selectedOptionIndex = optionIndex; linking = null; renderAll(); }); options.appendChild(row); });
     card.appendChild(options);
     card.addEventListener("click", () => {
-      if (linking) { const source = current().nodes[linking.nodeId]?.options?.[linking.optionIndex]; if (source) mutate(() => { source.next = nodeId; linking = null; selectedNodeId = nodeId; selectedOptionIndex = null; }); return; }
+      if (linking) { const source = nodeOptions(current().nodes[linking.nodeId])[linking.optionIndex]; if (source) mutate(() => { source.next = nodeId; linking = null; selectedNodeId = nodeId; selectedOptionIndex = null; }); return; }
       selectedNodeId = nodeId; selectedOptionIndex = null; renderAll();
     });
     head.addEventListener("pointerdown", (event) => { event.stopPropagation(); head.setPointerCapture(event.pointerId); drag = { nodeId, startX: event.clientX, startY: event.clientY, original: { ...pos }, element: card, moved: false }; });
-    head.addEventListener("pointermove", (event) => { if (!drag || drag.nodeId !== nodeId) return; const next = nodePosition(nodeId, index); next.x = Math.max(16, drag.original.x + event.clientX - drag.startX); next.y = Math.max(16, drag.original.y + event.clientY - drag.startY); drag.moved = true; card.style.left = `${next.x}px`; card.style.top = `${next.y}px`; renderEdges(); });
+    head.addEventListener("pointermove", (event) => { if (!drag || drag.nodeId !== nodeId) return; const next = nodePosition(nodeId, index); next.x = drag.original.x + event.clientX - drag.startX; next.y = drag.original.y + event.clientY - drag.startY; drag.moved = true; card.style.left = `${next.x}px`; card.style.top = `${next.y}px`; renderEdges(); });
     head.addEventListener("pointerup", () => { if (drag?.moved) recordHistory(); drag = null; });
     els.graphNodes.appendChild(card);
   });
@@ -509,7 +567,13 @@ function applyGraphOffset() {
 
 function renderNodeList() {
   els.nodeList.replaceChildren();
-  Object.keys(current().nodes).forEach((id) => { const button = h("button", selectedNodeId === id ? "active" : ""); button.type = "button"; button.append(h("span", "", simpleText(current().nodes[id].title) || id), h("small", "", id)); button.addEventListener("click", () => { selectedNodeId = id; selectedOptionIndex = null; linking = null; renderAll(); }); els.nodeList.appendChild(button); });
+  Object.keys(current().nodes).forEach((id) => {
+    const node = current().nodes[id], button = h("button", selectedNodeId === id ? "active" : ""); button.type = "button";
+    const label = window.DialogueEditorEnvironment?.sampleOnly ? simpleText(node.body).split("\n")[0].slice(0, 28) || id : simpleText(node.title) || id;
+    button.title = `${label}\nID: ${id}`;
+    button.append(h("span", "", label), h("small", "", node.optionList ? `${id} · @${node.optionList}` : id));
+    button.addEventListener("click", () => { selectedNodeId = id; selectedOptionIndex = null; linking = null; renderAll(); }); els.nodeList.appendChild(button);
+  });
 }
 
 function renderNpcSelect() {
@@ -524,23 +588,35 @@ function renderNpcSelect() {
 }
 
 function renderAll() {
-  if (!current()) return;
+  const empty = !current();
+  [els.addNode, els.npcSettings, els.validate, els.sandboxButton, els.apply, $("#saveTextJsonButton")].forEach((button) => { button.disabled = empty || savingJson; });
+  if (empty) {
+    renderNpcSelect(); els.nodeList.replaceChildren(); els.graphNodes.replaceChildren(h("p", "graph-empty", "文件夹内没有有效对话。可新建、导入或在设置中更换文件夹。"));
+    els.graphEdges.replaceChildren(); els.inspector.replaceChildren(); els.dirty.textContent = "无对话";
+    els.undo.disabled = true; els.redo.disabled = true; $("#textModeButton").disabled = true;
+    $("#textWorkspace").hidden = true; els.graph.hidden = false; $("#graphToolbar").hidden = false;
+    return;
+  }
+  $("#textModeButton").disabled = false;
+  if (selectedNodeId && !current().nodes[selectedNodeId]) selectedNodeId = null;
+  if (selectedOptionIndex !== null && !nodeOptions(current().nodes[selectedNodeId])[selectedOptionIndex]) selectedOptionIndex = null;
   renderNpcSelect(); renderNodeList(); renderGraph(); renderInspector();
   els.selectionStatus.textContent = selectedNodeId ? `${selectedNodeId}${selectedOptionIndex === null ? "" : ` / 选项 ${selectedOptionIndex + 1}`}` : `${current().id} / 对话设置`;
   updateHistoryUi();
+  window.DialogueTextEditor?.refresh();
 }
 
-function uniqueNodeId(base = "node") { let id = base, suffix = 2; while (current().nodes[id]) id = `${base}${suffix++}`; return id; }
-function uniqueOptionId(node, base) { let id = base, suffix = 2; while ((node.options || []).some((item) => item.id === id)) id = `${base}${suffix++}`; return id; }
+function uniqueNodeId(base = "node") { let id = base, suffix = 2; while (current().nodes[id] || current().optionLists?.[id]) id = `${base}${suffix++}`; return id; }
+function uniqueOptionId(node, base) { let id = base, suffix = 2; while (nodeOptions(node).some((item) => item.id === id)) id = `${base}${suffix++}`; return id; }
 
 function addNode() {
   const id = uniqueNodeId();
-  mutate(() => { current().nodes[id] = { kicker: `${current().name} · 对话`, title: "新节点", body: "在这里输入对白。", options: [] }; current().editor ||= { positions: {} }; current().editor.positions[id] = { x: 80 + Object.keys(current().nodes).length * 35, y: 90 + Object.keys(current().nodes).length * 30 }; selectedNodeId = id; selectedOptionIndex = null; });
+  mutate(() => { current().nodes[id] = { kicker: `${current().name} · 对话`, title: "新节点", body: "在这里输入对白。", options: [] }; current().editor ||= { positions: {} }; current().editor.positions[id] = { x: 80 + Object.keys(current().nodes).length * 35, y: 90 + Object.keys(current().nodes).length * 30 }; if (current().optionLists) setNodeOptions(current().nodes[id], []); selectedNodeId = id; selectedOptionIndex = null; });
 }
 
 function duplicateNode(id) {
   const nextId = uniqueNodeId(`${id}Copy`), source = current().nodes[id], pos = current().editor?.positions?.[id] || { x: 80, y: 80 };
-  mutate(() => { current().nodes[nextId] = clone(source); current().nodes[nextId].options = (current().nodes[nextId].options || []).map((option, i) => ({ ...option, id: uniqueOptionId(current().nodes[nextId], `${option.id || "option"}${i + 1}`) })); current().editor.positions[nextId] = { x: pos.x + 50, y: pos.y + 70 }; selectedNodeId = nextId; selectedOptionIndex = null; });
+  mutate(() => { current().nodes[nextId] = clone(source); const copied = clone(nodeOptions(source)); if (current().optionLists) delete current().nodes[nextId].optionList; setNodeOptions(current().nodes[nextId], copied); current().editor.positions[nextId] = { x: pos.x + 50, y: pos.y + 70 }; selectedNodeId = nextId; selectedOptionIndex = null; });
 }
 
 function deleteNode(id) {
@@ -549,7 +625,7 @@ function deleteNode(id) {
   if ((dialogue.entryNodes || []).includes(id)) inbound.push("World 外部入口（先移除入口标记及外部引用）");
   if (dialogue.start.default === id) inbound.push("默认入口");
   (dialogue.start.rules || []).forEach((rule, index) => { if (rule.node === id) inbound.push(`入口规则 ${index + 1}`); });
-  Object.entries(dialogue.nodes).forEach(([sourceId, node]) => (node.options || []).forEach((option) => { if (option.next === id) inbound.push(`${sourceId}.${option.id}`); }));
+  Object.entries(dialogue.nodes).forEach(([sourceId, node]) => nodeOptions(node).forEach((option) => { if (option.next === id) inbound.push(`${sourceId}.${option.id}`); }));
   if (inbound.length) return showFeedback(`节点仍被引用：${inbound.join("、")}`, true);
   if (Object.keys(dialogue.nodes).length === 1) return showFeedback("对话至少需要一个节点", true);
   mutate(() => { delete dialogue.nodes[id]; delete dialogue.editor?.positions?.[id]; selectedNodeId = null; selectedOptionIndex = null; });
@@ -557,10 +633,10 @@ function deleteNode(id) {
 
 function renameNode(oldId, nextId) {
   if (oldId === nextId) return;
-  if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(nextId) || current().nodes[nextId]) return showFeedback("节点 ID 无效或已经存在", true);
+  if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(nextId) || (current().nodes[nextId] || current().optionLists?.[nextId])) return showFeedback("节点 ID 无效或已经存在", true);
   mutate(() => {
     const dialogue = current(), entries = Object.entries(dialogue.nodes), replacement = {};
-    entries.forEach(([id, node]) => { replacement[id === oldId ? nextId : id] = node; (node.options || []).forEach((option) => { if (option.next === oldId) option.next = nextId; }); });
+    entries.forEach(([id, node]) => { replacement[id === oldId ? nextId : id] = node; nodeOptions(node).forEach((option) => { if (option.next === oldId) option.next = nextId; }); });
     dialogue.nodes = replacement; if (dialogue.entryNodes) dialogue.entryNodes = dialogue.entryNodes.map((id) => id === oldId ? nextId : id); if (dialogue.start.default === oldId) dialogue.start.default = nextId; dialogue.start.rules.forEach((rule) => { if (rule.node === oldId) rule.node = nextId; });
     if (dialogue.editor?.positions?.[oldId]) { dialogue.editor.positions[nextId] = dialogue.editor.positions[oldId]; delete dialogue.editor.positions[oldId]; }
     selectedNodeId = nextId;
@@ -573,12 +649,20 @@ function renameNpc(nextId) {
   if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(nextId) || documents[nextKey]) return showFeedback("同类型对话 ID 无效或已经存在", true);
   const references = dialogueReferences(dialogue);
   delete documents[oldKey]; documents[nextKey] = dialogue; dialogue.id = nextId; currentId = nextKey;
-  recordHistory(); renderAll(); showFeedback(`已修改 ID；导出后更新 ${sourceDirectory()}/manifest.json 及引用：${references.join("；") || "调用该对话的 World 入口"}`);
+  window.DialogueTextEditor?.moveDraft(oldKey, nextKey);
+  moveSourceFile(oldKey, nextKey);
+  recordHistory(); renderAll(); showFeedback(`已修改 ID；保存后请同步外部引用：${references.join("；") || "调用该对话的入口"}`);
+}
+
+function moveSourceFile(previous, next) {
+  const files = window.DialogueEditorEnvironment?.files;
+  if (previous !== next && files?.[previous]) { files[next] = files[previous]; delete files[previous]; }
 }
 
 function validationResult() {
   const result = Runtime.validateDialogue(current());
   const warnings = [...result.warnings];
+  if (window.DialogueEditorEnvironment?.sampleOnly) return { errors: result.errors, warnings };
   const manifest = dataSource().getManifest();
   const id = current().id;
   if (!manifest?.dialogues?.[id]) warnings.push(`manifest.json 尚未登记 ${id}`);
@@ -601,41 +685,53 @@ function validationResult() {
 function showValidation() {
   selectedNodeId = null; selectedOptionIndex = null; renderAll();
   const result = validationResult(), card = h("section", "card"); card.appendChild(h("h4", "", `检查：${result.errors.length} 错误，${result.warnings.length} 警告`));
-  const list = h("ul", "validation-list"); result.errors.forEach((message) => list.appendChild(h("li", "error", `错误：${message}`))); result.warnings.forEach((message) => list.appendChild(h("li", "warning", `警告：${message}`))); if (!result.errors.length && !result.warnings.length) list.appendChild(h("li", "", "配置完整，可以导出。")); card.appendChild(list); els.inspector.prepend(card);
-  showFeedback(result.errors.length ? "存在阻止导出的错误" : result.warnings.length ? "结构通过，但有联动警告" : "检查通过", Boolean(result.errors.length));
+  const list = h("ul", "validation-list"); result.errors.forEach((message) => list.appendChild(h("li", "error", `错误：${message}`))); result.warnings.forEach((message) => list.appendChild(h("li", "warning", `警告：${message}`))); if (!result.errors.length && !result.warnings.length) list.appendChild(h("li", "", "配置完整，可以保存。")); card.appendChild(list); els.inspector.prepend(card);
+  showFeedback(result.errors.length ? "存在阻止保存的错误" : result.warnings.length ? "结构通过，但有联动警告" : "检查通过", Boolean(result.errors.length));
   return result;
 }
 
-function exportCurrent() {
-  const result = showValidation(); if (result.errors.length) return;
-  const source = `${JSON.stringify(current(), null, 2)}\n`, blob = new Blob([source], { type: "application/json;charset=utf-8" }), url = URL.createObjectURL(blob), link = document.createElement("a");
-  link.href = url; link.download = `${current().id}.json`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-  originalSnapshots[currentId] = snapshot(); cleanSnapshot = snapshot(); updateHistoryUi();
-  const manifestEntry = `"${current().id}": "${current().id}.json"`;
-  navigator.clipboard?.writeText(manifestEntry).catch(() => {});
-  showFeedback(`已导出；请替换 ${sourceDirectory()}/${current().id}.json${dataSource().getManifest()?.dialogues?.[current().id] ? "" : `，并登记 ${sourceDirectory()}/manifest.json：${manifestEntry}`}。ID 变化时还需更新外部引用。`);
-  persistDraft();
+async function saveCurrentJson(skipTextGuard = false) {
+  if (savingJson || !current()) return;
+  if (!skipTextGuard && window.DialogueTextEditor?.hasDraft()) return window.DialogueTextEditor.guard(() => saveCurrentJson(true));
+  const result = validationResult(); if (result.errors.length) { showValidation(); return; }
+  const environment = window.DialogueEditorEnvironment;
+  if (!environment.folderMode) return showFeedback("请通过本地启动脚本打开，并在顶部“设置”中指定 JSON 文件夹后保存。", true);
+  const key = currentId, saved = snapshot();
+  const target = environment.files[key] ||= { file: `${current().id}.json`, revision: null };
+  savingJson = true; renderAll();
+  try {
+    const response = await environment.request("save", { directory: environment.directory, file: target.file, revision: target.revision, dialogue: JSON.parse(saved) });
+    target.revision = response.revision;
+    originalSnapshots[key] = saved;
+    if (currentId === key) cleanSnapshot = saved;
+    persistDraft(); showFeedback(`已生效并保存到 ${environment.directory}/${response.file}`);
+  } catch (error) { showFeedback(`保存失败：${error.message}`, true); }
+  finally { savingJson = false; renderAll(); }
 }
 
-function createNpc() {
+function createNpc(skipTextGuard = false) {
+  if (!skipTextGuard && window.DialogueTextEditor?.hasDraft()) return window.DialogueTextEditor.guard(() => createNpc(true));
   const kind = $("#dialogueKind").value === "world" || ($("#dialogueKind").value === "all" && isWorldDialogue()) ? "world" : "npc";
   const id = window.prompt(`输入稳定英文 ${kind === "world" ? "世界对话" : "NPC"} ID`, kind === "world" ? "newDialogue" : "newNpc"); if (!id) return;
   const key = `${kind}:${id}`;
   if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(id) || documents[key]) return showFeedback("同类型对话 ID 无效或已经存在", true);
   const name = window.prompt("输入显示名称", kind === "world" ? "新对话" : "新角色") || id;
   documents[key] = normalizeDialogue({ schemaVersion: 1, kind, id, name, start: { default: "root", rules: [] }, nodes: { root: { title: name, body: "在这里输入对白。", options: [] } } });
-  originalSnapshots[key] = null; selectNpc(key); persistDraft();
+  originalSnapshots[key] = null; selectNpc(key, true); persistDraft();
 }
 
-function selectNpc(id) {
+function selectNpc(id, skipTextGuard = false) {
+  if (!skipTextGuard && window.DialogueTextEditor?.hasDraft()) return window.DialogueTextEditor.guard(() => selectNpc(id, true));
   currentId = id.includes(":") ? id : `npc:${id}`; selectedNodeId = null; selectedOptionIndex = null; linking = null; resetHistory(); renderAll();
 }
 
-async function importDialogue(file) {
+async function importDialogue(file, skipTextGuard = false) {
+  if (!skipTextGuard && window.DialogueTextEditor?.hasDraft()) return window.DialogueTextEditor.guard(() => importDialogue(file, true));
   try {
     const dialogue = JSON.parse(await file.text()), result = Runtime.validateDialogue(dialogue);
     if (result.errors.length) throw new Error(result.errors.join("；"));
-    const key = documentKey(dialogue); documents[key] = normalizeDialogue(clone(dialogue)); originalSnapshots[key] ||= null; $("#dialogueKind").value = "all"; $("#dialogueSearch").value = ""; selectNpc(key); persistDraft(); showFeedback(`已导入 ${dialogue.name}`);
+    await window.DialogueTextEditor?.validateImport(dialogue);
+    const key = documentKey(dialogue); documents[key] = normalizeDialogue(clone(dialogue)); originalSnapshots[key] ||= null; $("#dialogueKind").value = "all"; $("#dialogueSearch").value = ""; selectNpc(key, true); persistDraft(); showFeedback(`已导入 ${dialogue.name}`);
   } catch (error) { showFeedback(`导入失败：${error.message}`, true); }
   els.importFile.value = "";
 }
@@ -671,7 +767,7 @@ function enterSandboxNode(nodeId) {
   optionNode.options.forEach((option, index) => {
     const button = document.createElement("button"); button.type = "button"; button.disabled = !option.enabled; button.append(h("span", "", option.label), h("small", "", option.hint));
     button.addEventListener("click", () => {
-      const raw = dialogue.nodes[sandboxNodeId].options.find((entry) => entry.id === option.id), fresh = sandboxContext();
+      const raw = nodeOptions(dialogue.nodes[sandboxNodeId], dialogue).find((entry) => entry.id === option.id), fresh = sandboxContext();
       if (!Runtime.evaluateCondition(raw.visibleWhen, fresh) || !Runtime.evaluateCondition(raw.enabledWhen, fresh)) return enterSandboxNode(sandboxNodeId);
       if (raw.action) appendSandboxLog(`具名动作（仅记录）：${raw.action}`);
       const effectBefore = clone({ flags: sandboxState.flags, inventory: sandboxState.inventory });
@@ -701,21 +797,48 @@ function startSandbox() {
 
 async function initialize() {
   try {
-    const [registry, worlds, battle] = await Promise.all([window.NpcDialogueData.ready, window.WorldDialogueData.ready, fetch("../battle-data/manifest.json", { cache: "no-store" }).then((response) => response.json()), window.ActionEventData.ready]);
+    await window.DialogueEditorEnvironment?.ready;
+    const sampleOnly = window.DialogueEditorEnvironment?.sampleOnly;
+    $("#editorDataHint").hidden = !sampleOnly;
+    if (window.DialogueEditorEnvironment?.folderMode) {
+      const environment = window.DialogueEditorEnvironment;
+      $("#editorDataHint").textContent = `对话文件夹：${environment.directory}${environment.skipped.length ? `；跳过 ${environment.skipped.length} 个无效或重复文件：${environment.skipped.join("；")}` : ""}`;
+    }
+    if (sampleOnly) {
+      $("#nodeLegendTitle").textContent = "文本提示";
+      $("#nodeLegendHelp").textContent = "转换后，目录显示节点 ID 和 @选项组ID。@root 进入开场正文，@mainChoices 保留正文并使用共享回答组；无需手写 ID 声明。";
+    }
+    const [registry, worlds, battle] = await Promise.all([window.NpcDialogueData.ready, window.WorldDialogueData.ready, sampleOnly ? null : fetch("../battle-data/manifest.json", { cache: "no-store" }).then((response) => response.json()), window.ActionEventData.ready]);
     battleManifest = battle;
     for (const [kind, entries] of [["npc", registry], ["world", worlds]]) {
       for (const source of Object.values(entries)) { const dialogue = normalizeDialogue(clone(source)); dialogue.kind = kind; const key = documentKey(dialogue); documents[key] = dialogue; originalSnapshots[key] = JSON.stringify(dialogue); }
-      try { const saved = JSON.parse(sessionStorage.getItem(`${kind}-editor-draft`) || "null");
-        for (const [id, source] of Object.entries(saved?.documents || {})) if (source?.id === id) { const dialogue = normalizeDialogue(clone(source)); dialogue.kind = kind; if (!Runtime.validateDialogue(dialogue).errors.length) documents[documentKey(dialogue)] = dialogue; }
+      try { const saved = JSON.parse(sessionStorage.getItem(editorStorageKey(`${kind}-editor-draft`)) || "null");
+        for (const [id, source] of Object.entries(saved?.documents || {})) if (source?.id === id) {
+          const dialogue = normalizeDialogue(clone(source)); dialogue.kind = kind;
+          if (Runtime.validateDialogue(dialogue).errors.length) continue;
+          if (window.DialogueEditorEnvironment?.folderMode) {
+            const files = window.DialogueEditorEnvironment.files, key = `${kind}:${id}`, savedFile = saved.sources?.[id];
+            const diskKey = savedFile ? Object.keys(files).find((k) => k.startsWith(`${kind}:`) && files[k].file === savedFile.file) : key;
+            if (saved.revisions?.[id] !== (files[diskKey]?.revision || null)) continue;
+            if (diskKey && diskKey !== key) {
+              // A renamed, unsaved document still owns its original source file after reload.
+              originalSnapshots[key] = originalSnapshots[diskKey]; delete documents[diskKey]; moveSourceFile(diskKey, key);
+            }
+          }
+          documents[documentKey(dialogue)] = dialogue;
+        }
       } catch { showFeedback("部分草稿无法读取，已加载项目配置", true); }
     }
     const params = new URLSearchParams(location.search), requested = `${params.get("kind") || "world"}:${params.get("id")}`;
-    const saved = sessionStorage.getItem("dialogue-editor-selection");
-    selectNpc(documents[requested] ? requested : documents[saved] ? saved : Object.keys(documents)[0]);
-    if (params.get("node") && current().nodes[params.get("node")]) { selectedNodeId = params.get("node"); renderAll(); }
+    const saved = sessionStorage.getItem(editorStorageKey("dialogue-editor-selection"));
+    const first = documents[requested] ? requested : documents[saved] ? saved : Object.keys(documents)[0];
+    if (first) selectNpc(first); else renderAll();
+    if (params.get("node") && current()?.nodes[params.get("node")]) { selectedNodeId = params.get("node"); renderAll(); }
+    $("#sandboxLocation").replaceChildren();
     for (const n of window.WORLD_MAP_BUNDLE.map.nodes) { const option = h("option", "", `${n.label} · ${n.id}`); option.value = n.id; $("#sandboxLocation").appendChild(option); }
     els.app.classList.remove("is-loading");
-  } catch (error) { els.dirty.textContent = "载入失败"; showFeedback(error.message, true); console.error(error); }
+    window.DialogueEditorStartup?.complete();
+  } catch (error) { els.dirty.textContent = "载入失败"; showFeedback(error.message, true); window.DialogueEditorStartup?.fail(error); console.error(error); }
 }
 
 Runtime.catalog.itemIds.forEach((id) => { const option = document.createElement("option"); option.value = id; option.label = itemNames[id] || id; $("#itemIds").appendChild(option); });
@@ -726,11 +849,15 @@ $("#dialogueKind").addEventListener("change", renderNpcSelect);
 $("#dialogueSearch").addEventListener("input", renderNpcSelect);
 els.npcSelect.addEventListener("change", () => { if (els.npcSelect.value) selectNpc(els.npcSelect.value); });
 els.npcSettings.addEventListener("click", () => { selectedNodeId = null; selectedOptionIndex = null; linking = null; renderAll(); });
-els.addNode.addEventListener("click", addNode); els.create.addEventListener("click", createNpc);
+els.addNode.addEventListener("click", addNode); els.create.addEventListener("click", () => createNpc());
 els.undo.addEventListener("click", () => restoreHistory(historyIndex - 1)); els.redo.addEventListener("click", () => restoreHistory(historyIndex + 1));
 els.importButton.addEventListener("click", () => els.importFile.click()); els.importFile.addEventListener("change", () => { if (els.importFile.files[0]) importDialogue(els.importFile.files[0]); });
-els.validate.addEventListener("click", showValidation); els.export.addEventListener("click", exportCurrent);
-els.sandboxButton.addEventListener("click", () => { els.sandbox.classList.remove("is-hidden"); populateSandboxEntries(); startSandbox(); }); els.closeSandbox.addEventListener("click", () => els.sandbox.classList.add("is-hidden")); els.startSandbox.addEventListener("click", startSandbox);
+els.validate.addEventListener("click", showValidation); els.apply.addEventListener("click", () => saveCurrentJson());
+$("#saveTextJsonButton").addEventListener("click", () => saveCurrentJson());
+els.sandboxButton.addEventListener("click", () => {
+  const open = () => { els.sandbox.classList.remove("is-hidden"); populateSandboxEntries(); startSandbox(); };
+  if (window.DialogueTextEditor?.hasDraft()) window.DialogueTextEditor.guard(open); else open();
+}); els.closeSandbox.addEventListener("click", () => els.sandbox.classList.add("is-hidden")); els.startSandbox.addEventListener("click", startSandbox);
 els.sandbox.addEventListener("click", (event) => { if (event.target === els.sandbox) els.sandbox.classList.add("is-hidden"); });
 els.graph.addEventListener("pointerdown", (event) => {
   if (event.button !== 0 || event.target.closest?.(".graph-node, .graph-edge-hit, .graph-edge")) return;
@@ -770,10 +897,16 @@ function stopGraphPan(event) {
 }
 document.addEventListener("pointerup", stopGraphPan);
 document.addEventListener("pointercancel", stopGraphPan);
-document.addEventListener("keydown", (event) => { if (event.key === "Escape") { if (linkDrag) { linkDrag.path.remove(); linkDrag = null; } linking = null; els.sandbox.classList.add("is-hidden"); renderGraph(); } if (event.ctrlKey && event.key.toLowerCase() === "z") { event.preventDefault(); restoreHistory(historyIndex - 1); } if (event.ctrlKey && event.key.toLowerCase() === "y") { event.preventDefault(); restoreHistory(historyIndex + 1); } });
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") { if (linkDrag) { linkDrag.path.remove(); linkDrag = null; } linking = null; els.sandbox.classList.add("is-hidden"); renderGraph(); }
+  if (event.target.matches("input, textarea")) return;
+  if (event.ctrlKey && event.key.toLowerCase() === "z") { event.preventDefault(); restoreHistory(historyIndex - 1); }
+  if (event.ctrlKey && event.key.toLowerCase() === "y") { event.preventDefault(); restoreHistory(historyIndex + 1); }
+});
 window.addEventListener("beforeunload", (event) => {
+  if (window.DialogueEditorLeaving) return;
   const dirty = Object.entries(documents).some(([id, dialogue]) => JSON.stringify(dialogue) !== originalSnapshots[id]);
-  if (dirty) { event.preventDefault(); event.returnValue = ""; }
+  if (dirty || window.DialogueTextEditor?.hasAnyDraft()) { event.preventDefault(); event.returnValue = ""; }
 });
 
 initialize();

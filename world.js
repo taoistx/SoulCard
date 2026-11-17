@@ -831,8 +831,8 @@ function showNpcDialogue(npcId, requestedNodeId = null) {
   const nodeId = requestedNodeId || window.NPCDialogueRuntime.resolveStart(script, context);
   const node = window.NPCDialogueRuntime.resolveNode(script, nodeId, context);
   if (!node) return;
-  const optionNode = node;
   applyDialogueEffects(node.effects);
+  const optionNode = window.NPCDialogueRuntime.resolveNode(script, nodeId, getNpcDialogueContext());
 
   const configuredOptions = (optionNode.options || []).map((option) => {
     const staminaCost = optionCostsStamina(option);
@@ -842,7 +842,7 @@ function showNpcDialogue(npcId, requestedNodeId = null) {
       enabled: option.enabled && v06NpcOptionEnabled(npcId, option.action) && (!staminaCost || canSpendStamina()),
       action: async () => {
         const freshContext = getNpcDialogueContext();
-        if (!window.NPCDialogueRuntime.evaluateCondition(option.enabledWhen, freshContext)) return showNpcDialogue(npcId, nodeId);
+        if (!window.NPCDialogueRuntime.evaluateCondition(option.visibleWhen, freshContext) || !window.NPCDialogueRuntime.evaluateCondition(option.enabledWhen, freshContext)) return showNpcDialogue(npcId, nodeId);
         if (!v06NpcOptionEnabled(npcId, option.action) || (staminaCost && !canSpendStamina())) return showNpcDialogue(npcId, nodeId);
         if (!v06CanApplyEffects(option.effects || [])) return showNpcDialogue(npcId, nodeId);
         const completed = option.action ? await runNpcAction(npcId, option.action) : true;

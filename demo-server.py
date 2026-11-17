@@ -3,14 +3,15 @@ from pathlib import Path
 import argparse
 import time
 import webbrowser
+from dialogue_editor_server import DialogueEditorHandler
 
 
 ROOT = Path(__file__).resolve().parent
 
 
-class NoCacheHandler(SimpleHTTPRequestHandler):
+class NoCacheHandler(DialogueEditorHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(ROOT), **kwargs)
+        super().__init__(*args, **kwargs)
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")

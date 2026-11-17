@@ -73,9 +73,17 @@
 
   function evaluateCondition(group, context = {}) {
     if (group === undefined || group === null) return true;
-    if (!isObject(group) || !Array.isArray(group.clauses)) return false;
-    if (!group.clauses.length) return true;
-    return group.mode === "any" ? group.clauses.some((clause) => evaluateClause(clause, context)) : group.clauses.every((clause) => evaluateClause(clause, context));
+    const errors = [];
+    validateCondition(group, "condition", errors);
+    if (errors.length) return false;
+    const evaluate = (entry) => {
+      if (!entry.mode) return evaluateClause(entry, context);
+      if (entry.mode === "not") return !evaluate(entry.clauses[0]);
+      // Preserve the existing empty-group behavior for old documents.
+      if (!entry.clauses.length) return true;
+      return entry.mode === "any" ? entry.clauses.some(evaluate) : entry.clauses.every(evaluate);
+    };
+    return evaluate(group);
   }
 
   function resolveText(spec, context = {}) {
@@ -90,6 +98,10 @@
     return rule?.node || dialogue.start?.default;
   }
 
+  function getNodeOptions(dialogue, node) {
+    return node?.optionList ? dialogue.optionLists?.[node.optionList]?.options || [] : node?.options || [];
+  }
+
   function resolveNode(dialogue, nodeId, context = {}) {
     const node = dialogue?.nodes?.[nodeId];
     if (!node) return null;
@@ -97,7 +109,7 @@
       id: nodeId, onEnter: node.onEnter, allowClose: node.allowClose !== false || (node.allowCloseWhen !== undefined && evaluateCondition(node.allowCloseWhen, context)),
       kicker: resolveText(node.kicker || "", context), title: resolveText(node.title || dialogue.name, context), body: resolveText(node.body || "", context),
       effects: clone(node.effects || []),
-      options: (node.options || []).filter((option) => evaluateCondition(option.visibleWhen, context)).map((option) => ({ ...clone(option), label: resolveText(option.label || "", context), hint: resolveText(option.hint || "", context), enabled: evaluateCondition(option.enabledWhen, context) })),
+      options: getNodeOptions(dialogue, node).filter((option) => evaluateCondition(option.visibleWhen, context)).map((option) => ({ ...clone(option), label: resolveText(option.label || "", context), hint: resolveText(option.hint || "", context), enabled: evaluateCondition(option.enabledWhen, context) })),
     };
   }
 
@@ -119,12 +131,15 @@
     for (const match of value.matchAll(/\{\{\s*([^}]+?)\s*\}\}/g)) if (!TEMPLATE_KEYS.has(match[1])) errors.push(`${field} 使用了未知变量 {{${match[1]}}}`);
   }
 
-  function validateCondition(group, field, errors) {
+  function validateCondition(group, field, errors, depth = 0) {
     if (group === undefined || group === null) return;
-    if (!isObject(group) || !["all", "any"].includes(group.mode) || !Array.isArray(group.clauses)) return errors.push(`${field} 必须是包含 mode 和 clauses 的条件组`);
+    if (depth > 64) return errors.push(`${field} 条件嵌套不能超过 64 层`);
+    if (!isObject(group) || !["all", "any", "not"].includes(group.mode) || !Array.isArray(group.clauses)) return errors.push(`${field} 必须是包含 mode 和 clauses 的条件组`);
+    if (group.mode === "not" && group.clauses.length !== 1) errors.push(`${field} 取反组必须恰好包含一个条件`);
     group.clauses.forEach((clause, index) => {
       const path = `${field}.clauses[${index}]`;
       if (!isObject(clause)) return errors.push(`${path} 必须是对象`);
+      if (Object.hasOwn(clause, "mode")) return validateCondition(clause, path, errors, depth + 1);
       if (NUMERIC_SOURCES.has(clause.source)) {
         if (!NUMERIC_OPERATORS.has(clause.operator) || !Number.isFinite(clause.value)) errors.push(`${path} 数值条件无效`);
       } else if (clause.source === "flag") {
@@ -179,6 +194,12 @@
     if (typeof dialogue.name !== "string" || !dialogue.name.trim()) errors.push("name 必须是非空字符串");
     if (!isObject(dialogue.nodes) || !Object.keys(dialogue.nodes).length) errors.push("nodes 至少需要一个节点");
     const nodeIds = new Set(Object.keys(dialogue.nodes || {}));
+    if (dialogue.optionLists !== undefined && !isObject(dialogue.optionLists)) errors.push("optionLists 必须是对象");
+    for (const [id, list] of Object.entries(isObject(dialogue.optionLists) ? dialogue.optionLists : {})) {
+      if (!ID_PATTERN.test(id) || ["__proto__", "constructor", "prototype"].includes(id)) errors.push(`选项组 id ${id} 无效`);
+      if (nodeIds.has(id)) errors.push(`ID ${id} 同时用于 node 和 optionList`);
+      if (!isObject(list) || !Array.isArray(list.options)) errors.push(`optionLists.${id}.options 必须是数组`);
+    }
     if (dialogue.entryNodes !== undefined && (!Array.isArray(dialogue.entryNodes) || dialogue.entryNodes.some((id) => !nodeIds.has(id)))) errors.push("entryNodes 必须引用现有节点");
     if (!isObject(dialogue.start) || !nodeIds.has(dialogue.start?.default)) errors.push("start.default 必须指向现有节点");
     if (dialogue.start?.rules !== undefined && !Array.isArray(dialogue.start.rules)) errors.push("start.rules 必须是数组");
@@ -194,10 +215,14 @@
       validateCondition(node.allowCloseWhen, `nodes.${nodeId}.allowCloseWhen`, errors);
       validateEffects(node.effects, `nodes.${nodeId}.effects`, errors);
       if (node.options !== undefined && !Array.isArray(node.options)) errors.push(`nodes.${nodeId}.options 必须是数组`);
+      if (node.optionList !== undefined && (typeof node.optionList !== "string" || !Object.hasOwn(dialogue.optionLists || {}, node.optionList))) errors.push(`nodes.${nodeId}.optionList 指向未知选项组`);
+      if (dialogue.optionLists !== undefined && node.options !== undefined) errors.push(`nodes.${nodeId} 应通过 optionList 引用选项组，不能同时保存 options`);
+      if (dialogue.optionLists === undefined) validateOptions(node.options, `nodes.${nodeId}.options`);
+    });
+    function validateOptions(entries, path) {
       const optionIds = new Set();
-      const nodeOptions = Array.isArray(node.options) ? node.options : [];
-      nodeOptions.forEach((option, index) => {
-        const field = `nodes.${nodeId}.options[${index}]`;
+      (Array.isArray(entries) ? entries : []).forEach((option, index) => {
+        const field = `${path}[${index}]`;
         if (!isObject(option)) return errors.push(`${field} 必须是对象`);
         if (typeof option.id !== "string" || !ID_PATTERN.test(option.id) || optionIds.has(option.id)) errors.push(`${field}.id 无效或重复`);
         optionIds.add(option.id);
@@ -209,16 +234,17 @@
         if (option.action && !knownActions.has(option.action)) (dialogue.kind === "world" ? errors : warnings).push(`${field}.action 未登记：${option.action}`);
         (Array.isArray(option.effects) ? option.effects : []).forEach((effect) => { if (effect.itemId && !effect.itemId.includes("{{") && !knownItems.has(effect.itemId)) warnings.push(`${field} 使用了未知物品：${effect.itemId}`); });
       });
-    });
+    }
+    for (const [id, list] of Object.entries(isObject(dialogue.optionLists) ? dialogue.optionLists : {})) validateOptions(list?.options, `optionLists.${id}.options`);
     const reachable = new Set(), queue = [...(dialogue.entryNodes || []), dialogue.start?.default, ...startRules.map((rule) => rule.node)].filter((id) => nodeIds.has(id));
-    while (queue.length) { const id = queue.shift(); if (reachable.has(id)) continue; reachable.add(id); (Array.isArray(dialogue.nodes[id]?.options) ? dialogue.nodes[id].options : []).forEach((option) => { if (option.next) queue.push(option.next); }); }
+    while (queue.length) { const id = queue.shift(); if (reachable.has(id)) continue; reachable.add(id); const entries = getNodeOptions(dialogue, dialogue.nodes[id]); (Array.isArray(entries) ? entries : []).forEach((option) => { if (option?.next) queue.push(option.next); }); }
     const unreachable = [...nodeIds].filter((id) => !reachable.has(id));
     if (unreachable.length) warnings.push(`不可达节点：${unreachable.join("、")}`);
-    nodeIds.forEach((id) => { if (dialogue.kind !== "world" && !(Array.isArray(dialogue.nodes[id]?.options) ? dialogue.nodes[id].options : []).length) warnings.push(`节点 ${id} 没有普通选项，将只能献祭或离开`); });
+    nodeIds.forEach((id) => { if (dialogue.kind !== "world" && !getNodeOptions(dialogue, dialogue.nodes[id])?.length) warnings.push(`节点 ${id} 没有普通选项，将只能献祭或离开`); });
     return { errors: [...new Set(errors)], warnings: [...new Set(warnings)] };
   }
 
-  const api = { SCHEMA_VERSION, catalog: Object.freeze({ templateKeys: [...TEMPLATE_KEYS], bodyParts: [...BODY_PARTS], itemIds: [...ITEM_IDS], actions: { ...ACTIONS }, dailyStocks: ["longSword", "shield", "dagger", "heavyArmor", "greatSword"] }), clone, deepFreeze, renderTemplate, resolveText, evaluateCondition, resolveStart, resolveNode, applyEffects, validateDialogue };
+  const api = { SCHEMA_VERSION, catalog: Object.freeze({ templateKeys: [...TEMPLATE_KEYS], bodyParts: [...BODY_PARTS], itemIds: [...ITEM_IDS], actions: { ...ACTIONS }, dailyStocks: ["longSword", "shield", "dagger", "heavyArmor", "greatSword"] }), clone, deepFreeze, renderTemplate, resolveText, evaluateCondition, resolveStart, resolveNode, getNodeOptions, applyEffects, validateDialogue };
   global.NPCDialogueRuntime = Object.freeze(api);
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

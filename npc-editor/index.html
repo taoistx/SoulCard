@@ -4,14 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>对话编辑器</title>
-    <link rel="stylesheet" href="editor.css" />
+    <link rel="stylesheet" href="editor.css?v=text-completion-1" />
+    <script src="startup.js?v=startup-recovery-2"></script>
   </head>
   <body>
+    <section id="startupFailure" class="startup-failure" role="alert" hidden>
+      <h2>对话编辑器未能加载</h2>
+      <p id="startupError"></p>
+      <p>推荐双击同目录的“启动剧情编辑器.cmd”。也可以点击下方按钮，选择 <strong>examples/dialogue_debug.json</strong> 直接进入独立调试。</p>
+      <div class="row-actions"><button id="retryStartupButton" type="button">刷新重试</button><button id="startupSettingsButton" type="button">设置 JSON 文件夹</button><button id="loadStartupExampleButton" class="primary" type="button">选择范例 JSON 并打开</button></div>
+      <input id="startupExampleFile" type="file" accept=".json,application/json" hidden />
+    </section>
     <main id="editorApp" class="editor-app is-loading">
       <header class="editor-header">
         <div class="brand"><p>WORLD AUTHORING TOOL</p><h1>对话编辑器</h1></div>
         <nav><a href="../node-editor/index.html">节点地图编辑器</a><a href="../index.html">返回游戏</a></nav>
         <div class="header-actions">
+          <button id="graphModeButton" type="button" aria-pressed="true">节点图</button>
+          <button id="textModeButton" type="button" aria-pressed="false">文本模式</button>
           <button id="newNpcButton" type="button">新建对话</button>
           <button id="importButton" type="button">导入 JSON</button>
           <input id="importFile" type="file" accept=".json,application/json" hidden />
@@ -19,7 +29,7 @@
           <button id="redoButton" type="button">重做</button>
           <button id="sandboxButton" type="button">状态沙盒</button>
           <button id="validateButton" type="button">检查</button>
-          <button id="exportButton" class="primary" type="button">导出当前对话</button>
+          <button id="editorSettingsButton" type="button">设置</button>
         </div>
         <span id="dirtyState" class="dirty-state">载入中</span>
       </header>
@@ -27,6 +37,7 @@
       <div class="editor-layout">
         <aside class="panel navigator-panel">
           <section>
+            <p id="editorDataHint" class="help" hidden>静态预览：读取 examples/dialogue_debug.json。直接保存请通过“启动剧情编辑器.cmd”打开，并在设置中指定 JSON 文件夹。</p>
             <p class="panel-kicker">当前对话</p>
             <label>类型<select id="dialogueKind"><option value="all">全部</option><option value="npc">NPC</option><option value="world">世界对话</option></select></label>
             <label>搜索<input id="dialogueSearch" placeholder="名称 / ID" type="search" /></label>
@@ -38,12 +49,77 @@
             <div id="nodeList" class="node-list"></div>
           </section>
           <section>
-            <p class="panel-kicker">图例</p>
-            <p class="help"><i class="entry-dot"></i> 入口节点<br />点击选项端口后，再点击目标节点即可连线。节点可以拖动。</p>
+            <p id="nodeLegendTitle" class="panel-kicker">图例</p>
+            <p id="nodeLegendHelp" class="help"><i class="entry-dot"></i> 入口节点<br />点击选项端口后，再点击目标节点即可连线。拖动节点头部可自由放置；拖动画布空白处可向四个方向平移，无边界限制。</p>
           </section>
         </aside>
 
         <section class="graph-column">
+          <div id="graphToolbar" class="graph-toolbar">
+            <button id="applyGraphButton" class="primary" type="button">生效并应用到Json</button>
+            <span id="graphSaveHint" class="help">写入当前对话的源 JSON 文件</span>
+          </div>
+          <section id="textWorkspace" class="text-workspace" hidden>
+            <div class="text-toolbar">
+              <button id="applyTextButton" class="primary" type="button">转换并应用 JSON</button>
+              <button id="saveTextJsonButton" type="button">保存到 JSON 文件</button>
+              <button id="resetTextButton" type="button">从节点图重新生成</button>
+              <button id="importTextButton" type="button">导入文本</button>
+              <button id="exportTextButton" type="button">导出完整文本</button>
+              <input id="importTextFile" type="file" accept=".txt,text/plain" hidden />
+            </div>
+            <p id="textDraftState" class="help" role="status"></p>
+            <div class="text-sheet-content">
+            <section id="textPanelBody" class="text-tab-panel text-body-panel" role="tabpanel" aria-labelledby="textTabBody" tabindex="0">
+              <div class="text-source">
+                <div id="textLineNumbers" class="text-line-numbers"></div>
+                <div class="text-edit-area">
+                  <div id="textScopeHighlights" class="text-scope-highlights" aria-hidden="true"></div>
+                  <textarea id="dialogueTextInput" aria-label="对话树文本" aria-autocomplete="list" aria-controls="textReferenceCompletion" spellcheck="false" wrap="off"></textarea>
+                  <div id="textReferenceCompletion" class="text-completion" role="listbox" aria-label="对话引用候选" hidden></div>
+                </div>
+              </div>
+            </section>
+            <section id="textPanelConfig" class="text-tab-panel" role="tabpanel" aria-labelledby="textTabConfig" tabindex="0" hidden>
+              <p class="help">用于补充正文未直接表达的设置，可编辑；完整对话 JSON 请查看“当前 JSON”页签。</p>
+              <div class="numbered-json-view">
+                <div class="numbered-json-gutter" aria-hidden="true"><pre id="configLineNumbers">1</pre></div>
+                <textarea id="textConfigInput" aria-label="高级 JSON 配置" spellcheck="false" wrap="off"></textarea>
+              </div>
+            </section>
+            <section id="textPanelFlags" class="text-tab-panel text-flags-panel" role="tabpanel" aria-labelledby="textTabFlags" tabindex="0" hidden>
+              <p id="flagMappingsHelp" class="help"></p>
+              <textarea id="textFlagAliases" aria-label="Flag 映射 JSON" rows="7" spellcheck="false"></textarea>
+              <div class="row-actions"><button id="acceptAliasesButton" type="button">采用映射</button><button id="importAliasesButton" type="button">导入映射</button><button id="exportAliasesButton" type="button">导出映射</button><input id="importAliasesFile" type="file" accept=".json,application/json" hidden /></div>
+              <pre id="textFlagReferences" class="help"></pre>
+            </section>
+            <section id="textPanelHelp" class="text-tab-panel text-help-panel" role="tabpanel" aria-labelledby="textTabHelp" tabindex="0" hidden>
+              <h3>文本语法帮助</h3><p class="help">直接写正文，第一行也是正文。正文段落间直接留空行即可，转换时自动保留，无需输入反斜杠。同一节点的正文和选项使用相同缩进，选项用》开头区分。选项后的回复才增加一级 Tab 或四个空格；该回复的选项保持同级。节点和选项组 ID 在手动转换时自动分配，左侧目录同时显示两类 ID。统一用 @ID 或 @ ID：引用 node（例如 @root）会进入目标正文、执行目标进入效果；引用 optionList（例如 @mainChoices）保留当前正文，只切换回答组。即使引用 node 前写了正文，也会切换为目标正文；转换会提示。回答下只有 @optionList 时保留当前显示的正文，不重复执行原节点进入效果。ID 不能跨类型重名，不能引用单个 option。不要写 @node、@option 声明。前置（条件1/！（条件2＆条件3））控制显示；末尾（+名称）选择时设置，正文独立一行则进入时设置。-名称设为假。全半角括号、!、&amp;、/ 均支持。正文保留符号可用反斜杠转义。</p>
+              <p class="help">需要调用游戏模块时，在选项的下一行写 #调用ID，并与选项同级缩进。例如在「交易」下一行写 #shop_eddie 来打开商店。</p>
+              <pre class="text-syntax-example">主文本1
+》主文本1选项1
+    主文本2
+    》主文本2选项1
+    》主文本2选项2
+》离开</pre>
+            </section>
+            <section id="textPanelJson" class="text-tab-panel" role="tabpanel" aria-labelledby="textTabJson" tabindex="0" hidden>
+              <p class="help">转换后的完整对话 JSON，包含正文、选项和跳转；只读，仅在手动转换成功后更新。</p>
+              <div class="numbered-json-view">
+                <div class="numbered-json-gutter" aria-hidden="true"><pre id="jsonLineNumbers">1</pre></div>
+                <pre id="textJsonPreview"></pre>
+              </div>
+            </section>
+            </div>
+            <div id="textDiagnostics" class="text-diagnostics" role="status"></div>
+            <nav id="textSheetTabs" class="text-sheet-tabs" role="tablist" aria-label="编辑与查看页签">
+              <button id="textTabBody" type="button" role="tab" aria-selected="true" aria-controls="textPanelBody" tabindex="0" data-sheet="body">正文</button>
+              <button id="textTabConfig" type="button" role="tab" aria-selected="false" aria-controls="textPanelConfig" tabindex="-1" data-sheet="config">高级配置</button>
+              <button id="textTabFlags" type="button" role="tab" aria-selected="false" aria-controls="textPanelFlags" tabindex="-1" data-sheet="flags">Flag 映射</button>
+              <button id="textTabHelp" type="button" role="tab" aria-selected="false" aria-controls="textPanelHelp" tabindex="-1" data-sheet="help">语法帮助</button>
+              <button id="textTabJson" type="button" role="tab" aria-selected="false" aria-controls="textPanelJson" tabindex="-1" data-sheet="json">当前 JSON</button>
+            </nav>
+          </section>
           <div id="graphViewport" class="graph-viewport">
             <svg id="graphEdges" class="graph-edges" aria-hidden="true"></svg>
             <div id="graphNodes" class="graph-nodes"></div>
@@ -57,6 +133,15 @@
         </aside>
       </div>
     </main>
+    <dialog id="editorSettingsDialog" aria-labelledby="editorSettingsTitle">
+      <h3 id="editorSettingsTitle">对话文件夹设置</h3>
+      <label>JSON 文件夹路径<input id="dialogueDirectoryInput" placeholder="例如 E:\项目文档\Demo魂卡牌\npc-dialogues" /></label>
+      <p class="help">支持绝对路径，或相对于项目根目录的路径。读取该文件夹直属的全部有效 NPC / 世界对话 JSON，忽略 manifest 和其他格式。设置会保留，下次启动自动读取；已有文件写回原文件名，新建对话保存为 ID.json。</p>
+      <p class="help">应用设置会重新载入列表。尚未保存的编辑保留为原文件夹的会话草稿。</p>
+      <p id="editorSettingsStatus" class="help" role="status"></p>
+      <div class="row-actions"><button id="applyEditorSettingsButton" class="primary" type="button">应用设置并读取</button><button id="retryEditorConnectionButton" type="button" hidden>重新检测连接</button><button id="closeEditorSettingsButton" type="button">取消</button></div>
+    </dialog>
+    <dialog id="textDraftDialog"><h3>当前对话有尚未转换的文本草稿</h3><p>保留草稿后，节点图、沙盒和 JSON 文件保存仍使用上一次转换的内容。</p><div class="row-actions"><button id="draftApplyContinue" class="primary" type="button">转换后继续</button><button id="draftKeepContinue" type="button">保留草稿并继续</button><button id="draftDiscardContinue" type="button">放弃草稿并继续</button><button id="draftCancel" type="button">取消</button></div></dialog>
 
     <section id="sandbox" class="sandbox is-hidden" role="dialog" aria-modal="true" aria-labelledby="sandboxTitle">
       <div class="sandbox-card">
@@ -85,13 +170,14 @@
 
     <datalist id="itemIds"></datalist>
     <datalist id="actionIds"></datalist>
-    <script src="../world-events.js"></script>
     <script src="../world-dialogue-catalog.js"></script>
-    <script src="../action-events.js"></script>
-    <script src="../world-map.js"></script>
-    <script src="../npc-dialogues.js?v=json-dialogue-2"></script>
-    <script src="../npc-dialogue-loader.js?v=json-dialogue-2"></script>
-    <script src="../world-dialogue-loader.js"></script>
-    <script src="editor.js?v=json-dialogue-2"></script>
+    <script src="../npc-dialogues.js?v=startup-recovery-2"></script>
+    <script src="dialogue-text.js?v=option-calls-1"></script>
+    <script src="editor-data.js?v=folder-flags-1"></script>
+    <script src="editor.js?v=folder-flags-1"></script>
+    <script src="text-folding.js?v=2"></script>
+    <script src="text-completion.js?v=1"></script>
+    <script src="text-editor.js?v=text-completion-1"></script>
+    <script src="folder-settings.js?v=folder-connection-2"></script>
   </body>
 </html>

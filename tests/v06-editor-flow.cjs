@@ -28,7 +28,7 @@ const base = process.env.DUNGEON_URL || "http://127.0.0.1:8765";
     await page.locator("#eventSetList button").filter({ hasText: "v06_slice_church_nave" }).click();
     await page.locator(".event-entry-card").click(); assert.equal(await page.getByLabel(/^世界对话/).inputValue(), "site_slice_church_nave");
     await page.click("#validateButton"); assert.match(await page.locator("#inspector").innerText(), /检查：0 错误/);
-    await page.goto(`${base}/npc-editor/index.html`); await page.waitForSelector("#editorApp:not(.is-loading)");
+    await page.goto(`${base}/npc-editor/index.html?source=project`); await page.waitForSelector("#editorApp:not(.is-loading)");
     for (const id of ["eddie", "thomas", "genichiro", "winnie", "mor", "emperor", "hollan"]) {
       await page.selectOption("#npcSelect", id); await page.click("#validateButton");
       assert.match(await page.locator("#inspector").innerText(), /检查：0 错误，0 警告/);

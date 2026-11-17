@@ -8,7 +8,7 @@ const base = process.env.DUNGEON_URL || "http://127.0.0.1:8765";
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   const errors = []; page.on("pageerror", (error) => errors.push(error.message));
   try {
-    await page.goto(`${base}/npc-editor/index.html?kind=world&id=site_start`);
+    await page.goto(`${base}/npc-editor/index.html?source=project&kind=world&id=site_start`);
     await page.waitForSelector("#editorApp:not(.is-loading)");
     assert.equal(await page.locator("#npcSelect").inputValue(), "world:site_start");
     assert.match(await page.locator("#inspector").innerText(), /world-dialogues\/site_start.json/);
@@ -33,13 +33,9 @@ const base = process.env.DUNGEON_URL || "http://127.0.0.1:8765";
     assert.match(await page.locator("#previewBody").innerText(), /白絮已经扎进/);
     assert.doesNotMatch(await page.locator("#previewOptions").innerText(), /自动追加献祭/);
     await page.click("#closeSandboxButton");
-    const downloadPromise = page.waitForEvent("download");
-    await page.click("#exportButton");
-    const download = await downloadPromise;
-    const exported = JSON.parse(readFileSync(await download.path(), "utf8"));
-    assert.equal(download.suggestedFilename(), "site_start.json");
+    assert.equal(await page.locator("#exportButton").count(), 0);
+    const exported = await page.evaluate(() => JSON.parse(JSON.stringify(current())));
     assert.equal(exported.nodes.root.body, "已编辑的岸台正文");
-    assert.match(await page.locator("#feedback").innerText(), /world-dialogues\/site_start.json/);
 
     // A world document can share an NPC's ID. Import, rename and undo must not alter the NPC.
     const collision = { ...exported, id: "eddie", name: "同 ID 世界对话" };
@@ -64,7 +60,7 @@ const base = process.env.DUNGEON_URL || "http://127.0.0.1:8765";
     assert.match(await page.locator("#previewOptions").innerText(), /不能直接关闭/);
     await page.click("#closeSandboxButton");
 
-    // Serve the actual exported file to a fresh game load, without writing project files.
+    // Serve the current JSON to a fresh game load, without writing project files.
     await page.route("**/world-dialogues/site_start.json", (route) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(exported) }));
     await page.goto(`${base}/index.html`);
     await page.waitForFunction(() => typeof WorldGame !== "undefined" && !document.querySelector("#startButton").disabled);
@@ -104,6 +100,6 @@ const base = process.env.DUNGEON_URL || "http://127.0.0.1:8765";
     await page.locator("#worldModalOptions").getByRole("button", { name: /重新开始 Vertical Slice/ }).click();
     assert.ok(await page.evaluate(() => world.hp > 0));
     assert.deepEqual(errors, []);
-    console.log("PASS: world dialogue search, graph edits, undo/redo, sandbox, ID isolation, draft reload, JSON export and actual game reload");
+    console.log("PASS: world dialogue search, graph edits, undo/redo, sandbox, ID isolation, draft reload and actual game reload");
   } finally { await browser.close(); }
 })().catch((error) => { console.error(error); process.exitCode = 1; });

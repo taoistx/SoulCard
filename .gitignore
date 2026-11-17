@@ -5,3 +5,5 @@ assets/*
 !assets/map-terrain/*.jpg
 *.rar
 /ArtSketch
+/.npc-editor-settings.json
+__pycache__/

@@ -1,6 +1,10 @@
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import json
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from dialogue_editor_server import DialogueEditorHandler
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -9,9 +13,9 @@ WORLD_EVENTS = ROOT / "world-events.js"
 PORT = 8765
 
 
-class NodeEditorHandler(SimpleHTTPRequestHandler):
+class NodeEditorHandler(DialogueEditorHandler):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=str(ROOT), **kwargs)
+        super().__init__(*args, **kwargs)
 
     def end_headers(self):
         self.send_header("Cache-Control", "no-store")
@@ -23,8 +27,7 @@ class NodeEditorHandler(SimpleHTTPRequestHandler):
             "/__node_editor/save_world_events": (WORLD_EVENTS, "window.WORLD_EVENT_SET_BUNDLE"),
         }
         if self.path not in targets:
-            self.send_error(404, "Unknown endpoint")
-            return
+            return super().do_POST()
         try:
             target, marker = targets[self.path]
             length = int(self.headers.get("Content-Length", "0"))

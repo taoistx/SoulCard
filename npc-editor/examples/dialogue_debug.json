@@ -1,0 +1,305 @@
+{
+  "schemaVersion": 1,
+  "kind": "npc",
+  "id": "dialogue_debug",
+  "name": "路边偶遇露西 · 调试范例",
+  "start": {
+    "default": "root",
+    "rules": []
+  },
+  "nodes": {
+    "root": {
+      "title": "路边偶遇露西",
+      "body": "你又见到她，似乎依然没有离开。",
+      "optionList": "mainChoices"
+    },
+    "unwell": {
+      "title": "露西的回答",
+      "body": "她摇摇头，似乎很难受。",
+      "optionList": "unwellChoices"
+    },
+    "textNode1": {
+      "body": "她非常失望，但又不愿意表现出来。",
+      "optionList": "mainChoices"
+    },
+    "silent": {
+      "title": "沉默",
+      "body": "她没有回答。",
+      "optionList": "silentChoices"
+    },
+    "monster": {
+      "title": "异变",
+      "body": "她变成了怪兽。",
+      "effects": [
+        {
+          "type": "setFlag",
+          "key": "debugLucyMonster",
+          "value": true
+        }
+      ],
+      "optionList": "monsterChoices"
+    },
+    "debug_state": {
+      "title": "调整测试状态",
+      "body": "选择一项后返回开场，观察“你好点吗？”是否出现。\n\n理解感染 / !（吃药 & 已经康复）\n只有不理解感染、且吃药和已经康复都为真时，才隐藏该选项。\n\n“没有吃药”是独立 Flag，可用来试写其他条件。",
+      "optionList": "debug_stateChoices"
+    }
+  },
+  "editor": {
+    "positions": {
+      "root": {
+        "x": 60,
+        "y": 100
+      },
+      "unwell": {
+        "x": 390,
+        "y": 30
+      },
+      "silent": {
+        "x": 390,
+        "y": 260
+      },
+      "monster": {
+        "x": 720,
+        "y": 260
+      },
+      "debug_state": {
+        "x": 60,
+        "y": 470
+      },
+      "textNode1": {
+        "x": 720,
+        "y": 30
+      }
+    },
+    "textAuthoring": {
+      "flagAliases": {
+        "理解感染": "debugUnderstandsInfection",
+        "没有吃药": "debugNoMedicine",
+        "吃药": "debugTookMedicine",
+        "已经康复": "debugRecovered",
+        "问候过露西": "debugGreetedLucy",
+        "露西怪兽": "debugLucyMonster"
+      },
+      "nextNodeSerial": 2,
+      "syntaxVersion": 4
+    }
+  },
+  "optionLists": {
+    "mainChoices": {
+      "options": [
+        {
+          "id": "ask_condition",
+          "label": "你好点吗？",
+          "visibleWhen": {
+            "mode": "any",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "debugUnderstandsInfection",
+                "operator": "eq",
+                "value": true
+              },
+              {
+                "mode": "not",
+                "clauses": [
+                  {
+                    "mode": "all",
+                    "clauses": [
+                      {
+                        "source": "flag",
+                        "key": "debugTookMedicine",
+                        "operator": "eq",
+                        "value": true
+                      },
+                      {
+                        "source": "flag",
+                        "key": "debugRecovered",
+                        "operator": "eq",
+                        "value": true
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "next": "unwell"
+        },
+        {
+          "id": "avoid",
+          "label": "回避",
+          "next": "textNode1"
+        },
+        {
+          "id": "greet",
+          "label": "问候",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "debugGreetedLucy",
+              "value": true
+            }
+          ],
+          "next": "silent"
+        },
+        {
+          "id": "adjust_state",
+          "label": "调整测试状态",
+          "next": "debug_state"
+        },
+        {
+          "id": "leave",
+          "label": "离开"
+        }
+      ]
+    },
+    "unwellChoices": {
+      "options": [
+        {
+          "id": "back",
+          "label": "返回交谈",
+          "next": "root"
+        },
+        {
+          "id": "leave",
+          "label": "离开"
+        }
+      ]
+    },
+    "silentChoices": {
+      "options": [
+        {
+          "id": "keep_asking",
+          "label": "继续追问",
+          "next": "monster"
+        },
+        {
+          "id": "leave",
+          "label": "离开"
+        }
+      ]
+    },
+    "monsterChoices": {
+      "options": [
+        {
+          "id": "noticed_change",
+          "label": "你已经看到了她的异变",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "debugLucyMonster",
+                "operator": "eq",
+                "value": true
+              }
+            ]
+          },
+          "next": "root"
+        },
+        {
+          "id": "leave",
+          "label": "离开"
+        }
+      ]
+    },
+    "debug_stateChoices": {
+      "options": [
+        {
+          "id": "understand",
+          "label": "理解感染",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "debugUnderstandsInfection",
+              "value": true
+            }
+          ],
+          "next": "root"
+        },
+        {
+          "id": "no_medicine",
+          "label": "没有吃药",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "debugNoMedicine",
+              "value": true
+            },
+            {
+              "type": "setFlag",
+              "key": "debugTookMedicine",
+              "value": false
+            }
+          ],
+          "next": "root"
+        },
+        {
+          "id": "take_medicine",
+          "label": "吃药并康复",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "debugTookMedicine",
+              "value": true
+            },
+            {
+              "type": "setFlag",
+              "key": "debugRecovered",
+              "value": true
+            },
+            {
+              "type": "setFlag",
+              "key": "debugNoMedicine",
+              "value": false
+            }
+          ],
+          "next": "root"
+        },
+        {
+          "id": "reset",
+          "label": "重置全部范例 Flag",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "debugUnderstandsInfection",
+              "value": false
+            },
+            {
+              "type": "setFlag",
+              "key": "debugNoMedicine",
+              "value": false
+            },
+            {
+              "type": "setFlag",
+              "key": "debugTookMedicine",
+              "value": false
+            },
+            {
+              "type": "setFlag",
+              "key": "debugRecovered",
+              "value": false
+            },
+            {
+              "type": "setFlag",
+              "key": "debugGreetedLucy",
+              "value": false
+            },
+            {
+              "type": "setFlag",
+              "key": "debugLucyMonster",
+              "value": false
+            }
+          ],
+          "next": "root"
+        },
+        {
+          "id": "back",
+          "label": "返回交谈",
+          "next": "root"
+        }
+      ]
+    }
+  }
+}

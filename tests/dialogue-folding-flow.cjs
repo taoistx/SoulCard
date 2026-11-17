@@ -1,0 +1,122 @@
+const assert = require("node:assert/strict");
+const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
+const base = process.env.DUNGEON_URL || "http://127.0.0.1:8765";
+
+(async () => {
+  const browser = await chromium.launch({ headless: true, channel: process.env.BROWSER_CHANNEL || "msedge" });
+  try {
+    const page = await browser.newPage({ acceptDownloads: true });
+    const input = page.locator("#dialogueTextInput");
+    const toggle = (line) => page.locator(`.text-fold-toggle[data-line="${line}"]`);
+    const numbers = () => page.locator("#textLineNumbers .text-line-number > span").allTextContents();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    await page.goto(`${base}/npc-editor/index.html`);
+    await input.waitFor({ state: "visible" });
+    const suggestions = page.getByRole("listbox", { name: "对话引用候选" });
+    const suggestion = (name) => suggestions.getByRole("option", { name, exact: true });
+    const originalJson = await page.evaluate(() => snapshot());
+    await input.fill("开场\n》问路\n    ");
+    await page.keyboard.insertText("@");
+    await suggestions.waitFor();
+    assert.equal(await suggestion("root 节点").count(), 1);
+    assert.equal(await suggestion("mainChoices 选项组").count(), 1);
+    assert.equal(await suggestions.getByRole("option", { name: /ask_condition/ }).count(), 0);
+    await page.keyboard.insertText(" unwell");
+    assert.equal(await suggestions.getByRole("option").count(), 2);
+    await input.press("ArrowDown");
+    assert.equal(await suggestion("unwellChoices 选项组").getAttribute("aria-selected"), "true");
+    await input.press("Tab");
+    assert.equal(await input.inputValue(), "开场\n》问路\n    @ unwellChoices");
+    assert.equal(await suggestions.isVisible(), false);
+    assert.equal(await page.evaluate(() => DialogueTextEditor.hasDraft()), true);
+    await input.fill("开场\n》问路\n@ro");
+    await suggestion("root 节点").click();
+    assert.equal(await input.inputValue(), "开场\n》问路\n@root");
+    await input.fill("开场\n@un");
+    await input.press("Enter");
+    assert.equal(await input.inputValue(), "开场\n@unwell");
+    await input.fill("开场\n@");
+    await input.press("Escape");
+    assert.equal(await suggestions.isVisible(), false);
+    assert.equal(await input.inputValue(), "开场\n@");
+    for (const text of ["开场里有 @ro", "\\@ro", "@noSuchId"]) {
+      await input.fill(text);
+      assert.equal(await suggestions.isVisible(), false);
+    }
+    const longText = "正文\n".repeat(80);
+    await input.fill(longText);
+    await input.press("Control+End");
+    await page.keyboard.insertText("@main");
+    await suggestion("mainChoices 选项组").waitFor();
+    assert.equal(await suggestions.evaluate((menu) => {
+      const bounds = menu.getBoundingClientRect(), editor = menu.parentElement.getBoundingClientRect();
+      return bounds.top >= editor.top && bounds.bottom <= editor.bottom;
+    }), true);
+    await input.press("Enter");
+    assert.equal(await input.inputValue(), longText + "@mainChoices");
+    assert.equal(await page.evaluate(() => snapshot()), originalJson);
+    const activeLines = () => page.locator("#textLineNumbers .is-in-scope > span").allTextContents();
+    const activeParent = () => page.locator("#textLineNumbers .is-scope-parent > span").textContent();
+    const scoped = "开场\n》问路\n\t沿河走\n\t》追问\n\t\t往北\n》借宿\n    去旅店\n    》道谢";
+    await input.fill(scoped);
+    await input.press("Control+Home");
+    await input.press("ArrowDown");
+    await input.press("ArrowDown");
+    await page.waitForFunction(() => document.querySelector("#textLineNumbers .is-cursor-line > span")?.textContent === "3");
+    assert.deepEqual(await activeLines(), ["3", "4"]);
+    assert.equal(await activeParent(), "2");
+    assert.equal(await page.locator("#textScopeHighlights .is-in-scope").count(), 2);
+    await toggle(2).click();
+    assert.deepEqual(await activeLines(), ["1", "2", "6"]);
+    await input.press("Control+End");
+    await page.waitForFunction(() => document.querySelector("#textLineNumbers .is-cursor-line > span")?.textContent === "8");
+    assert.deepEqual(await activeLines(), ["7", "8"]);
+    assert.equal(await activeParent(), "6");
+
+    const source = "开场\n》问路\n\t沿河走\n\n\t直到桥边\n\t》追问\n\t\t往北\n\t》道谢\n》离开";
+    await input.fill(source);
+    await toggle(6).click();
+    await toggle(2).click();
+    assert.equal(await input.inputValue(), "开场\n》问路\n》离开");
+    assert.deepEqual(await numbers(), ["1", "2", "9"]);
+    await toggle(2).press("Enter");
+    assert.equal(await toggle(6).getAttribute("aria-expanded"), "false");
+    await toggle(2).click();
+
+    await input.press("Control+Home");
+    await page.keyboard.insertText("序幕\n");
+    await input.press("ArrowDown");
+    await input.press("End");
+    await page.keyboard.insertText("吧");
+    assert.equal(await input.inputValue(), "序幕\n开场\n》问路吧\n》离开");
+    assert.equal(await toggle(3).getAttribute("aria-expanded"), "false");
+
+    const edited = "序幕\n" + source.replace("》问路", "》问路吧");
+    const downloadReady = page.waitForEvent("download");
+    await page.click("#exportTextButton");
+    const download = await downloadReady;
+    const bytes = await download.createReadStream();
+    let exported = "";
+    bytes.setEncoding("utf8");
+    for await (const chunk of bytes) exported += chunk;
+    assert.equal(exported.split("\n\n@config")[0], edited);
+    await page.click("#applyTextButton");
+    await page.waitForFunction(() => !DialogueTextEditor.hasDraft());
+    await page.click("#sandboxButton");
+    await page.getByRole("button", { name: "问路吧", exact: true }).click();
+    assert.match(await page.locator("#previewBody").textContent(), /沿河走\n\n直到桥边/);
+    await page.getByRole("button", { name: "追问", exact: true }).click();
+    assert.equal(await page.locator("#previewBody").textContent(), "往北");
+    await page.click("#closeSandboxButton");
+
+    await input.fill("开场\n》问路\n    回复\n    @missing\n》离开");
+    await toggle(2).click();
+    await page.click("#applyTextButton");
+    await page.locator("#textDiagnostics button").filter({ hasText: "未知节点" }).click();
+    assert.equal(await toggle(2).getAttribute("aria-expanded"), "true");
+    assert.equal(await input.evaluate((field) => field.value.slice(field.selectionStart).split("\n")[0]), "@missing");
+    assert.deepEqual(errors, []);
+    console.log("PASS: reference completion, caret and branch highlights, nested folding, full export, conversion and diagnostic reveal");
+  } finally { await browser.close(); }
+})().catch((error) => { console.error(error); process.exitCode = 1; });

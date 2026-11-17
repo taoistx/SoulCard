@@ -6,12 +6,52 @@
     "default": "root",
     "rules": []
   },
+  "editor": {
+    "positions": {
+      "root": {
+        "x": 16,
+        "y": 173
+      },
+      "church_info": {
+        "x": 390,
+        "y": 70
+      },
+      "slice_salvage": {
+        "x": 700,
+        "y": 290
+      },
+      "slice_report": {
+        "x": 60,
+        "y": 520
+      },
+      "textNode1": {
+        "x": 700,
+        "y": 60
+      },
+      "textNode2": {
+        "x": 60,
+        "y": 290
+      },
+      "textNode7": {
+        "x": 60,
+        "y": 520
+      },
+      "textNode8": {
+        "x": 380,
+        "y": 520
+      }
+    },
+    "textAuthoring": {
+      "nextNodeSerial": 9,
+      "syntaxVersion": 4
+    }
+  },
+  "kind": "npc",
   "nodes": {
     "root": {
       "kicker": "NPC · 岸台营地",
       "title": "渔夫 艾迪",
       "body": {
-        "default": "艾迪把一只湿壳翻过来晾着，抬眼看你。\n“从浅滩上来的？先站稳，台子外面都是软泥。”",
         "variants": [
           {
             "when": {
@@ -27,140 +67,36 @@
             },
             "text": "“我这有好东西你可能用得着。”\n“拿新鲜的肉换装备，好膜能制防护，也能罩住作业位。想换什么，到货摊上看看。”"
           }
-        ]
+        ],
+        "default": "这是在黑水边一片相对坚硬的台地上的一个棚架，有一个老人，似乎在黑水里打捞东西"
       },
-      "effects": [
-        {
-          "type": "setFlag",
-          "key": "eddieMet",
-          "value": true
-        }
-      ],
-      "options": [
-        {
-          "id": "ask_place",
-          "label": "这里是什么地方？",
-          "hint": "免费情报",
-          "next": "church_info"
-        },
-        {
-          "id": "attack",
-          "label": {
-            "default": "袭击艾迪，夺走货物",
-            "variants": []
-          },
-          "hint": "触发战斗",
-          "action": "fight_eddie"
-        },
-        {
-          "id": "shop",
-          "label": "看看你的货物",
-          "hint": "打开商店 · 以物易物",
-          "action": "shop_eddie"
-        },
-        {
-          "id": "slice_salvage",
-          "label": "问漂积湾里有什么",
-          "hint": "",
-          "action": "v06_eddie_salvage",
-          "next": "slice_salvage"
-        },
-        {
-          "id": "slice_report",
-          "label": "告诉他亲自试穿的结果",
-          "hint": "",
-          "next": "slice_report"
-        }
-      ]
+      "effects": [],
+      "optionList": "rootChoices"
     },
     "church_info": {
       "kicker": "艾迪 · 情报",
       "title": "山上的教堂仍有人往来",
-      "body": "“看见铁壁上头那个尖顶了吗？那是教堂。我见过有人背着东西从那边下来，石阶也有人修。至于能不能回到原来的地方……我没见谁回来告诉我。”\n他朝硬堤指了指：“沿堤上去，贴到铁壁再往高处走。”",
-      "options": [
-        {
-          "id": "ask_identity",
-          "label": "你是谁？",
-          "hint": "情报",
-          "next": "eddie_info"
-        },
-        {
-          "id": "ask_flesh",
-          "label": "吃人的血肉？！",
-          "hint": "情报",
-          "next": "flesh_info"
-        },
-        {
-          "id": "back_trade",
-          "label": "返回",
-          "hint": "返回",
-          "next": "root"
-        }
-      ],
-      "effects": []
+      "effects": [],
+      "body": "我叫艾迪，也是一个倒霉蛋而已",
+      "optionList": "church_infoChoices"
     },
-    "eddie_info": {
-      "kicker": "艾迪 · 情报",
-      "title": "这里能交易",
-      "body": "“我叫艾迪。水把东西送过来，我挑能用的，拿去换肉。你有新鲜的肉也能换东西，废壳里的好膜我也用得上。”",
-      "options": [
-        {
-          "id": "ask_stay",
-          "label": "你为什么不去那建筑？",
-          "hint": "情报",
-          "next": "whyhere_info"
-        },
-        {
-          "id": "back_trade",
-          "label": "继续交易",
-          "hint": "打开商店",
-          "action": "shop_eddie"
-        }
-      ],
-      "effects": []
+    "textNode1": {
+      "effects": [],
+      "body": "这是所有倒霉的东西汇集的地方……",
+      "optionList": "textNode1Choices"
     },
-    "flesh_info": {
-      "kicker": "艾迪 · 情报",
-      "title": "血肉只能填补伤势",
-      "body": "“能吃的肉会让伤口合上，别拿长白丝的凑数。可你甲缝里那东西已经扎进去了，吃肉拔不出来。”",
-      "options": [
-        {
-          "id": "back_trade",
-          "label": "返回",
-          "hint": "返回",
-          "next": "root"
-        }
-      ],
-      "effects": []
-    },
-    "whyhere_info": {
-      "kicker": "艾迪 · 情报",
-      "title": "这里能交易",
-      "body": "“山腰的灰粉，我受不了。下来的那些人也从不肯带我走。这里还有活计，我就先守着。”",
-      "options": [
-        {
-          "id": "back_trade",
-          "label": "返回",
-          "hint": "返回",
-          "next": "root"
-        }
-      ],
-      "effects": []
+    "textNode2": {
+      "effects": [],
+      "body": "看到远处山顶那类似教堂的建筑吗？到那就能回去原来的世界了",
+      "optionList": "textNode2Choices"
     },
     "slice_salvage": {
-      "body": "“台子左边的回水湾，会把东西留在石头旁。废壳下面有时夹着好膜，剥掉沾泥的外层，剩下的能包甲缝。”",
-      "options": [
-        {
-          "id": "back",
-          "label": "返回",
-          "hint": "",
-          "next": "root"
-        }
-      ]
+      "effects": [],
+      "body": "捞点有用的东西……你要有新鲜的血肉可以来跟我交换",
+      "optionList": "slice_salvageChoices"
     },
     "slice_report": {
       "body": {
-        "default": "你还没有亲自穿着仿罩走过菌丛，暂时没有验证可说。",
         "variants": [
           {
             "when": {
@@ -176,40 +112,134 @@
             },
             "text": "你说出穿过菌丛时甲缝没有再刺痛的体验。艾迪翻过罩布：“能挡这一段，不代表能挡刀。”"
           }
-        ]
+        ],
+        "default": "艾迪轻微唉了一声，“你是喝到黑水了吧？你可能没几天可以活就要变异了。”"
       },
+      "effects": [],
+      "optionList": "slice_reportChoices"
+    },
+    "textNode7": {
+      "effects": [],
+      "body": "怎么形容……变成一滩烂肉吧。",
+      "optionList": "slice_reportChoices"
+    },
+    "textNode8": {
+      "effects": [],
+      "body": "我也不知道，也许你只能到山上的教堂去碰碰运气。",
+      "optionList": "slice_reportChoices"
+    }
+  },
+  "optionLists": {
+    "rootChoices": {
       "options": [
         {
-          "id": "back",
+          "id": "choice1",
+          "label": "你是谁？",
+          "next": "church_info"
+        },
+        {
+          "id": "choice2",
+          "label": "这里是哪？",
+          "next": "textNode1"
+        },
+        {
+          "id": "choice3",
+          "label": "怎样能离开这个鬼地方？",
+          "next": "textNode2"
+        },
+        {
+          "id": "choice4",
+          "label": "你在这里做什么？",
+          "next": "slice_salvage",
+          "effects": [
+            {
+              "type": "setFlag",
+              "key": "storyFlag_5ee56f094639b74d894bd178217070b0e09fd1839095adc6f1ee799b52996b48",
+              "value": true
+            }
+          ]
+        },
+        {
+          "id": "choice5",
+          "label": "你知道我身上这些斑纹是怎么回事吗？",
+          "next": "slice_report"
+        },
+        {
+          "id": "choice6",
+          "label": "交易",
+          "action": "shop_eddie",
+          "visibleWhen": {
+            "mode": "all",
+            "clauses": [
+              {
+                "source": "flag",
+                "key": "storyFlag_5ee56f094639b74d894bd178217070b0e09fd1839095adc6f1ee799b52996b48",
+                "operator": "eq",
+                "value": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "choice7",
+          "label": "离开"
+        }
+      ]
+    },
+    "church_infoChoices": {
+      "options": [
+        {
+          "id": "choice1",
           "label": "返回",
-          "hint": "",
           "next": "root"
         }
       ]
-    }
-  },
-  "editor": {
-    "positions": {
-      "root": {
-        "x": 16,
-        "y": 173
-      },
-      "church_info": {
-        "x": 390,
-        "y": 70
-      },
-      "eddie_info": {
-        "x": 700,
-        "y": 70
-      },
-      "flesh_info": {
-        "x": 700,
-        "y": 260
-      },
-      "whyhere_info": {
-        "x": 1010,
-        "y": 70
-      }
+    },
+    "textNode1Choices": {
+      "options": [
+        {
+          "id": "choice1",
+          "label": "返回",
+          "next": "root"
+        }
+      ]
+    },
+    "textNode2Choices": {
+      "options": [
+        {
+          "id": "choice1",
+          "label": "返回",
+          "next": "root"
+        }
+      ]
+    },
+    "slice_salvageChoices": {
+      "options": [
+        {
+          "id": "choice1",
+          "label": "返回",
+          "next": "root"
+        }
+      ]
+    },
+    "slice_reportChoices": {
+      "options": [
+        {
+          "id": "choice1",
+          "label": "变异？变成什么？",
+          "next": "textNode7"
+        },
+        {
+          "id": "choice2",
+          "label": "怎么能治好",
+          "next": "textNode8"
+        },
+        {
+          "id": "choice3",
+          "label": "返回",
+          "next": "root"
+        }
+      ]
     }
   }
 }
