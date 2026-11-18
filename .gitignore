@@ -6,4 +6,5 @@ assets/*
 *.rar
 /ArtSketch
 /.npc-editor-settings.json
+/.action-event-editor-settings.json
 __pycache__/

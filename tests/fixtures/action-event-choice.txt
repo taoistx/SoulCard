@@ -1,0 +1,26 @@
+#露西 #粪怪
+
+》确认
+执念》露西：
+	第一次执念后，情况依然危险
+	》选项1
+		@jump options
+	》选项2
+		@exit
+》离开
+	@exit
+
+[options]
+执念》露西 & 暴力》粪怪:
+    @battle monster1?
+    》胜利
+        +flag: 露西获救
+        +card: 处决
+        @exit
+    》失败
+        +flag: 露西死亡
+        @exit
+    》其他
+        @exit
+其他:
+    这样的行动似乎没有意义。

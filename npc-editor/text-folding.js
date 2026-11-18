@@ -1,6 +1,11 @@
 "use strict";
 
-function createDialogueFolding(input, gutter, onChange) {
+function createDialogueFolding(input, gutter, onChange, {
+  isFoldHeader = (text) => text.startsWith("》"),
+  allowFlatReply = true,
+  indentDepth = (indent) => indent.includes("\t") ? indent.length : indent.length / 4,
+  belongsToHeader = () => false,
+} = {}) {
   const rowHeight = 23;
   const highlights = document.querySelector("#textScopeHighlights");
   let source = "", folded = new Set(), ranges = new Map();
@@ -14,17 +19,18 @@ function createDialogueFolding(input, gutter, onChange) {
     const tokens = lines.flatMap((line, index) => {
       if (!line.trim()) return [];
       const indent = line.match(/^[\t ]*/u)[0];
-      return [{ index, depth: indent.includes("\t") ? indent.length : indent.length / 4, text: line.slice(indent.length) }];
+      return [{ index, depth: indentDepth(indent), text: line.slice(indent.length) }];
     });
     const result = new Map();
     for (let i = 0; i < tokens.length; i++) {
       const { index, depth, text } = tokens[i];
-      if (!text.startsWith("》")) continue;
+      if (!isFoldHeader(text, depth)) continue;
       let j = i + 1;
       // Plain text also accepts a same-level reply or @ reference after an option.
-      const flatReply = tokens[j]?.depth === depth && !/^(》|@(?:node|option)\s)/u.test(tokens[j].text);
+      const flatReply = allowFlatReply && tokens[j]?.depth === depth && !/^(》|@(?:node|option)\s)/u.test(tokens[j].text);
       while (j < tokens.length) {
         const next = tokens[j];
+        if (next.depth === depth && belongsToHeader(text.trimEnd(), next.text.trimEnd())) { j++; continue; }
         if (next.depth <= depth) {
           if (next.depth < depth || !flatReply || /^(》|@(?:node|option)\s)/u.test(next.text)) break;
           if (next.text.startsWith("@")) { j++; break; }

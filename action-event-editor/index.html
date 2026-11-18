@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>行动事件文本编辑器</title>
+    <link rel="stylesheet" href="../npc-editor/editor.css?v=text-completion-1" />
+    <link rel="stylesheet" href="editor.css" />
+  </head>
+  <body class="action-authoring">
+    <main class="editor-app">
+      <header class="editor-header">
+        <div class="brand"><h1>行动事件文本编辑器</h1></div>
+        <nav aria-label="编辑器导航">
+          <a href="../npc-editor/index.html">剧情编辑器</a>
+          <a href="../node-editor/events.html">事件集编辑器</a>
+          <button id="openFolderSettings" type="button">设置</button>
+        </nav>
+      </header>
+      <div class="editor-layout action-layout">
+        <aside class="panel navigator-panel">
+          <label for="eventFile">事件 JSON 文件</label>
+          <select id="eventFile" disabled><option value="">选择事件文件</option></select>
+          <p id="eventFolderStatus" class="help" role="status"></p>
+          <p class="panel-kicker">当前文件</p>
+          <p id="filename"></p>
+          <button id="loadExample" type="button">载入露西示例</button>
+          <nav id="outlineNav" aria-label="正文大纲">
+            <h2>正文大纲</h2>
+            <div id="outline" class="node-list"></div>
+          </nav>
+        </aside>
+        <section class="text-workspace" aria-label="编辑工作区">
+          <div class="text-toolbar">
+            <button id="apply" type="button" class="primary">转换并应用</button>
+            <button id="import" type="button">导入</button>
+            <button id="exportText" type="button">导出文本</button>
+            <button id="exportJson" type="button">导出 JSON</button>
+            <input id="importFile" type="file" accept=".txt,.json,text/plain,application/json" hidden />
+          </div>
+          <p id="draftState" class="help" role="status"></p>
+          <div class="text-sheet-content">
+            <section id="sourcePanel" class="text-tab-panel text-body-panel" role="tabpanel" aria-labelledby="sourceTab">
+              <div class="text-source">
+                <div id="lineNumbers" class="text-line-numbers"></div>
+                <div class="text-edit-area">
+                  <div id="textScopeHighlights" class="text-scope-highlights" aria-hidden="true"></div>
+                  <textarea id="source" aria-label="行动事件正文" spellcheck="false" wrap="off"></textarea>
+                </div>
+              </div>
+            </section>
+            <section id="jsonPanel" class="text-tab-panel" role="tabpanel" aria-labelledby="jsonTab" tabindex="0" hidden>
+              <p class="help">这里显示最近一次成功转换或校验的 JSON。</p>
+              <pre id="jsonPreview" class="text-syntax-example"></pre>
+            </section>
+            <section id="helpPanel" class="text-tab-panel" role="tabpanel" aria-labelledby="helpTab" tabindex="0" hidden>
+              <p>在正文里按 <kbd>Shift</kbd> + <kbd>Tab</kbd>，可将当前行或选中的多行减少一级缩进。</p>
+              <div id="eventTextHelp" hidden>
+                <h2>游戏事件文本</h2>
+                <p><code>#槽位ID</code> 定义槽位，<code>[阶段ID]</code> 定义该阶段的规则组，<code>》配方ID</code> 定义组内配方。每级缩进用一个 Tab 或四个空格，阶段正文每行以 <code>|</code> 开头。</p>
+                <pre class="text-syntax-example">@event sample
+版本：1
+标题：菌雾里的金属声
+起始阶段：opening
+#subject
+    名称：菌雾
+#field
+    名称：周围环境
+[opening]
+    |你听见远处传来规律的敲击声。
+    》observe
+        伎俩[focus]》subject
+        &gt;你辨出了节奏。</pre>
+                <p>配方内每行写一条槽位匹配，同时列出多条时必须全部满足。用 <code>伎俩[!focus]》subject</code> 排除指定卡牌，或用 <code>物品或知识[freshFlesh]》field</code> 匹配资源。配方结果正文以 <code>&gt;</code> 开头，也可用「结果对话」和「结果节点」引用游戏对白。</p>
+                <p>「世界条件」和「世界后果」沿用 JSON 值。<code>@字段 ["字段名", 值]</code> 保留扩展字段。转换后可在「当前 JSON」核对供游戏加载的数据。</p>
+              </div>
+              <div id="sandboxTextHelp">
+              <h2>DSL v0.1</h2>
+              <p>按开场正文、<code>#槽位</code>、<code>》选项</code> 的顺序写。顶层选项顶格写，卡牌规则与所属选项同级。规则的结果缩进一级，<code>@battle</code> 和它的 <code>》胜利</code> 等返回分支同级。每级用一个 Tab 或四个空格。</p>
+              <p>规则用 <code>暴力》粪怪</code> 匹配标签，<code>[肉块]》粪怪</code> 匹配具体卡牌，<code>空》露西</code> 匹配空槽。<code>!</code> 表示否定，<code>&amp;</code> 表示且，<code>|</code> 表示或，按这个顺序运算。圆括号可分组和嵌套，支持全角符号。例如 <code>（执念》露西）|（！暴力》露西）:</code>。</p>
+              <p>同一选项或命名组里的条件从上往下匹配，只执行第一条符合条件的分支。<code>其他:</code> 放在末尾，用于前面的条件都不符合时。正文行以保留符号开头时，在前面加 <code>\</code>。</p>
+              <pre class="text-syntax-example">菌雾里传来微弱的敲击声。
+#露西 #粪怪
+》确认
+执念》露西 &amp; 暴力》粪怪:
+    @battle monster1?
+    》胜利
+        +flag: 露西获救
+        @exit
+    》失败
+        @exit
+其他:
+    这样的行动似乎没有意义。
+
+》离开</pre>
+              <p><code>@jump root</code> 返回面板并清空槽位里的牌。<code>@exit</code> 或单独一行的 <code>》离开</code> 结束本轮。命名规则组 <code>[组ID]</code> 可供 <code>@jump 组ID</code> 跳转，组内规则也顶格写。<code>@battle</code> 带 <code>?</code> 时进入返回分支，<code>@shop eddie</code> 等待关闭模拟商店。</p>
+              <p>顶层和后续的 <code>》选项</code> 遵循同一套规则。选项可以接下一层的正文和指令，也可以直接接同级的卡牌规则。结果正文和它提供的下一组选项同级，这个结构可以反复嵌套。</p>
+              <p>下一组选项会沿用当前槽位布局，并清空槽位里的牌。重新放牌后点击选项，卡牌规则和 <code>@jump</code> 按这次摆牌匹配。与结果正文同级写 <code>#新槽位 #另一槽位</code> 可替换布局。</p>
+              <pre class="text-syntax-example">》确认
+执念》露西:
+    情况依然危险。
+    》继续
+    暴力》粪怪:
+        @jump options
+    其他:
+        还需要一张暴力牌。
+    》离开
+        @exit
+
+[options]
+执念》露西 &amp; 暴力》粪怪:
+    @battle monster1?
+    》胜利
+        你击败了粪怪。
+    》失败
+        你被怪物击倒了。</pre>
+              <p><code>+flag:</code> / <code>-flag:</code> 设置布尔值。<code>+card:</code> / <code>-card:</code> 和 <code>+item:</code> / <code>-item:</code> 每次增减一份。在沙盒配置中注册脚本引用的卡牌、标签、物品、战斗和商店。</p>
+              </div>
+            </section>
+            <section id="sandboxPanel" class="text-tab-panel" role="tabpanel" aria-labelledby="sandboxTab" tabindex="0" hidden>
+              <p id="sandboxVersion" class="help" role="status"></p>
+              <div id="sandboxPlay" class="action-play"></div>
+              <details id="sandboxSettings">
+                <summary>沙盒配置</summary>
+                <label for="config">卡牌与标签、物品、模拟战斗与商店、初始状态</label>
+                <textarea id="config" rows="16" spellcheck="false" wrap="off"></textarea>
+              </details>
+            </section>
+          </div>
+          <div id="diagnostics" class="text-diagnostics" aria-label="转换诊断" aria-live="polite"></div>
+          <nav id="tabs" class="text-sheet-tabs" role="tablist" aria-label="工作区页签">
+            <button id="sourceTab" type="button" role="tab" aria-selected="true" aria-controls="sourcePanel">正文</button>
+            <button id="jsonTab" type="button" role="tab" aria-selected="false" aria-controls="jsonPanel" tabindex="-1">当前 JSON</button>
+            <button id="helpTab" type="button" role="tab" aria-selected="false" aria-controls="helpPanel" tabindex="-1">语法帮助</button>
+            <button id="sandboxTab" type="button" role="tab" aria-selected="false" aria-controls="sandboxPanel" tabindex="-1">沙盒</button>
+          </nav>
+        </section>
+      </div>
+    </main>
+    <dialog id="eventFolderSettings" aria-labelledby="eventFolderTitle">
+      <form id="eventFolderForm">
+        <h2 id="eventFolderTitle">事件文件夹设置</h2>
+        <label for="eventDirectory">事件 JSON 所在文件夹</label>
+        <input id="eventDirectory" type="text" autocomplete="off" required />
+        <p class="help">支持绝对路径和相对于项目根目录的路径。下拉框列出该文件夹直属的行动事件及沙盒 JSON。</p>
+        <p id="eventSettingsStatus" class="help" role="status"></p>
+        <div class="row-actions">
+          <button id="applyFolderSettings" type="submit" class="primary">应用文件夹</button>
+          <button id="closeFolderSettings" type="button">关闭</button>
+        </div>
+      </form>
+    </dialog>
+    <script src="../action-events.js" data-validate-only></script>
+    <script src="../npc-editor/text-folding.js?v=4"></script>
+    <script src="dsl.js"></script>
+    <script src="event-text.js"></script>
+    <script src="sandbox.js"></script>
+    <script src="example.js"></script>
+    <script src="sandbox-view.js"></script>
+    <script src="folder-settings.js"></script>
+    <script src="editor.js"></script>
+  </body>
+</html>

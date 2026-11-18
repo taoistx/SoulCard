@@ -116,6 +116,7 @@
   const api = Object.freeze({ validate, resources, match, KNOWLEDGE });
   if (typeof module !== "undefined" && module.exports) { module.exports = api; return; }
   global.ActionEventRuntime = api;
+  if (document.currentScript.hasAttribute("data-validate-only")) return;
   const base = new URL("action-events/", document.currentScript.src);
   let registry = {};
   async function readJson(path) {

@@ -1,0 +1,8 @@
+{
+  "理解感染": "debugUnderstandsInfection",
+  "没有吃药": "debugNoMedicine",
+  "吃药": "debugTookMedicine",
+  "已经康复": "debugRecovered",
+  "问候过露西": "debugGreetedLucy",
+  "露西怪兽": "debugLucyMonster"
+}
